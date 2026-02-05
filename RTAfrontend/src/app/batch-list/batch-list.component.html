@@ -1,0 +1,76 @@
+<div class="profile-container">
+  <aside class="sidebar">
+    <h2>RTA Merchant Upload</h2>
+    <ul>
+      <li routerLink="/batch-list" routerLinkActive="active">
+        <b>Upload Batch File</b>
+      </li>
+      <li routerLink="/profile" routerLinkActive="active">View Profile</li>
+    </ul>
+  </aside>
+
+  <button class="logout-btn" (click)="logout()">Logout</button>
+
+  <main class="profile-content">
+    <h1>Uploaded Batches</h1>
+
+    <div class="merchant-info">
+      <p>
+        🧾 Merchant ID: <b>{{ merchant?.merchantId }}</b>
+      </p>
+      <p>
+        🏢 Company: <b>{{ merchant?.company }}</b>
+      </p>
+      <p>
+        👤 Name: <b>{{ merchant?.name }}</b>
+      </p>
+    </div>
+
+    <div class="upload-section">
+      <input
+        type="file"
+        accept=".xlsx,.xls,.csv,.txt"
+        (change)="onFileSelected($event)"
+      />
+      <button (click)="uploadBatch()">Upload</button>
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>File Name</th>
+          <th>Status</th>
+          <th>Merchant</th>
+          <th>Created By</th>
+          <th>Created At</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+
+      <tbody>
+        <tr *ngFor="let batch of batches">
+          <td>{{ batch.fileName }}</td>
+          <td>{{ batch.status }}</td>
+          <td>{{ batch.merchantId }}</td>
+          <td>{{ batch.createdBy }}</td>
+          <td>{{ batch.createdAt | date : 'short' }}</td>
+          <td>
+            <button class="btn-blue" (click)="viewBatch(batch.id!)">
+              View
+            </button>
+            <button class="btn-red" (click)="deleteBatch(batch.id!)">
+              Delete
+            </button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+
+    <section class="activity-log">
+      <h3>Activity Log</h3>
+      <ul>
+        <li *ngFor="let log of activityLogs">{{ log }}</li>
+      </ul>
+    </section>
+  </main>
+</div>

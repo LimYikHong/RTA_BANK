@@ -1,0 +1,49 @@
+<div class="login-container">
+  <div class="login-card">
+    <h2>Merchant Login</h2>
+
+    <!-- Step 1: Username/Password -->
+    <form (ngSubmit)="onLogin()" *ngIf="step === 1">
+      <input
+        type="text"
+        placeholder="Username"
+        [(ngModel)]="username"
+        name="username"
+        required
+      />
+      <input
+        type="password"
+        placeholder="Password"
+        [(ngModel)]="password"
+        name="password"
+        required
+      />
+      <button type="submit">Next</button>
+    </form>
+
+    <!-- Step 2; 2FA Setup (First time) -->
+    <div *ngIf="step === 2" class="step-container">
+      <h3>Setup 2FA</h3>
+      <p>Scan this QR code with Google Authenticator:</p>
+      <img *ngIf="qrCodeUrl" [src]="qrCodeUrl" alt="QR Code" />
+      <p class="secret-text">Secret: {{ tempData.secret }}</p>
+      
+      <div class="code-input">
+         <input type="text" placeholder="Enter 6-digit code" [(ngModel)]="twoFaCode" maxlength="6" />
+      </div>
+      <button (click)="verify2FA()">Verify & Login</button>
+    </div>
+
+    <!-- Step 3: 2FA Verify (Returning) -->
+    <div *ngIf="step === 3" class="step-container">
+       <h3>Two-Factor Authentication</h3>
+       <p>Enter the code from your app</p>
+       <div class="code-input">
+         <input type="text" placeholder="000 000" [(ngModel)]="twoFaCode" maxlength="6" />
+      </div>
+      <button (click)="verify2FA()">Verify</button>
+    </div>
+
+    <p *ngIf="errorMessage" class="error">{{ errorMessage }}</p>
+  </div>
+</div>
