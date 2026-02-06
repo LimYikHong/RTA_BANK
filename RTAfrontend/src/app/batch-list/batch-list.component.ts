@@ -26,7 +26,6 @@ export class BatchListComponent implements OnInit {
   // Holds the file chosen from the input
   selectedFile?: File;
   merchant: MerchantProfile | null = null;
-  activityLogs: string[] = [];
 
   // Inject services:
   // - PortalService: HTTP calls for batches (list/upload/delete)
@@ -53,7 +52,6 @@ export class BatchListComponent implements OnInit {
     }
 
     this.loadBatches();
-    this.loadActivityLogs();
   }
 
   logout(): void {
@@ -61,19 +59,11 @@ export class BatchListComponent implements OnInit {
     this.router.navigate(['/login']);
   }
 
-  loadActivityLogs(): void {
-    this.portalService.getActivityLogs().subscribe({
-      next: (logs) => (this.activityLogs = logs),
-      error: (err) => console.error('Failed to fetch logs', err)
-    });
-  }
-
   // Fetch batches from backend and update table
   loadBatches(): void {
     this.portalService.getBatches().subscribe({
       next: (data) => (this.batches = data),
-      error: (err) =>
-        this.logActivity('Failed to fetch batches: ' + err.message),
+      error: (err) => console.error('Failed to fetch batches: ' + err.message),
     });
   }
 
@@ -121,12 +111,11 @@ export class BatchListComponent implements OnInit {
       .uploadBatch(renamedFile, this.merchant.merchantId, originalFileName)
       .subscribe({
         next: (res) => {
-          this.logActivity(`File ${res.fileName} uploaded successfully`);
+          console.log(`File ${res.fileName} uploaded successfully`);
           this.loadBatches();
-          this.loadActivityLogs();
         },
         error: (err) => {
-          this.logActivity(`Upload failed: ${err.message}`);
+          console.error(`Upload failed: ${err.message}`);
           this.loadBatches();
         },
       });
@@ -134,9 +123,9 @@ export class BatchListComponent implements OnInit {
 
   // Show a simple alert with batch details (for quick view)
   viewBatch(id: number): void {
-    const batch = this.batches.find((b) => b.id === id);
+    const batch = this.batches.find((b) => b.batchId === id);
     if (!batch) {
-      this.logActivity(`Batch with ID ${id} not found`);
+      console.error(`Batch with ID ${id} not found`);
       return;
     }
     alert(
@@ -148,18 +137,10 @@ export class BatchListComponent implements OnInit {
   deleteBatch(id: number): void {
     this.portalService.deleteBatch(id).subscribe({
       next: () => {
-        this.logActivity(`Batch ID ${id} deleted.`);
+        console.log(`Batch ID ${id} deleted.`);
         this.loadBatches();
-        this.loadActivityLogs();
       },
-      error: (err) =>
-        this.logActivity(`Failed to delete batch: ${err.message}`),
+      error: (err) => console.error(`Failed to delete batch: ${err.message}`),
     });
-  }
-
-  // Push a timestamped message to the top of the activity log
-  private logActivity(message: string): void {
-    const timestamp = new Date().toLocaleTimeString();
-    this.activityLogs.unshift(`[${timestamp}] ${message}`);
   }
 }

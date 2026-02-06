@@ -8,7 +8,7 @@ import { Observable } from 'rxjs';
  * - Optional fields (id/createdBy/createdAt) are filled by backend.
  */
 export interface RtaBatch {
-  id?: number;
+  batchId?: number;
   fileName: string;
   status: string;
   merchantId: string;
@@ -37,9 +37,6 @@ export class PortalService {
     return this.http.get<RtaBatch[]>(this.apiUrl);
   }
 
-  getActivityLogs(): Observable<string[]> {
-    return this.http.get<string[]>(`${this.apiUrl}/activity`);
-  }
   /**
    * POST /api/batches/upload
    * - Uploads a batch file using multipart/form-data.

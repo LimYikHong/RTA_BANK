@@ -55,22 +55,15 @@
           <td>{{ batch.createdBy }}</td>
           <td>{{ batch.createdAt | date : 'short' }}</td>
           <td>
-            <button class="btn-blue" (click)="viewBatch(batch.id!)">
+            <button class="btn-blue" (click)="viewBatch(batch.batchId!)">
               View
             </button>
-            <button class="btn-red" (click)="deleteBatch(batch.id!)">
+            <button class="btn-red" (click)="deleteBatch(batch.batchId!)">
               Delete
             </button>
           </td>
         </tr>
       </tbody>
     </table>
-
-    <section class="activity-log">
-      <h3>Activity Log</h3>
-      <ul>
-        <li *ngFor="let log of activityLogs">{{ log }}</li>
-      </ul>
-    </section>
   </main>
 </div>

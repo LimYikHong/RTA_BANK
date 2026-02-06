@@ -8,6 +8,7 @@ import java.time.LocalDateTime;
 @Table(name = "rta_user")
 @Data
 public class MerchantProfile {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -32,6 +33,7 @@ public class MerchantProfile {
 
     private String contact;
 
+    @Column(name = "joined_on")
     private LocalDateTime joinedOn;
 
     @Column(name = "profile_photo_url")

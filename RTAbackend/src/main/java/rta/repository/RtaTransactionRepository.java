@@ -8,5 +8,6 @@ import java.util.List;
 
 @Repository
 public interface RtaTransactionRepository extends JpaRepository<RtaTransaction, Long> {
-    List<RtaTransaction> findByBatchId(Long batchId);
+
+    List<RtaTransaction> findByBatchBatchId(Long batchId);
 }

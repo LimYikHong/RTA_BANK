@@ -5,8 +5,6 @@ import org.springframework.web.multipart.MultipartFile;
 
 import rta.model.MerchantProfile;
 import rta.repository.ProfileRepository;
-import rta.repository.MerchantActivityLogRepository;
-import rta.entity.MerchantActivityLog;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -20,40 +18,27 @@ import com.warrenstrange.googleauth.GoogleAuthenticatorKey;
 @Service
 
 /**
- * ProfileService
- * - Handles merchant authentication and profile CRUD.
- * - Stores profile photos on local disk and saves public URL path in DB.
+ * ProfileService - Handles merchant authentication and profile CRUD. - Stores
+ * profile photos on local disk and saves public URL path in DB.
  */
 public class ProfileService {
 
     private final ProfileRepository profileRepository;
-    private final MerchantActivityLogRepository activityLogRepository;
     private final GoogleAuthenticator gAuth = new GoogleAuthenticator();
 
-    public ProfileService(ProfileRepository profileRepository, MerchantActivityLogRepository activityLogRepository) {
+    public ProfileService(ProfileRepository profileRepository) {
         this.profileRepository = profileRepository;
-        this.activityLogRepository = activityLogRepository;
-    }
-
-    private void logActivity(String merchantId, String type, String description) {
-        MerchantActivityLog log = new MerchantActivityLog();
-        log.setMerchantId(merchantId);
-        log.setActivityType(type);
-        log.setDescription(description);
-        log.setTimestamp(LocalDateTime.now());
-        activityLogRepository.save(log);
     }
 
     /**
-     * Authenticate by username/password.
-     * - Throws RuntimeException on user not found or invalid password.
+     * Authenticate by username/password. - Throws RuntimeException on user not
+     * found or invalid password.
      */
     public MerchantProfile login(String username, String password) {
         MerchantProfile profile = profileRepository.findByUsername(username)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
         if (!profile.getPassword().equals(password)) {
-            logActivity(profile.getMerchantId(), "LOGIN_FAILED", "Invalid password for user: " + username);
             throw new RuntimeException("Invalid password");
         }
 
@@ -94,9 +79,6 @@ public class ProfileService {
                 profile.setTwoFactorEnabled(true);
                 profileRepository.save(profile);
             }
-            logActivity(profile.getMerchantId(), "LOGIN_2FA_SUCCESS", "User logged in with 2FA successfully");
-        } else {
-            logActivity(profile.getMerchantId(), "LOGIN_2FA_FAILED", "Invalid 2FA code for user: " + username);
         }
         return isCodeValid;
     }
@@ -107,21 +89,18 @@ public class ProfileService {
     }
 
     /**
-     * Register a new merchant profile.
-     * - Rejects duplicate usernames.
+     * Register a new merchant profile. - Rejects duplicate usernames.
      */
     public MerchantProfile register(MerchantProfile profile) {
         if (profileRepository.findByUsername(profile.getUsername()).isPresent()) {
             throw new RuntimeException("Username already exists");
         }
         MerchantProfile saved = profileRepository.save(profile);
-        logActivity(saved.getMerchantId(), "REGISTER", "New merchant registered: " + saved.getUsername());
         return saved;
     }
 
     /**
-     * Fetch profile by merchantId.
-     * - Throws if not found.
+     * Fetch profile by merchantId. - Throws if not found.
      */
     public MerchantProfile getProfile(String merchantId) {
         return profileRepository.findByMerchantId(merchantId)
@@ -129,8 +108,8 @@ public class ProfileService {
     }
 
     /**
-     * Update mutable profile fields.
-     * - Copies selected fields from newProfile to existing record.
+     * Update mutable profile fields. - Copies selected fields from newProfile
+     * to existing record.
      */
     public MerchantProfile updateProfile(String merchantId, MerchantProfile newProfile) {
         MerchantProfile existing = profileRepository.findByMerchantId(merchantId)
@@ -144,14 +123,13 @@ public class ProfileService {
         existing.setJoinedOn(newProfile.getJoinedOn());
 
         MerchantProfile updated = profileRepository.save(existing);
-        logActivity(merchantId, "UPDATE_PROFILE", "Profile updated");
         return updated;
     }
 
     /**
-     * Save profile photo to disk and update profile with a public URL.
-     * - Writes under "uploads/profile-photos" (relative to app working dir).
-     * - Stores "/uploads/profile-photos/{uuid.ext}" as profilePhotoUrl.
+     * Save profile photo to disk and update profile with a public URL. - Writes
+     * under "uploads/profile-photos" (relative to app working dir). - Stores
+     * "/uploads/profile-photos/{uuid.ext}" as profilePhotoUrl.
      */
     public MerchantProfile uploadProfilePhoto(String merchantId, MultipartFile file) {
         MerchantProfile profile = getProfile(merchantId);
@@ -180,10 +158,8 @@ public class ProfileService {
             profile.setProfilePhotoUrl(fileUrl);
 
             MerchantProfile saved = profileRepository.save(profile);
-            logActivity(merchantId, "UPLOAD_PHOTO", "Profile photo uploaded: " + newFilename);
             return saved;
         } catch (IOException e) {
-            logActivity(merchantId, "UPLOAD_PHOTO_FAILED", "Failed to upload photo: " + e.getMessage());
             throw new RuntimeException("Failed to store file.", e);
         }
     }

@@ -6,11 +6,11 @@ CREATE TABLE merchant_bank_acc (
     transaction_currency VARCHAR(10) NOT NULL,
     settlement_currency VARCHAR(10) NOT NULL,
     is_default BOOLEAN DEFAULT FALSE,
-    create_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     create_by VARCHAR(100),
     last_modified_at DATETIME ON UPDATE CURRENT_TIMESTAMP,
     last_modified_by VARCHAR(100),
-    delete_at DATETIME
+    deleted_at DATETIME
 );
 
 -- Merchant Info Table
@@ -24,11 +24,11 @@ CREATE TABLE merchant_info (
     merchant_address VARCHAR(255),
     merchant_contact_person VARCHAR(100),
     merchant_status VARCHAR(20),
-    create_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     create_by VARCHAR(100),
     last_modified_at DATETIME ON UPDATE CURRENT_TIMESTAMP,
     last_modified_by VARCHAR(100),
-    delete_at DATETIME,
+    deleted_at DATETIME,
     FOREIGN KEY (account_id) REFERENCES merchant_bank_acc(account_id)
 );
 
@@ -105,11 +105,15 @@ CREATE TABLE rta_batch (
     total_success_count INT DEFAULT 0,
     total_fail_count INT DEFAULT 0,
     processed_by VARCHAR(100),
-    create_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    file_name VARCHAR(255) NOT NULL,
+    original_file_name VARCHAR(255),
+    merchant_id VARCHAR(50) NOT NULL,
     batch_status VARCHAR(20),
-    deleted_at DATETIME,
     last_modified_by VARCHAR(100),
-    last_modified_at DATETIME ON UPDATE CURRENT_TIMESTAMP
+    last_modified_at DATETIME ON UPDATE CURRENT_TIMESTAMP,
+    created_by VARCHAR(100) NOT NULL,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    deleted_at DATETIME
 );
 
 -- RTA Incoming Batch File Table
@@ -159,4 +163,22 @@ CREATE TABLE rta_transaction (
     FOREIGN KEY (merchant_id) REFERENCES merchant_info(merchant_id),
     FOREIGN KEY (batch_file_id) REFERENCES rta_incoming_batch_file(batch_file_id),
     FOREIGN KEY (batch_id) REFERENCES rta_batch(batch_id)
+);
+
+-- RTA User Table (Merchant Portal Users)
+CREATE TABLE rta_user (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    merchant_id VARCHAR(50) NOT NULL UNIQUE,
+    name VARCHAR(255) NOT NULL,
+    address VARCHAR(255),
+    phone VARCHAR(50),
+    email VARCHAR(255),
+    password VARCHAR(255),
+    username VARCHAR(255),
+    company VARCHAR(100),
+    contact VARCHAR(100),
+    joined_on DATETIME,
+    profile_photo_url VARCHAR(255),
+    two_factor_secret VARCHAR(255),
+    is_two_factor_enabled BOOLEAN DEFAULT FALSE
 );
