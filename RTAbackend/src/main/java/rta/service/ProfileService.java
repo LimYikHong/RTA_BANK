@@ -3,14 +3,19 @@ package rta.service;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
-import rta.model.MerchantProfile;
+import rta.model.UserProfile;
 import rta.repository.ProfileRepository;
+import rta.entity.RtaRole;
+import rta.entity.RtaUserRole;
+import rta.repository.RtaRoleRepository;
+import rta.repository.RtaUserRoleRepository;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
 import com.warrenstrange.googleauth.GoogleAuthenticator;
 import com.warrenstrange.googleauth.GoogleAuthenticatorKey;
@@ -18,24 +23,28 @@ import com.warrenstrange.googleauth.GoogleAuthenticatorKey;
 @Service
 
 /**
- * ProfileService - Handles merchant authentication and profile CRUD. - Stores
+ * ProfileService - Handles user authentication and profile CRUD. - Stores
  * profile photos on local disk and saves public URL path in DB.
  */
 public class ProfileService {
 
     private final ProfileRepository profileRepository;
+    private final RtaRoleRepository roleRepository;
+    private final RtaUserRoleRepository userRoleRepository;
     private final GoogleAuthenticator gAuth = new GoogleAuthenticator();
 
-    public ProfileService(ProfileRepository profileRepository) {
+    public ProfileService(ProfileRepository profileRepository, RtaRoleRepository roleRepository, RtaUserRoleRepository userRoleRepository) {
         this.profileRepository = profileRepository;
+        this.roleRepository = roleRepository;
+        this.userRoleRepository = userRoleRepository;
     }
 
     /**
      * Authenticate by username/password. - Throws RuntimeException on user not
      * found or invalid password.
      */
-    public MerchantProfile login(String username, String password) {
-        MerchantProfile profile = profileRepository.findByUsername(username)
+    public UserProfile login(String username, String password) {
+        UserProfile profile = profileRepository.findByUsername(username)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
         if (!profile.getPassword().equals(password)) {
@@ -48,7 +57,7 @@ public class ProfileService {
     }
 
     public String generate2FASecret(String username) {
-        MerchantProfile profile = profileRepository.findByUsername(username)
+        UserProfile profile = profileRepository.findByUsername(username)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
         if (profile.getTwoFactorSecret() != null && !profile.getTwoFactorSecret().isEmpty()) {
@@ -64,7 +73,7 @@ public class ProfileService {
     }
 
     public boolean verify2FA(String username, int code) {
-        MerchantProfile profile = profileRepository.findByUsername(username)
+        UserProfile profile = profileRepository.findByUsername(username)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
         if (profile.getTwoFactorSecret() == null) {
@@ -83,37 +92,37 @@ public class ProfileService {
         return isCodeValid;
     }
 
-    public MerchantProfile getProfileByUsername(String username) {
+    public UserProfile getProfileByUsername(String username) {
         return profileRepository.findByUsername(username)
                 .orElseThrow(() -> new RuntimeException("User not found"));
     }
 
     /**
-     * Register a new merchant profile. - Rejects duplicate usernames.
+     * Register a new user profile. - Rejects duplicate usernames.
      */
-    public MerchantProfile register(MerchantProfile profile) {
+    public UserProfile register(UserProfile profile) {
         if (profileRepository.findByUsername(profile.getUsername()).isPresent()) {
             throw new RuntimeException("Username already exists");
         }
-        MerchantProfile saved = profileRepository.save(profile);
+        UserProfile saved = profileRepository.save(profile);
         return saved;
     }
 
     /**
      * Fetch profile by merchantId. - Throws if not found.
      */
-    public MerchantProfile getProfile(String merchantId) {
+    public UserProfile getProfile(String merchantId) {
         return profileRepository.findByMerchantId(merchantId)
-                .orElseThrow(() -> new RuntimeException("Merchant profile not found: " + merchantId));
+                .orElseThrow(() -> new RuntimeException("User profile not found: " + merchantId));
     }
 
     /**
      * Update mutable profile fields. - Copies selected fields from newProfile
      * to existing record.
      */
-    public MerchantProfile updateProfile(String merchantId, MerchantProfile newProfile) {
-        MerchantProfile existing = profileRepository.findByMerchantId(merchantId)
-                .orElseThrow(() -> new RuntimeException("Merchant profile not found: " + merchantId));
+    public UserProfile updateProfile(String merchantId, UserProfile newProfile) {
+        UserProfile existing = profileRepository.findByMerchantId(merchantId)
+                .orElseThrow(() -> new RuntimeException("User profile not found: " + merchantId));
 
         existing.setName(newProfile.getName());
         existing.setEmail(newProfile.getEmail());
@@ -122,7 +131,7 @@ public class ProfileService {
         existing.setAddress(newProfile.getAddress());
         existing.setJoinedOn(newProfile.getJoinedOn());
 
-        MerchantProfile updated = profileRepository.save(existing);
+        UserProfile updated = profileRepository.save(existing);
         return updated;
     }
 
@@ -131,8 +140,8 @@ public class ProfileService {
      * under "uploads/profile-photos" (relative to app working dir). - Stores
      * "/uploads/profile-photos/{uuid.ext}" as profilePhotoUrl.
      */
-    public MerchantProfile uploadProfilePhoto(String merchantId, MultipartFile file) {
-        MerchantProfile profile = getProfile(merchantId);
+    public UserProfile uploadProfilePhoto(String merchantId, MultipartFile file) {
+        UserProfile profile = getProfile(merchantId);
 
         if (file.isEmpty()) {
             throw new RuntimeException("Failed to store empty file.");
@@ -157,10 +166,80 @@ public class ProfileService {
             String fileUrl = "/uploads/profile-photos/" + newFilename;
             profile.setProfilePhotoUrl(fileUrl);
 
-            MerchantProfile saved = profileRepository.save(profile);
+            UserProfile saved = profileRepository.save(profile);
             return saved;
         } catch (IOException e) {
             throw new RuntimeException("Failed to store file.", e);
         }
+    }
+
+    /**
+     * Create a new user with a specific role.
+     */
+    public UserProfile createUser(UserProfile user, String roleName) {
+        if (profileRepository.findByUsername(user.getUsername()).isPresent()) {
+            throw new RuntimeException("Username already exists");
+        }
+        if (profileRepository.findByMerchantId(user.getMerchantId()).isPresent()) {
+            throw new RuntimeException("User ID already exists");
+        }
+
+        user.setJoinedOn(LocalDateTime.now());
+        user.setUpdatedAt(LocalDateTime.now());
+        // Default values if missing
+        if (user.getStatus() == null) {
+            user.setStatus("ACTIVE");
+        }
+        if (!user.isTwoFactorEnabled()) {
+            user.setTwoFactorEnabled(false);
+        }
+        user.setIsEnabled(true);
+
+        // createdBy is set from frontend (current logged-in user's username)
+        String creator = user.getCreatedBy() != null ? user.getCreatedBy() : "unknown";
+        user.setLastModifiedBy(creator);
+
+        UserProfile savedUser = profileRepository.save(user);
+
+        // Assign Role
+        RtaRole role = roleRepository.findByRoleName(roleName)
+                .orElseThrow(() -> new RuntimeException("Role not found: " + roleName));
+
+        RtaUserRole userRole = new RtaUserRole();
+        userRole.setUser(savedUser);
+        userRole.setRole(role);
+        userRole.setAssignedBy(creator);
+        userRoleRepository.save(userRole);
+
+        return savedUser;
+    }
+
+    /**
+     * Get all users.
+     */
+    public List<UserProfile> getAllUsers() {
+        return profileRepository.findAll();
+    }
+
+    /**
+     * Search users by keyword (matches username, name, email, merchantId,
+     * company).
+     */
+    public List<UserProfile> searchUsers(String keyword) {
+        if (keyword == null || keyword.trim().isEmpty()) {
+            return profileRepository.findAll();
+        }
+        return profileRepository.searchByKeyword(keyword.trim());
+    }
+
+    /**
+     * Get the role name for a given user.
+     */
+    public String getUserRole(Long userId) {
+        List<RtaUserRole> userRoles = userRoleRepository.findByUser_Id(userId);
+        if (userRoles.isEmpty()) {
+            return "N/A";
+        }
+        return userRoles.get(0).getRole().getRoleName();
     }
 }

@@ -4,7 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { PLATFORM_ID } from '@angular/core';
 import { AuthService } from '../services/auth.service';
-import { ProfileService, MerchantProfile } from '../services/profile.service';
+import { ProfileService, UserProfile } from '../services/profile.service';
 
 @Component({
   selector: 'app-login',
@@ -86,9 +86,9 @@ export class LoginComponent {
     });
   }
 
-  private handleLoginSuccess(profile: MerchantProfile) {
+  private handleLoginSuccess(profile: UserProfile) {
     this.profileService.setProfile(profile);
-    localStorage.setItem('merchant', JSON.stringify(profile));
+    localStorage.setItem('user', JSON.stringify(profile));
     this.router.navigate(['/batch-list']);
   }
 }

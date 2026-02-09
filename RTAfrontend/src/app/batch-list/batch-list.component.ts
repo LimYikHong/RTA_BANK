@@ -3,12 +3,12 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule, Router } from '@angular/router';
 import { PortalService, RtaBatch } from '../services/portal.service';
-import { ProfileService, MerchantProfile } from '../services/profile.service';
+import { ProfileService, UserProfile } from '../services/profile.service';
 import { AuthService } from '../services/auth.service';
 
 /**
  * BatchListComponent
- * - Shows uploaded RTA batch files for the current merchant
+ * - Shows uploaded RTA batch files for the current user
  * - Allows uploading a new batch file (renamed with merchantId + timestamp)
  * - Supports viewing simple batch details and deleting a batch
  * - Demonstrates Angular features: standalone component, routing links, *ngFor, pipes, service calls, error handling
@@ -25,7 +25,7 @@ export class BatchListComponent implements OnInit {
   batches: RtaBatch[] = [];
   // Holds the file chosen from the input
   selectedFile?: File;
-  merchant: MerchantProfile | null = null;
+  user: UserProfile | null = null;
 
   // Inject services:
   // - PortalService: HTTP calls for batches (list/upload/delete)
@@ -38,14 +38,14 @@ export class BatchListComponent implements OnInit {
     private router: Router
   ) {}
 
-  // read merchant profile from cache and load batch list
+  // read user profile from cache and load batch list
   ngOnInit(): void {
-    this.merchant = this.profileService.getProfile();
+    this.user = this.profileService.getProfile();
 
-    if (this.merchant && this.merchant.merchantId) {
-      this.profileService.fetchProfile(this.merchant.merchantId).subscribe({
+    if (this.user && this.user.merchantId) {
+      this.profileService.fetchProfile(this.user.merchantId).subscribe({
         next: (profile) => {
-          this.merchant = profile;
+          this.user = profile;
         },
         error: (err) => console.error('Failed to refresh profile from DB', err),
       });
@@ -77,8 +77,8 @@ export class BatchListComponent implements OnInit {
   // - Rename file to {merchantId}_{yyyy-mm-dd_HH-mm-ss}.xlsx before upload
   // - Call service and refresh list; log success/error
   uploadBatch(): void {
-    if (!this.selectedFile || !this.merchant) {
-      alert('Missing file or merchant info.');
+    if (!this.selectedFile || !this.user) {
+      alert('Missing file or user info.');
       return;
     }
 
@@ -101,14 +101,14 @@ export class BatchListComponent implements OnInit {
       .padStart(2, '0')}-${timestamp.getSeconds().toString().padStart(2, '0')}`;
 
     // Create a new File object with the new name (content unchanged)
-    const newFileName = `${this.merchant.merchantId}_${formattedTime}.xlsx`;
+    const newFileName = `${this.user.merchantId}_${formattedTime}.xlsx`;
     const renamedFile = new File([this.selectedFile], newFileName, {
       type: this.selectedFile.type,
     });
 
     // Call upload API with renamed file, merchantId and original name for audit trail
     this.portalService
-      .uploadBatch(renamedFile, this.merchant.merchantId, originalFileName)
+      .uploadBatch(renamedFile, this.user.merchantId, originalFileName)
       .subscribe({
         next: (res) => {
           console.log(`File ${res.fileName} uploaded successfully`);
@@ -129,7 +129,7 @@ export class BatchListComponent implements OnInit {
       return;
     }
     alert(
-      `📄 Batch Details:\nFile: ${batch.fileName}\nMerchant: ${batch.merchantId}\nStatus: ${batch.status}`
+      `📄 Batch Details:\nFile: ${batch.fileName}\nUser: ${batch.merchantId}\nStatus: ${batch.status}`
     );
   }
 

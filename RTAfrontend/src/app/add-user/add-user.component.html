@@ -1,0 +1,161 @@
+<div class="page-container">
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <h2>RTA Upload</h2>
+    <ul>
+      <li routerLink="/batch-list" routerLinkActive="active"><b>Upload Batch File</b></li>
+      <li routerLink="/profile" routerLinkActive="active">View Profile</li>
+      <li routerLink="/users" routerLinkActive="active"><b>User Management</b></li>
+    </ul>
+  </aside>
+
+  <!-- Main Content -->
+  <button class="logout-btn" (click)="logout()">Logout</button>
+  <main class="main-content">
+    <div class="page-header">
+      <button class="back-btn" routerLink="/users">< Back to Users</button>
+      <h1>Add New User</h1>
+      <p class="subtitle">Fill in the details below to create a new user account.</p>
+    </div>
+
+    <div class="form-card">
+      <form #addUserForm="ngForm" (ngSubmit)="saveNewUser()">
+
+        <div class="form-section">
+          <h3>Account Information</h3>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label" for="username">Username <span class="required">*</span></label>
+              <input type="text" id="username" class="form-input" [(ngModel)]="newUser.username" name="username"
+                placeholder="Enter username" required (ngModelChange)="onUsernameChange()"
+                [class.input-error]="usernameExists" />
+              <span class="field-checking" *ngIf="usernameChecking">Checking...</span>
+              <span class="field-error" *ngIf="usernameExists && usernameChecked && !usernameChecking">Username already existed.</span>
+              <span class="field-warn" *ngIf="usernameCheckError && usernameChecked && !usernameChecking">Unable to verify — please ensure backend is running</span>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="password">Password <span class="required">*</span></label>
+              <div class="password-wrapper">
+                <input [type]="showPassword ? 'text' : 'password'" id="password" class="form-input password-input"
+                  [(ngModel)]="newUser.password" name="password" #passwordField="ngModel"
+                  placeholder="Enter password" required (ngModelChange)="validatePassword()"
+                  (blur)="passwordTouched = true; validatePassword()"
+                  [class.input-error]="passwordTouched && !isPasswordValid" />
+                <button type="button" class="toggle-password-btn" (click)="togglePasswordVisibility()">
+                  {{ showPassword ? '🙈' : '👁️' }}
+                </button>
+              </div>
+              <span class="field-error" *ngIf="passwordTouched && !newUser.password">❌ Password is required</span>
+              <span class="field-error" *ngIf="passwordTouched && newUser.password && !isPasswordValid">❌ Password does not meet requirements</span>
+              <div class="password-rules" *ngIf="newUser.password || passwordTouched">
+                <p [class.rule-pass]="passwordChecks.minLength" [class.rule-fail]="!passwordChecks.minLength">
+                  {{ passwordChecks.minLength ? '✅' : '❌' }} At least 8 characters
+                </p>
+                <p [class.rule-pass]="passwordChecks.uppercase" [class.rule-fail]="!passwordChecks.uppercase">
+                  {{ passwordChecks.uppercase ? '✅' : '❌' }} At least one uppercase letter
+                </p>
+                <p [class.rule-pass]="passwordChecks.lowercase" [class.rule-fail]="!passwordChecks.lowercase">
+                  {{ passwordChecks.lowercase ? '✅' : '❌' }} At least one lowercase letter
+                </p>
+                <p [class.rule-pass]="passwordChecks.number" [class.rule-fail]="!passwordChecks.number">
+                  {{ passwordChecks.number ? '✅' : '❌' }} At least one number
+                </p>
+                <p [class.rule-pass]="passwordChecks.special" [class.rule-fail]="!passwordChecks.special">
+                  {{ passwordChecks.special ? '✅' : '❌' }} At least one special character
+                </p>
+              </div>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label" for="email">Email <span class="required">*</span></label>
+              <input type="email" id="email" class="form-input" [(ngModel)]="newUser.email" name="email"
+                placeholder="Enter email address" required />
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="role">Role <span class="required">*</span></label>
+              <select id="role" class="form-input" [(ngModel)]="newUserRole" name="role">
+                <option value="SUPER_ADMIN">Super Admin</option>
+                <option value="ADMIN">Admin</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-section">
+          <h3>Personal Information</h3>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label" for="userId">User ID <span class="required">*</span></label>
+              <input type="text" id="userId" class="form-input" [(ngModel)]="newUser.merchantId" name="merchantId"
+                placeholder="Enter user ID" required (ngModelChange)="onUserIdChange()"
+                [class.input-error]="userIdExists" />
+              <span class="field-checking" *ngIf="userIdChecking">Checking...</span>
+              <span class="field-error" *ngIf="userIdExists && userIdChecked && !userIdChecking">User ID already existed.</span>
+              <span class="field-warn" *ngIf="userIdCheckError && userIdChecked && !userIdChecking">⚠️ Unable to verify — please ensure backend is running</span>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="fullName">Full Name <span class="required">*</span></label>
+              <input type="text" id="fullName" class="form-input" [(ngModel)]="newUser.name" name="name"
+                placeholder="Enter full name" required />
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label" for="firstName">First Name</label>
+              <input type="text" id="firstName" class="form-input" [(ngModel)]="newUser.firstName" name="firstName"
+                placeholder="Enter first name" />
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="lastName">Last Name</label>
+              <input type="text" id="lastName" class="form-input" [(ngModel)]="newUser.lastName" name="lastName"
+                placeholder="Enter last name" />
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label" for="phone">Phone Number</label>
+              <input type="text" id="phone" class="form-input" [(ngModel)]="newUser.phone" name="phone"
+                placeholder="Enter phone number" />
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="officeNumber">Office Number</label>
+              <input type="text" id="officeNumber" class="form-input" [(ngModel)]="newUser.officeNumber" name="officeNumber"
+                placeholder="Enter office number" />
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label" for="contact">Contact Person</label>
+              <input type="text" id="contact" class="form-input" [(ngModel)]="newUser.contact" name="contact"
+                placeholder="Enter contact person" />
+            </div>
+          </div>
+        </div>
+
+        <div class="form-section">
+          <h3>Company Information</h3>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label" for="company">Company</label>
+              <input type="text" id="company" class="form-input" [(ngModel)]="newUser.company" name="company"
+                placeholder="Enter company name" />
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="address">Address</label>
+              <input type="text" id="address" class="form-input" [(ngModel)]="newUser.address" name="address"
+                placeholder="Enter address" />
+            </div>
+          </div>
+        </div>
+
+        <div class="form-actions">
+          <button type="button" class="btn btn-cancel" (click)="cancel()">Cancel</button>
+          <button type="submit" class="btn btn-submit" [disabled]="isSubmitting || !addUserForm.valid || !isPasswordValid || usernameExists || userIdExists">
+            {{ isSubmitting ? 'Creating...' : 'Create User' }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </main>
+</div>

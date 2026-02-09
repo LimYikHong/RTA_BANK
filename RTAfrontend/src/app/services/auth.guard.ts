@@ -10,11 +10,11 @@ import { inject } from '@angular/core';
 export const authGuard: CanActivateFn = (route, state): boolean | UrlTree => {
   const router = inject(Router); // Properly inject the Router in a functional guard
 
-  // Read auth state (simple demo: presence of 'merchant' in localStorage)
+  // Read auth state (simple demo: presence of 'user' in localStorage)
   // In real apps, prefer a dedicated AuthService and token/expiry checks.
   let hasUser = false;
   try {
-    hasUser = !!localStorage.getItem('merchant');
+    hasUser = !!localStorage.getItem('user');
   } catch {
     hasUser = false;
   }

@@ -14,6 +14,9 @@
     display: flex;
     flex-direction: column;
     align-items: flex-start;
+    position: fixed;
+    top: 0;
+    left: 0;
 }
 
 .sidebar h2 {
@@ -25,6 +28,12 @@
     text-transform: uppercase;
     width: 100%;
     text-align: center;
+}
+
+.sidebar ul {
+    list-style: none;
+    padding: 0;
+    width: 100%;
 }
 
 .sidebar li {
@@ -43,7 +52,9 @@
 
 .profile-content {
     flex: 1;
+    margin-left: 220px;
     padding: 40px 60px;
+    max-width: 1200px;
 }
 
 .logout-btn {
@@ -73,6 +84,31 @@
     border-radius: 10px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
     margin-bottom: 30px;
+}
+
+.header-info {
+    display: flex;
+    flex-direction: column;
+}
+
+.header-info h1 {
+    margin: 0 0 4px 0;
+    font-size: 26px;
+    font-weight: 700;
+    color: #1e293b;
+}
+
+.header-info .email {
+    margin: 0 0 2px 0;
+    color: #64748b;
+    font-size: 14px;
+}
+
+.username-display {
+    margin: 0 0 12px 0;
+    color: #94a3b8;
+    font-size: 13px;
+    font-style: italic;
 }
 
 .avatar {
@@ -136,6 +172,47 @@
     padding: 30px;
     border-radius: 10px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    margin-bottom: 24px;
+}
+
+.profile-details h2 {
+    font-size: 18px;
+    font-weight: 600;
+    color: #334155;
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid #e2e8f0;
+}
+
+.detail-item span {
+    display: block;
+    margin-top: 2px;
+    color: #1e293b;
+    font-size: 15px;
+}
+
+.status-badge {
+    display: inline-block;
+    padding: 3px 12px;
+    border-radius: 12px;
+    font-size: 13px;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.status-active {
+    background-color: #dcfce7;
+    color: #16a34a;
+}
+
+.status-inactive {
+    background-color: #fee2e2;
+    color: #dc2626;
+}
+
+.status-suspended {
+    background-color: #fef3c7;
+    color: #d97706;
 }
 
 .details-grid {
@@ -156,18 +233,16 @@
     margin-top: 100px;
 }
 
-.photo-preview {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    margin-top: 10px;
-}
+@media (max-width: 768px) {
+    .details-grid {
+        grid-template-columns: 1fr;
+    }
 
-.img-thumbnail {
-    max-width: 100%;
-    height: auto;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    padding: 5px;
-    background-color: white;
+    .profile-content {
+        padding: 20px;
+    }
+
+    .sidebar {
+        display: none;
+    }
 }

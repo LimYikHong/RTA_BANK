@@ -2,7 +2,7 @@ package rta.controller;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import rta.model.MerchantProfile;
+import rta.model.UserProfile;
 import rta.service.ProfileService;
 
 import java.util.Map;
@@ -22,21 +22,17 @@ public class AuthController {
     }
 
     /**
-     * POST /api/auth/login
-     * - Step 1: Username/Password check.
-     * - If valid, checks 2FA status.
-     * - Returns:
-     * - 200 + { status: "2FA_REQUIRED" } (if 2FA active)
-     * - 200 + { status: "SETUP_2FA", secret: "..." } (if not set up)
+     * POST /api/auth/login - Step 1: Username/Password check. - If valid,
+     * checks 2FA status. - Returns: - 200 + { status: "2FA_REQUIRED" } (if 2FA
+     * active) - 200 + { status: "SETUP_2FA", secret: "..." } (if not set up)
      */
     @PostMapping("/login")
-    public ResponseEntity<?> login(@RequestBody MerchantProfile credentials) {
+    public ResponseEntity<?> login(@RequestBody UserProfile credentials) {
         try {
-            MerchantProfile user = profileService.login(credentials.getUsername(), credentials.getPassword());
+            UserProfile user = profileService.login(credentials.getUsername(), credentials.getPassword());
 
             // Generate secret if missing (force setup) or retrieve existing status
             // For this flow, we'll force setup if it's not enabled/present
-
             Map<String, Object> response = new HashMap<>();
 
             if (!user.isTwoFactorEnabled()) {
@@ -51,7 +47,7 @@ public class AuthController {
                 String otpAuthUrl = "otpauth://totp/RTA_Example:" + user.getUsername()
                         + "?secret=" + secret
                         + "&issuer=RTA_Example";
-                
+
                 // Return the raw URI for client-side QR generation
                 response.put("otpAuthUri", otpAuthUrl);
 
@@ -93,7 +89,7 @@ public class AuthController {
         boolean isValid = profileService.verify2FA(username, code);
 
         if (isValid) {
-            MerchantProfile user = profileService.getProfileByUsername(username);
+            UserProfile user = profileService.getProfileByUsername(username);
             return ResponseEntity.ok(user);
         } else {
             return ResponseEntity.status(401).body("Invalid 2FA Code");

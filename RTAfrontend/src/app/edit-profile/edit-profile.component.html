@@ -1,0 +1,116 @@
+<div class="page-container">
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <h2>RTA Upload</h2>
+    <ul>
+      <li routerLink="/batch-list" routerLinkActive="active"><b>Upload Batch File</b></li>
+      <li routerLink="/profile" routerLinkActive="active">View Profile</li>
+      <li routerLink="/users" routerLinkActive="active"><b>User Management</b></li>
+    </ul>
+  </aside>
+
+  <!-- Main Content -->
+  <button class="logout-btn" (click)="logout()">Logout</button>
+  <main class="main-content">
+    <div class="page-header">
+      <button class="back-btn" routerLink="/profile">&larr; Back to Profile</button>
+      <h1>Edit Profile</h1>
+      <p class="subtitle">Update your profile information below.</p>
+    </div>
+
+    <div class="form-card">
+      <form #editProfileForm="ngForm" (ngSubmit)="saveProfile()">
+
+        <!-- Account Information (read-only fields) -->
+        <div class="form-section">
+          <h3>Account Information</h3>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label" for="username">Username</label>
+              <input type="text" id="username" class="form-input readonly-input" [value]="editData.username" readonly />
+              <small class="readonly-hint">Username cannot be changed</small>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="email">Email <span class="required">*</span></label>
+              <input type="email" id="email" class="form-input" [(ngModel)]="editData.email" name="email"
+                placeholder="Enter email address" required />
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label" for="userId">User ID</label>
+              <input type="text" id="userId" class="form-input readonly-input" [value]="editData.merchantId" readonly />
+              <small class="readonly-hint">User ID cannot be changed</small>
+            </div>
+          </div>
+        </div>
+
+        <!-- Personal Information -->
+        <div class="form-section">
+          <h3>Personal Information</h3>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label" for="fullName">Full Name <span class="required">*</span></label>
+              <input type="text" id="fullName" class="form-input" [(ngModel)]="editData.name" name="name"
+                placeholder="Enter full name" required />
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="firstName">First Name</label>
+              <input type="text" id="firstName" class="form-input" [(ngModel)]="editData.firstName" name="firstName"
+                placeholder="Enter first name" />
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label" for="lastName">Last Name</label>
+              <input type="text" id="lastName" class="form-input" [(ngModel)]="editData.lastName" name="lastName"
+                placeholder="Enter last name" />
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="phone">Phone Number</label>
+              <input type="text" id="phone" class="form-input" [(ngModel)]="editData.phone" name="phone"
+                placeholder="Enter phone number" />
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label" for="officeNumber">Office Number</label>
+              <input type="text" id="officeNumber" class="form-input" [(ngModel)]="editData.officeNumber"
+                name="officeNumber" placeholder="Enter office number" />
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="contact">Contact Person</label>
+              <input type="text" id="contact" class="form-input" [(ngModel)]="editData.contact" name="contact"
+                placeholder="Enter contact person" />
+            </div>
+          </div>
+        </div>
+
+        <!-- Company Information -->
+        <div class="form-section">
+          <h3>Company Information</h3>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label" for="company">Company</label>
+              <input type="text" id="company" class="form-input" [(ngModel)]="editData.company" name="company"
+                placeholder="Enter company name" />
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="address">Address</label>
+              <input type="text" id="address" class="form-input" [(ngModel)]="editData.address" name="address"
+                placeholder="Enter address" />
+            </div>
+          </div>
+        </div>
+
+        <!-- Form Actions -->
+        <div class="form-actions">
+          <button type="button" class="btn btn-cancel" (click)="cancel()">Cancel</button>
+          <button type="submit" class="btn btn-submit" [disabled]="isSubmitting || !editProfileForm.valid">
+            {{ isSubmitting ? 'Saving...' : 'Save Changes' }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </main>
+</div>

@@ -27,6 +27,12 @@
     text-align: center;
 }
 
+.sidebar ul {
+    list-style: none;
+    padding: 0;
+    width: 100%;
+}
+
 .sidebar li {
     margin: 15px 0;
     cursor: pointer;
@@ -47,7 +53,7 @@
     overflow-y: auto;
 }
 
-.merchant-info {
+.user-info {
     margin-bottom: 15px;
     line-height: 1.5;
     color: #475569;

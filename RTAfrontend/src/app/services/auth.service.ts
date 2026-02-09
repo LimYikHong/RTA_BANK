@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { MerchantProfile } from './profile.service';
+import { UserProfile } from './profile.service';
 
 @Injectable({
   providedIn: 'root',
@@ -10,7 +10,7 @@ import { MerchantProfile } from './profile.service';
 /**
  * AuthService
  * - Handles login/logout and simple session helpers.
- * - Stores the authenticated merchant in localStorage under 'merchant'.
+ * - Stores the authenticated user in localStorage under 'user'.
  */
 export class AuthService {
   private apiUrl = 'http://localhost:8088/api/auth';
@@ -20,7 +20,7 @@ export class AuthService {
   /**
    * POST /api/auth/login
    * - Sends credentials.
-   * - Response can be actual MerchantProfile (old flow) 
+   * - Response can be actual UserProfile (old flow) 
    * - OR a Map with status: "2FA_REQUIRED" | "SETUP_2FA"
    */
   login(username: string, password: string): Observable<any> {
@@ -30,8 +30,8 @@ export class AuthService {
     });
   }
 
-  verify2fa(username: string, code: number): Observable<MerchantProfile> {
-    return this.http.post<MerchantProfile>(`${this.apiUrl}/verify-2fa`, {
+  verify2fa(username: string, code: number): Observable<UserProfile> {
+    return this.http.post<UserProfile>(`${this.apiUrl}/verify-2fa`, {
       username,
       code
     });
@@ -44,24 +44,24 @@ export class AuthService {
    */
 
   logout(): void {
-    localStorage.removeItem('merchant');
+    localStorage.removeItem('user');
   }
 
   /**
    * Quick boolean flag for route guards/UI.
-   * - True if 'merchant' exists in localStorage.
+   * - True if 'user' exists in localStorage.
    * - Does not validate token/expiry (demo-friendly).
    */
   isLoggedIn(): boolean {
-    return !!localStorage.getItem('merchant');
+    return !!localStorage.getItem('user');
   }
 
   /**
    * Reads the current user from localStorage.
-   * - Returns parsed MerchantProfile or null if missing.
+   * - Returns parsed UserProfile or null if missing.
    */
-  getCurrentUser(): MerchantProfile | null {
-    const data = localStorage.getItem('merchant');
-    return data ? (JSON.parse(data) as MerchantProfile) : null;
+  getCurrentUser(): UserProfile | null {
+    const data = localStorage.getItem('user');
+    return data ? (JSON.parse(data) as UserProfile) : null;
   }
 }

@@ -1,0 +1,84 @@
+<div class="page-container">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+        <h2>RTA Upload</h2>
+        <ul>
+            <li routerLink="/batch-list" routerLinkActive="active"><b>Upload Batch File</b></li>
+            <li routerLink="/profile" routerLinkActive="active">View Profile</li>
+            <li routerLink="/users" routerLinkActive="active"><b>User Management</b></li>
+        </ul>
+    </aside>
+
+    <!-- Main Content -->
+    <button class="logout-btn" (click)="logout()">Logout</button>
+    <main class="main-content">
+        <!-- Page Header -->
+        <div class="page-header">
+            <div class="header-top">
+                <div>
+                    <h1>User Management</h1>
+                    <p class="subtitle">Manage all registered users in the system.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Search Bar -->
+        <div class="search-section">
+            <div class="search-box">
+                <input type="text" class="search-input" [(ngModel)]="searchKeyword" (keyup.enter)="onSearch()"
+                    placeholder="Search by name, username, email, ID, or company..." />
+                <button class="btn btn-search" (click)="onSearch()">Search</button>
+                <button class="btn btn-clear" *ngIf="searchKeyword" (click)="clearSearch()">Clear</button>
+                <button class="btn btn-add" routerLink="/add-user">Add User</button>
+            </div>
+            <p class="result-count">Showing {{ filteredUsers.length }} user(s)</p>
+        </div>
+
+        <!-- Loading Indicator -->
+        <div class="loading-text" *ngIf="isLoading">Loading users...</div>
+
+        <!-- User Table -->
+        <div class="table-card" *ngIf="!isLoading">
+            <table *ngIf="filteredUsers.length > 0; else noUsers">
+                <thead>
+                    <tr>
+                        <th>Username</th>
+                        <th>Full Name</th>
+                        <th>Email</th>
+                        <th>User ID</th>
+                        <th>Company</th>
+                        <th>Role</th>
+                        <th>Status</th>
+                        <th>Joined On</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr *ngFor="let user of filteredUsers">
+                        <td>{{ user.username }}</td>
+                        <td>{{ user.name || '-' }}</td>
+                        <td>{{ user.email }}</td>
+                        <td>{{ user.merchantId || '-' }}</td>
+                        <td>{{ user.company || '-' }}</td>
+                        <td>
+                            <span class="role-badge" [ngClass]="getRoleBadgeClass(user.role)">
+                                {{ user.role }}
+                            </span>
+                        </td>
+                        <td>
+                            <span class="status-badge" [ngClass]="getStatusClass(user.status)">
+                                {{ user.status }}
+                            </span>
+                        </td>
+                        <td>{{ user.joinedOn | date: 'mediumDate' }}</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <ng-template #noUsers>
+                <div class="empty-state">
+                    <p>No users found.</p>
+                </div>
+            </ng-template>
+        </div>
+    </main>
+</div>
