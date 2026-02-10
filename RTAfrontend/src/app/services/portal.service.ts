@@ -26,7 +26,7 @@ export interface RtaBatch {
  * - Keeps API URLs centralized and easy to change.
  */
 export class PortalService {
-  private apiUrl = 'http://localhost:8088/api/batches';
+  private apiUrl = 'https://localhost:8086/api/batches';
 
   constructor(private http: HttpClient) {}
   /**

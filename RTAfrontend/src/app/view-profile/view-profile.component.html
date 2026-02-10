@@ -4,6 +4,7 @@
     <h2>RTA Upload</h2>
     <ul>
       <li routerLink="/batch-list" routerLinkActive="active"><b>Upload Batch File</b></li>
+      <li routerLink="/incoming-batch" routerLinkActive="active"><b>Incoming Batch File</b></li>
       <li routerLink="/profile" routerLinkActive="active">View Profile</li>
       <li routerLink="/users" routerLinkActive="active"><b>User Management</b></li>
     </ul>
@@ -14,7 +15,7 @@
   <main class="profile-content" *ngIf="profile; else loading">
     <div class="profile-header">
       <div class="avatar" (click)="openPhotoUpload()">
-        <img *ngIf="profile.profilePhotoUrl" [src]="'http://localhost:8088' + profile.profilePhotoUrl"
+        <img *ngIf="profile.profilePhotoUrl" [src]="'https://localhost:8086' + profile.profilePhotoUrl"
           alt="Profile Photo" class="profile-photo" />
         <span *ngIf="!profile.profilePhotoUrl">{{
           profile.name ? profile.name.charAt(0) : '?'
