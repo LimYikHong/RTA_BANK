@@ -13,7 +13,7 @@ import { UserProfile } from './profile.service';
  * - Stores the authenticated user in localStorage under 'user'.
  */
 export class AuthService {
-  private apiUrl = 'http://localhost:8088/api/auth';
+  private apiUrl = 'https://localhost:8086/api/auth';
 
   constructor(private http: HttpClient) {}
 

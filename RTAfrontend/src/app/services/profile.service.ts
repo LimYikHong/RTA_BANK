@@ -56,7 +56,7 @@ export interface UserListItem {
  * - Provides helpers for CRUD-like actions: fetch, update, upload photo
  */
 export class ProfileService {
-  private apiUrl = 'http://localhost:8088/api/profile';
+  private apiUrl = 'https://localhost:8086/api/profile';
   private cachedProfile: UserProfile | null = null;
 
   constructor(private http: HttpClient) {}
