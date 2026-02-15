@@ -43,6 +43,7 @@ export interface UserListItem {
   status: string;
   joinedOn: string;
   role: string;
+  type: string;
 }
 
 export interface MerchantInfoPayload {
@@ -181,6 +182,14 @@ export class ProfileService {
 
   checkMerchantId(merchantId: string): Observable<{ exists: boolean }> {
     return this.http.get<{ exists: boolean }>(`${this.merchantApiUrl}/check-id?merchantId=${encodeURIComponent(merchantId)}`);
+  }
+
+  getNextAdminId(): Observable<{ nextId: string }> {
+    return this.http.get<{ nextId: string }>(`${this.apiUrl}/next-admin-id`);
+  }
+
+  getNextMerchantId(): Observable<{ nextId: string }> {
+    return this.http.get<{ nextId: string }>(`${this.merchantApiUrl}/next-id`);
   }
 
   setProfile(profile: UserProfile): void {

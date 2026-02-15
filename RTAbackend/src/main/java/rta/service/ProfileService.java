@@ -242,4 +242,23 @@ public class ProfileService {
         }
         return userRoles.get(0).getRole().getRoleName();
     }
+
+    /**
+     * Generate the next admin user ID in ascending order: A001, A002, ...
+     */
+    public String generateNextAdminId() {
+        List<String> existingIds = profileRepository.findAllAdminIdsWithPrefix();
+        int maxNum = 0;
+        for (String id : existingIds) {
+            try {
+                int num = Integer.parseInt(id.substring(1));
+                if (num > maxNum) {
+                    maxNum = num;
+                }
+            } catch (NumberFormatException | StringIndexOutOfBoundsException e) {
+                // skip non-numeric IDs
+            }
+        }
+        return String.format("A%03d", maxNum + 1);
+    }
 }

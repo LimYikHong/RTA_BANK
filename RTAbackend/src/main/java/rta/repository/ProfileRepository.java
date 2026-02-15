@@ -23,4 +23,7 @@ public interface ProfileRepository extends JpaRepository<UserProfile, Long> {
             + "LOWER(u.merchantId) LIKE LOWER(CONCAT('%', :keyword, '%')) OR "
             + "LOWER(u.company) LIKE LOWER(CONCAT('%', :keyword, '%'))")
     List<UserProfile> searchByKeyword(@Param("keyword") String keyword);
+
+    @Query("SELECT u.merchantId FROM UserProfile u WHERE u.merchantId LIKE 'A%' ORDER BY u.merchantId DESC")
+    List<String> findAllAdminIdsWithPrefix();
 }

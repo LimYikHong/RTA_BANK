@@ -5,10 +5,13 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import rta.entity.MerchantInfo;
 import rta.model.UserProfile;
 import rta.repository.ProfileRepository;
+import rta.service.MerchantService;
 import rta.service.ProfileService;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -22,6 +25,7 @@ public class ProfileController {
 
     private final ProfileService profileService;
     private final ProfileRepository profileRepository;
+    private final MerchantService merchantService;
 
     /**
      * POST /api/profile/register - Creates a new user profile (demo
@@ -83,6 +87,17 @@ public class ProfileController {
     }
 
     /**
+     * GET /api/profile/next-admin-id Returns the next auto-generated admin user
+     * ID (A001, A002, ...).
+     */
+    @GetMapping("/next-admin-id")
+    public ResponseEntity<Map<String, String>> getNextAdminId() {
+        Map<String, String> result = new HashMap<>();
+        result.put("nextId", profileService.generateNextAdminId());
+        return ResponseEntity.ok(result);
+    }
+
+    /**
      * GET /api/profile/check-username?username= - Check if username is taken.
      */
     @GetMapping("/check-username")
@@ -130,12 +145,14 @@ public class ProfileController {
     }
 
     /**
-     * GET /api/profile/users - List all users with their roles.
+     * GET /api/profile/users - List all users (admins + merchants) with their
+     * roles.
      */
     @GetMapping("/users")
     public ResponseEntity<List<Map<String, Object>>> getAllUsers() {
+        // 1. Admin users from rta_bank_user
         List<UserProfile> users = profileService.getAllUsers();
-        List<Map<String, Object>> result = users.stream().map(u -> {
+        List<Map<String, Object>> result = new ArrayList<>(users.stream().map(u -> {
             Map<String, Object> map = new HashMap<>();
             map.put("id", u.getId());
             map.put("username", u.getUsername());
@@ -147,18 +164,39 @@ public class ProfileController {
             map.put("status", u.getStatus());
             map.put("joinedOn", u.getJoinedOn());
             map.put("role", profileService.getUserRole(u.getId()));
+            map.put("type", "ADMIN");
             return map;
-        }).collect(Collectors.toList());
+        }).collect(Collectors.toList()));
+
+        // 2. Merchants from merchant_info
+        List<MerchantInfo> merchants = merchantService.getAllMerchants();
+        for (MerchantInfo m : merchants) {
+            Map<String, Object> map = new HashMap<>();
+            map.put("id", null);
+            map.put("username", m.getMerchantContactPerson());
+            map.put("name", m.getMerchantName());
+            map.put("email", null);
+            map.put("merchantId", m.getMerchantId());
+            map.put("company", m.getMerchantBank());
+            map.put("phone", m.getMerchantPhoneNum());
+            map.put("status", m.getMerchantStatus());
+            map.put("joinedOn", m.getCreatedAt());
+            map.put("role", "MERCHANT");
+            map.put("type", "MERCHANT");
+            result.add(map);
+        }
+
         return ResponseEntity.ok(result);
     }
 
     /**
-     * GET /api/profile/users/search?keyword= - Search users by keyword.
+     * GET /api/profile/users/search?keyword= - Search users and merchants by keyword.
      */
     @GetMapping("/users/search")
     public ResponseEntity<List<Map<String, Object>>> searchUsers(@RequestParam String keyword) {
+        // 1. Search admin users
         List<UserProfile> users = profileService.searchUsers(keyword);
-        List<Map<String, Object>> result = users.stream().map(u -> {
+        List<Map<String, Object>> result = new ArrayList<>(users.stream().map(u -> {
             Map<String, Object> map = new HashMap<>();
             map.put("id", u.getId());
             map.put("username", u.getUsername());
@@ -170,8 +208,37 @@ public class ProfileController {
             map.put("status", u.getStatus());
             map.put("joinedOn", u.getJoinedOn());
             map.put("role", profileService.getUserRole(u.getId()));
+            map.put("type", "ADMIN");
             return map;
-        }).collect(Collectors.toList());
+        }).collect(Collectors.toList()));
+
+        // 2. Search merchants by keyword (name, ID, contact person, bank, phone, code)
+        String kw = keyword.toLowerCase();
+        List<MerchantInfo> merchants = merchantService.getAllMerchants();
+        for (MerchantInfo m : merchants) {
+            boolean matches = (m.getMerchantName() != null && m.getMerchantName().toLowerCase().contains(kw))
+                    || (m.getMerchantId() != null && m.getMerchantId().toLowerCase().contains(kw))
+                    || (m.getMerchantContactPerson() != null && m.getMerchantContactPerson().toLowerCase().contains(kw))
+                    || (m.getMerchantBank() != null && m.getMerchantBank().toLowerCase().contains(kw))
+                    || (m.getMerchantPhoneNum() != null && m.getMerchantPhoneNum().toLowerCase().contains(kw))
+                    || (m.getMerchantCode() != null && m.getMerchantCode().toLowerCase().contains(kw));
+            if (matches) {
+                Map<String, Object> map = new HashMap<>();
+                map.put("id", null);
+                map.put("username", m.getMerchantContactPerson());
+                map.put("name", m.getMerchantName());
+                map.put("email", null);
+                map.put("merchantId", m.getMerchantId());
+                map.put("company", m.getMerchantBank());
+                map.put("phone", m.getMerchantPhoneNum());
+                map.put("status", m.getMerchantStatus());
+                map.put("joinedOn", m.getCreatedAt());
+                map.put("role", "MERCHANT");
+                map.put("type", "MERCHANT");
+                result.add(map);
+            }
+        }
+
         return ResponseEntity.ok(result);
     }
 

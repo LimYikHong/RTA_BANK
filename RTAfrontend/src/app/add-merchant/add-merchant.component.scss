@@ -180,6 +180,22 @@
   box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.15) !important;
 }
 
+.id-readonly {
+  background-color: #f1f5f9;
+  color: #64748b;
+  cursor: not-allowed;
+  font-weight: 600;
+}
+
+.field-info {
+  display: block;
+  margin-top: 4px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #64748b;
+  font-style: italic;
+}
+
 .field-error {
   display: block;
   margin-top: 4px;

@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
@@ -12,7 +12,7 @@ import { AuthService } from '../services/auth.service';
   templateUrl: './add-merchant.component.html',
   styleUrl: './add-merchant.component.scss'
 })
-export class AddMerchantComponent {
+export class AddMerchantComponent implements OnInit {
   merchant: MerchantInfoPayload = {
     merchantId: '',
     merchantName: '',
@@ -29,13 +29,7 @@ export class AddMerchantComponent {
   };
 
   isSubmitting = false;
-
-  // Merchant ID uniqueness check
-  merchantIdExists = false;
-  merchantIdChecking = false;
-  merchantIdChecked = false;
-  merchantIdCheckError = false;
-  private merchantIdCheckTimer: any = null;
+  isLoadingId = true;
 
   constructor(
     private profileService: ProfileService,
@@ -43,40 +37,20 @@ export class AddMerchantComponent {
     private router: Router
   ) {}
 
-  onMerchantIdChange(): void {
-    if (this.merchantIdCheckTimer) clearTimeout(this.merchantIdCheckTimer);
-    const id = (this.merchant.merchantId || '').trim();
-    if (!id) {
-      this.merchantIdExists = false;
-      this.merchantIdChecking = false;
-      this.merchantIdChecked = false;
-      this.merchantIdCheckError = false;
-      return;
-    }
-
-    // Auto-fill merchantCode and accNum when merchantId changes
-    this.merchant.merchantCode = id;
-    this.merchant.merchantAccNum = 'ACC-' + id + '-001';
-
-    this.merchantIdChecking = true;
-    this.merchantIdChecked = false;
-    this.merchantIdCheckError = false;
-    this.merchantIdCheckTimer = setTimeout(() => {
-      this.profileService.checkMerchantId(id).subscribe({
-        next: (res) => {
-          this.merchantIdExists = res.exists;
-          this.merchantIdChecking = false;
-          this.merchantIdChecked = true;
-          this.merchantIdCheckError = false;
-        },
-        error: () => {
-          this.merchantIdChecking = false;
-          this.merchantIdChecked = true;
-          this.merchantIdCheckError = true;
-          this.merchantIdExists = false;
-        }
-      });
-    }, 500);
+  ngOnInit(): void {
+    this.isLoadingId = true;
+    this.profileService.getNextMerchantId().subscribe({
+      next: (res) => {
+        this.merchant.merchantId = res.nextId;
+        this.merchant.merchantCode = res.nextId;
+        this.isLoadingId = false;
+      },
+      error: () => {
+        this.merchant.merchantId = 'M001';
+        this.merchant.merchantCode = 'M001';
+        this.isLoadingId = false;
+      }
+    });
   }
 
   onMerchantNameChange(): void {

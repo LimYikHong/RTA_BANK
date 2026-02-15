@@ -100,4 +100,23 @@ public class MerchantService {
     public boolean merchantIdExists(String merchantId) {
         return merchantInfoRepository.findByMerchantId(merchantId).isPresent();
     }
+
+    /**
+     * Generate the next merchant ID in ascending order: M001, M002, ...
+     */
+    public String generateNextMerchantId() {
+        List<String> existingIds = merchantInfoRepository.findAllMerchantIdsWithPrefix();
+        int maxNum = 0;
+        for (String id : existingIds) {
+            try {
+                int num = Integer.parseInt(id.substring(1));
+                if (num > maxNum) {
+                    maxNum = num;
+                }
+            } catch (NumberFormatException | StringIndexOutOfBoundsException e) {
+                // skip non-numeric IDs
+            }
+        }
+        return String.format("M%03d", maxNum + 1);
+    }
 }

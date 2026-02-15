@@ -78,4 +78,15 @@ public class MerchantController {
         result.put("exists", merchantService.merchantIdExists(merchantId));
         return ResponseEntity.ok(result);
     }
+
+    /**
+     * GET /api/merchants/next-id Returns the next auto-generated merchant ID
+     * (M001, M002, ...).
+     */
+    @GetMapping("/next-id")
+    public ResponseEntity<Map<String, String>> getNextMerchantId() {
+        Map<String, String> result = new HashMap<>();
+        result.put("nextId", merchantService.generateNextMerchantId());
+        return ResponseEntity.ok(result);
+    }
 }

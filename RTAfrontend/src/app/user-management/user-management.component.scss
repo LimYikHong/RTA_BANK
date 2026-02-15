@@ -179,6 +179,35 @@
   background-color: #e2e8f0;
 }
 
+.btn-sync {
+  background-color: #f0fdf4;
+  color: #166534;
+  border: 1px solid #bbf7d0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.btn-sync:hover {
+  background-color: #dcfce7;
+  border-color: #86efac;
+}
+
+.btn-sync:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.spinning {
+  display: inline-block;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
 /* Table */
 .table-card {
   background: white;
@@ -272,6 +301,27 @@ tbody tr:hover {
 .role-default {
   background-color: #f1f5f9;
   color: #475569;
+}
+
+/* Type Badges */
+.type-badge {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+}
+
+.type-admin {
+  background-color: #dbeafe;
+  color: #1e40af;
+}
+
+.type-merchant {
+  background-color: #d1fae5;
+  color: #065f46;
 }
 
 /* Empty State */

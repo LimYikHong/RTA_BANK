@@ -28,12 +28,10 @@
           <div class="form-row">
             <div class="form-group">
               <label class="form-label" for="merchantId">Merchant ID <span class="required">*</span></label>
-              <input type="text" id="merchantId" class="form-input" [(ngModel)]="merchant.merchantId"
-                name="merchantId" placeholder="e.g. M999" required (ngModelChange)="onMerchantIdChange()"
-                [class.input-error]="merchantIdExists" />
-              <span class="field-checking" *ngIf="merchantIdChecking">Checking...</span>
-              <span class="field-error" *ngIf="merchantIdExists && merchantIdChecked && !merchantIdChecking">Merchant ID already exists.</span>
-              <span class="field-warn" *ngIf="merchantIdCheckError && merchantIdChecked && !merchantIdChecking">Unable to verify — please ensure backend is running</span>
+              <input type="text" id="merchantId" class="form-input id-readonly" [(ngModel)]="merchant.merchantId"
+                name="merchantId" placeholder="Auto-generated" required readonly />
+              <span class="field-info" *ngIf="isLoadingId">Generating ID...</span>
+              <span class="field-info" *ngIf="!isLoadingId">Auto-generated (read-only)</span>
             </div>
             <div class="form-group">
               <label class="form-label" for="merchantName">Merchant Name <span class="required">*</span></label>
@@ -43,14 +41,14 @@
           </div>
           <div class="form-row">
             <div class="form-group">
-              <label class="form-label" for="merchantCode">Merchant Code</label>
+              <label class="form-label" for="merchantCode">Merchant Code <span class="required">*</span></label>
               <input type="text" id="merchantCode" class="form-input" [(ngModel)]="merchant.merchantCode"
-                name="merchantCode" placeholder="Auto-filled from Merchant ID" />
+                name="merchantCode" placeholder="Auto-filled from Merchant ID" required />
             </div>
             <div class="form-group">
-              <label class="form-label" for="merchantBank">Merchant Bank</label>
+              <label class="form-label" for="merchantBank">Merchant Bank <span class="required">*</span></label>
               <input type="text" id="merchantBank" class="form-input" [(ngModel)]="merchant.merchantBank"
-                name="merchantBank" placeholder="e.g. RTA Bank" />
+                name="merchantBank" placeholder="e.g. RTA Bank" required />
             </div>
           </div>
         </div>
@@ -72,9 +70,9 @@
           </div>
           <div class="form-row">
             <div class="form-group full-width">
-              <label class="form-label" for="merchantAddress">Address</label>
+              <label class="form-label" for="merchantAddress">Address <span class="required">*</span></label>
               <input type="text" id="merchantAddress" class="form-input" [(ngModel)]="merchant.merchantAddress"
-                name="merchantAddress" placeholder="Enter merchant address" />
+                name="merchantAddress" placeholder="Enter merchant address" required />
             </div>
           </div>
         </div>
@@ -84,20 +82,20 @@
           <h3>Bank Account Information</h3>
           <div class="form-row">
             <div class="form-group">
-              <label class="form-label" for="merchantAccNum">Account Number</label>
+              <label class="form-label" for="merchantAccNum">Account Number <span class="required">*</span></label>
               <input type="text" id="merchantAccNum" class="form-input" [(ngModel)]="merchant.merchantAccNum"
-                name="merchantAccNum" placeholder="Auto-generated from Merchant ID" />
+                name="merchantAccNum" placeholder="Enter account number" required />
             </div>
             <div class="form-group">
-              <label class="form-label" for="merchantAccName">Account Name</label>
+              <label class="form-label" for="merchantAccName">Account Name <span class="required">*</span></label>
               <input type="text" id="merchantAccName" class="form-input" [(ngModel)]="merchant.merchantAccName"
-                name="merchantAccName" placeholder="Auto-filled from Merchant Name" />
+                name="merchantAccName" placeholder="Auto-filled from Merchant Name" required />
             </div>
           </div>
           <div class="form-row">
             <div class="form-group">
-              <label class="form-label" for="transactionCurrency">Transaction Currency</label>
-              <select id="transactionCurrency" class="form-input" [(ngModel)]="merchant.transactionCurrency" name="transactionCurrency">
+              <label class="form-label" for="transactionCurrency">Transaction Currency <span class="required">*</span></label>
+              <select id="transactionCurrency" class="form-input" [(ngModel)]="merchant.transactionCurrency" name="transactionCurrency" required>
                 <option value="MYR">MYR</option>
                 <option value="USD">USD</option>
                 <option value="SGD">SGD</option>
@@ -105,8 +103,8 @@
               </select>
             </div>
             <div class="form-group">
-              <label class="form-label" for="settlementCurrency">Settlement Currency</label>
-              <select id="settlementCurrency" class="form-input" [(ngModel)]="merchant.settlementCurrency" name="settlementCurrency">
+              <label class="form-label" for="settlementCurrency">Settlement Currency <span class="required">*</span></label>
+              <select id="settlementCurrency" class="form-input" [(ngModel)]="merchant.settlementCurrency" name="settlementCurrency" required>
                 <option value="MYR">MYR</option>
                 <option value="USD">USD</option>
                 <option value="SGD">SGD</option>
@@ -120,7 +118,7 @@
         <div class="form-actions">
           <button type="button" class="btn btn-cancel" (click)="cancel()">Cancel</button>
           <button type="submit" class="btn btn-submit"
-            [disabled]="isSubmitting || !addMerchantForm.valid || merchantIdExists">
+            [disabled]="isSubmitting || !addMerchantForm.valid || isLoadingId">
             {{ isSubmitting ? 'Creating...' : 'Create Merchant' }}
           </button>
         </div>

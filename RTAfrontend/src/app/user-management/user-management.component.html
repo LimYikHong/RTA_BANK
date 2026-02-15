@@ -30,6 +30,9 @@
                     placeholder="Search by name, username, email, ID, or company..." />
                 <button class="btn btn-search" (click)="onSearch()">Search</button>
                 <button class="btn btn-clear" *ngIf="searchKeyword" (click)="clearSearch()">Clear</button>
+                <button class="btn btn-sync" (click)="syncUsers()" [disabled]="isSyncing" title="Refresh user list">
+                    <span [class.spinning]="isSyncing">🔄</span> {{ isSyncing ? 'Syncing...' : 'Sync' }}
+                </button>
                 <button class="btn btn-add" (click)="openAddUserModal()">Add User</button>
             </div>
             <p class="result-count">Showing {{ filteredUsers.length }} user(s)</p>
@@ -43,6 +46,7 @@
             <table *ngIf="filteredUsers.length > 0; else noUsers">
                 <thead>
                     <tr>
+                        <th>Type</th>
                         <th>Username</th>
                         <th>Full Name</th>
                         <th>Email</th>
@@ -55,9 +59,14 @@
                 </thead>
                 <tbody>
                     <tr *ngFor="let user of filteredUsers">
+                        <td>
+                            <span class="type-badge" [ngClass]="user.type === 'MERCHANT' ? 'type-merchant' : 'type-admin'">
+                                {{ user.type }}
+                            </span>
+                        </td>
                         <td>{{ user.username }}</td>
                         <td>{{ user.name || '-' }}</td>
-                        <td>{{ user.email }}</td>
+                        <td>{{ user.email || '-' }}</td>
                         <td>{{ user.merchantId || '-' }}</td>
                         <td>{{ user.company || '-' }}</td>
                         <td>

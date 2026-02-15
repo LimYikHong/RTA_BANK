@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
@@ -12,7 +12,7 @@ import { AuthService } from '../services/auth.service';
   templateUrl: './add-user.component.html',
   styleUrl: './add-user.component.scss'
 })
-export class AddUserComponent {
+export class AddUserComponent implements OnInit {
   newUser: UserProfile = {
     merchantId: '',
     name: '',
@@ -29,6 +29,7 @@ export class AddUserComponent {
   };
   newUserRole: string = 'ADMIN';
   isSubmitting = false;
+  isLoadingId = true;
 
   showPassword = false;
   private passwordTimer: any = null;
@@ -48,17 +49,25 @@ export class AddUserComponent {
   usernameCheckError = false;
   private usernameCheckTimer: any = null;
 
-  userIdExists = false;
-  userIdChecking = false;
-  userIdChecked = false;
-  userIdCheckError = false;
-  private userIdCheckTimer: any = null;
-
   constructor(
     private profileService: ProfileService,
     private authService: AuthService,
     private router: Router
   ) {}
+
+  ngOnInit(): void {
+    this.isLoadingId = true;
+    this.profileService.getNextAdminId().subscribe({
+      next: (res) => {
+        this.newUser.merchantId = res.nextId;
+        this.isLoadingId = false;
+      },
+      error: () => {
+        this.newUser.merchantId = 'A001';
+        this.isLoadingId = false;
+      }
+    });
+  }
 
   onUsernameChange(): void {
     if (this.usernameCheckTimer) clearTimeout(this.usernameCheckTimer);
@@ -77,27 +86,6 @@ export class AddUserComponent {
       this.profileService.checkUsername(username).subscribe({
         next: (res) => { this.usernameExists = res.exists; this.usernameChecking = false; this.usernameChecked = true; this.usernameCheckError = false; },
         error: () => { this.usernameChecking = false; this.usernameChecked = true; this.usernameCheckError = true; this.usernameExists = false; }
-      });
-    }, 500);
-  }
-
-  onUserIdChange(): void {
-    if (this.userIdCheckTimer) clearTimeout(this.userIdCheckTimer);
-    const userId = (this.newUser.merchantId || '').trim();
-    if (!userId) {
-      this.userIdExists = false;
-      this.userIdChecking = false;
-      this.userIdChecked = false;
-      this.userIdCheckError = false;
-      return;
-    }
-    this.userIdChecking = true;
-    this.userIdChecked = false;
-    this.userIdCheckError = false;
-    this.userIdCheckTimer = setTimeout(() => {
-      this.profileService.checkUserId(userId).subscribe({
-        next: (res) => { this.userIdExists = res.exists; this.userIdChecking = false; this.userIdChecked = true; this.userIdCheckError = false; },
-        error: () => { this.userIdChecking = false; this.userIdChecked = true; this.userIdCheckError = true; this.userIdExists = false; }
       });
     }, 500);
   }
