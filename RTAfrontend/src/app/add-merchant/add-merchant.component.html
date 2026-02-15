@@ -1,0 +1,130 @@
+<div class="page-container">
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <h2>RTA Upload</h2>
+    <ul>
+      <li routerLink="/batch-list" routerLinkActive="active"><b>Upload Batch File</b></li>
+      <li routerLink="/incoming-batch" routerLinkActive="active"><b>Incoming Batch File</b></li>
+      <li routerLink="/profile" routerLinkActive="active">View Profile</li>
+      <li routerLink="/users" routerLinkActive="active"><b>User Management</b></li>
+    </ul>
+  </aside>
+
+  <!-- Main Content -->
+  <button class="logout-btn" (click)="logout()">Logout</button>
+  <main class="main-content">
+    <div class="page-header">
+      <button class="back-btn" routerLink="/users">&lt; Back to Users</button>
+      <h1>Add New Merchant</h1>
+      <p class="subtitle">Fill in the details below to create a new merchant. This will publish a Kafka event to notify all sub-systems.</p>
+    </div>
+
+    <div class="form-card">
+      <form #addMerchantForm="ngForm" (ngSubmit)="saveMerchant()">
+
+        <!-- Merchant Identity -->
+        <div class="form-section">
+          <h3>Merchant Identity</h3>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label" for="merchantId">Merchant ID <span class="required">*</span></label>
+              <input type="text" id="merchantId" class="form-input" [(ngModel)]="merchant.merchantId"
+                name="merchantId" placeholder="e.g. M999" required (ngModelChange)="onMerchantIdChange()"
+                [class.input-error]="merchantIdExists" />
+              <span class="field-checking" *ngIf="merchantIdChecking">Checking...</span>
+              <span class="field-error" *ngIf="merchantIdExists && merchantIdChecked && !merchantIdChecking">Merchant ID already exists.</span>
+              <span class="field-warn" *ngIf="merchantIdCheckError && merchantIdChecked && !merchantIdChecking">Unable to verify — please ensure backend is running</span>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="merchantName">Merchant Name <span class="required">*</span></label>
+              <input type="text" id="merchantName" class="form-input" [(ngModel)]="merchant.merchantName"
+                name="merchantName" placeholder="Enter merchant name" required (ngModelChange)="onMerchantNameChange()" />
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label" for="merchantCode">Merchant Code</label>
+              <input type="text" id="merchantCode" class="form-input" [(ngModel)]="merchant.merchantCode"
+                name="merchantCode" placeholder="Auto-filled from Merchant ID" />
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="merchantBank">Merchant Bank</label>
+              <input type="text" id="merchantBank" class="form-input" [(ngModel)]="merchant.merchantBank"
+                name="merchantBank" placeholder="e.g. RTA Bank" />
+            </div>
+          </div>
+        </div>
+
+        <!-- Contact Information -->
+        <div class="form-section">
+          <h3>Contact Information</h3>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label" for="merchantContactPerson">Contact Person <span class="required">*</span></label>
+              <input type="text" id="merchantContactPerson" class="form-input" [(ngModel)]="merchant.merchantContactPerson"
+                name="merchantContactPerson" placeholder="Enter contact person name" required />
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="merchantPhoneNum">Phone Number <span class="required">*</span></label>
+              <input type="text" id="merchantPhoneNum" class="form-input" [(ngModel)]="merchant.merchantPhoneNum"
+                name="merchantPhoneNum" placeholder="Enter phone number" required />
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group full-width">
+              <label class="form-label" for="merchantAddress">Address</label>
+              <input type="text" id="merchantAddress" class="form-input" [(ngModel)]="merchant.merchantAddress"
+                name="merchantAddress" placeholder="Enter merchant address" />
+            </div>
+          </div>
+        </div>
+
+        <!-- Bank Account Information -->
+        <div class="form-section">
+          <h3>Bank Account Information</h3>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label" for="merchantAccNum">Account Number</label>
+              <input type="text" id="merchantAccNum" class="form-input" [(ngModel)]="merchant.merchantAccNum"
+                name="merchantAccNum" placeholder="Auto-generated from Merchant ID" />
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="merchantAccName">Account Name</label>
+              <input type="text" id="merchantAccName" class="form-input" [(ngModel)]="merchant.merchantAccName"
+                name="merchantAccName" placeholder="Auto-filled from Merchant Name" />
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label" for="transactionCurrency">Transaction Currency</label>
+              <select id="transactionCurrency" class="form-input" [(ngModel)]="merchant.transactionCurrency" name="transactionCurrency">
+                <option value="MYR">MYR</option>
+                <option value="USD">USD</option>
+                <option value="SGD">SGD</option>
+                <option value="EUR">EUR</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="settlementCurrency">Settlement Currency</label>
+              <select id="settlementCurrency" class="form-input" [(ngModel)]="merchant.settlementCurrency" name="settlementCurrency">
+                <option value="MYR">MYR</option>
+                <option value="USD">USD</option>
+                <option value="SGD">SGD</option>
+                <option value="EUR">EUR</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- Form Actions -->
+        <div class="form-actions">
+          <button type="button" class="btn btn-cancel" (click)="cancel()">Cancel</button>
+          <button type="submit" class="btn btn-submit"
+            [disabled]="isSubmitting || !addMerchantForm.valid || merchantIdExists">
+            {{ isSubmitting ? 'Creating...' : 'Create Merchant' }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </main>
+</div>

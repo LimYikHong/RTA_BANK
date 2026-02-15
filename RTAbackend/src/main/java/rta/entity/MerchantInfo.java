@@ -39,6 +39,9 @@ public class MerchantInfo {
     @Column(name = "merchant_status")
     private String merchantStatus;
 
+    @Column(name = "profile_photo_url")
+    private String profilePhotoUrl;
+
     @Column(name = "created_at")
     private LocalDateTime createdAt;
 

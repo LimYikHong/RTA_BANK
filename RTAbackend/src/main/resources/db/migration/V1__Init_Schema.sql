@@ -115,6 +115,7 @@ CREATE TABLE merchant_info (
     merchant_address VARCHAR(255),
     merchant_contact_person VARCHAR(100),
     merchant_status VARCHAR(20),
+    profile_photo_url VARCHAR(255),
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     create_by VARCHAR(100),
     last_modified_at DATETIME ON UPDATE CURRENT_TIMESTAMP,

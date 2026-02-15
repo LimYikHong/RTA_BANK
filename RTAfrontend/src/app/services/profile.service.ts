@@ -45,6 +45,21 @@ export interface UserListItem {
   role: string;
 }
 
+export interface MerchantInfoPayload {
+  merchantId: string;
+  merchantName: string;
+  merchantBank: string;
+  merchantCode: string;
+  merchantPhoneNum: string;
+  merchantAddress: string;
+  merchantContactPerson: string;
+  merchantAccNum: string;
+  merchantAccName: string;
+  transactionCurrency: string;
+  settlementCurrency: string;
+  createdBy: string;
+}
+
 @Injectable({
   providedIn: 'root',
 })
@@ -57,6 +72,7 @@ export interface UserListItem {
  */
 export class ProfileService {
   private apiUrl = 'https://localhost:8086/api/profile';
+  private merchantApiUrl = 'https://localhost:8086/api/merchants';
   private cachedProfile: UserProfile | null = null;
 
   constructor(private http: HttpClient) {}
@@ -157,6 +173,14 @@ export class ProfileService {
         return of([]);
       })
     );
+  }
+
+  createMerchant(payload: MerchantInfoPayload): Observable<any> {
+    return this.http.post<any>(`${this.merchantApiUrl}`, payload);
+  }
+
+  checkMerchantId(merchantId: string): Observable<{ exists: boolean }> {
+    return this.http.get<{ exists: boolean }>(`${this.merchantApiUrl}/check-id?merchantId=${encodeURIComponent(merchantId)}`);
   }
 
   setProfile(profile: UserProfile): void {

@@ -30,7 +30,7 @@
                     placeholder="Search by name, username, email, ID, or company..." />
                 <button class="btn btn-search" (click)="onSearch()">Search</button>
                 <button class="btn btn-clear" *ngIf="searchKeyword" (click)="clearSearch()">Clear</button>
-                <button class="btn btn-add" routerLink="/add-user">Add User</button>
+                <button class="btn btn-add" (click)="openAddUserModal()">Add User</button>
             </div>
             <p class="result-count">Showing {{ filteredUsers.length }} user(s)</p>
         </div>
@@ -82,4 +82,26 @@
             </ng-template>
         </div>
     </main>
+</div>
+
+<!-- Add User Type Selection Modal -->
+<div class="modal-overlay" *ngIf="showAddUserModal" (click)="closeAddUserModal()">
+    <div class="modal-card" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+            <h2>What would you like to create?</h2>
+            <button class="modal-close" (click)="closeAddUserModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+            <div class="type-card" (click)="selectAddType('admin')">
+                <div class="type-icon">🛡️</div>
+                <h3>Admin User</h3>
+                <p>Create an internal admin or super admin account for system management.</p>
+            </div>
+            <div class="type-card" (click)="selectAddType('merchant')">
+                <div class="type-icon">🏪</div>
+                <h3>Merchant</h3>
+                <p>Register a new merchant. This will publish a Kafka event to notify all sub-systems.</p>
+            </div>
+        </div>
+    </div>
 </div>

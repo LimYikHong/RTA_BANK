@@ -17,6 +17,7 @@ export class UserManagementComponent implements OnInit {
   filteredUsers: UserListItem[] = [];
   searchKeyword: string = '';
   isLoading: boolean = false;
+  showAddUserModal: boolean = false;
 
   constructor(
     private profileService: ProfileService,
@@ -79,6 +80,23 @@ export class UserManagementComponent implements OnInit {
       case 'ADMIN': return 'role-admin';
       case 'MERCHANT': return 'role-merchant';
       default: return 'role-default';
+    }
+  }
+
+  openAddUserModal(): void {
+    this.showAddUserModal = true;
+  }
+
+  closeAddUserModal(): void {
+    this.showAddUserModal = false;
+  }
+
+  selectAddType(type: string): void {
+    this.showAddUserModal = false;
+    if (type === 'admin') {
+      this.router.navigate(['/add-user']);
+    } else if (type === 'merchant') {
+      this.router.navigate(['/add-merchant']);
     }
   }
 
