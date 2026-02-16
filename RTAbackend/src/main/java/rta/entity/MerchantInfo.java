@@ -15,32 +15,44 @@ public class MerchantInfo {
     @Column(name = "merchant_id")
     private String merchantId;
 
-    @Column(name = "account_id")
+    @Column(name = "account_id", nullable = false)
     private Long accountId;
 
-    @Column(name = "merchant_name", nullable = false)
-    private String merchantName;
+    @Column(name = "name")
+    private String name;
 
-    @Column(name = "merchant_bank")
-    private String merchantBank;
+    @Column(name = "address")
+    private String address;
 
-    @Column(name = "merchant_code")
-    private String merchantCode;
+    @Column(name = "phone")
+    private String phone;
 
-    @Column(name = "merchant_phone_num")
-    private String merchantPhoneNum;
+    @Column(name = "email")
+    private String email;
 
-    @Column(name = "merchant_address")
-    private String merchantAddress;
+    @Column(name = "password", nullable = false)
+    private String password;
 
-    @Column(name = "merchant_contact_person")
-    private String merchantContactPerson;
+    @Column(name = "username", nullable = false)
+    private String username;
 
-    @Column(name = "merchant_status")
-    private String merchantStatus;
+    @Column(name = "company", nullable = false)
+    private String company;
+
+    @Column(name = "contact", nullable = false)
+    private String contact;
+
+    @Column(name = "joined_on")
+    private LocalDateTime joinedOn;
 
     @Column(name = "profile_photo_url")
     private String profilePhotoUrl;
+
+    @Column(name = "two_factor_secret")
+    private String twoFactorSecret;
+
+    @Column(name = "is_two_factor_enabled")
+    private Boolean isTwoFactorEnabled;
 
     @Column(name = "created_at")
     private LocalDateTime createdAt;

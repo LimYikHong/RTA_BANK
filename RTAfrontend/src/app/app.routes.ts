@@ -7,6 +7,7 @@ import { AddMerchantComponent } from './add-merchant/add-merchant.component';
 import { EditProfileComponent } from './edit-profile/edit-profile.component';
 import { IncomingBatchComponent } from './incoming-batch/incoming-batch.component';
 import { UserManagementComponent } from './user-management/user-management.component';
+import { MerchantMaintenanceComponent } from './merchant-maintenance/merchant-maintenance.component';
 import { authGuard } from './services/auth.guard';
 
 export const routes: Routes = [
@@ -16,6 +17,7 @@ export const routes: Routes = [
   { path: 'profile', component: ViewProfileComponent, canActivate: [authGuard] },
   { path: 'edit-profile', component: EditProfileComponent, canActivate: [authGuard] },
   { path: 'users', component: UserManagementComponent, canActivate: [authGuard] },
+  { path: 'merchant-maintenance', component: MerchantMaintenanceComponent, canActivate: [authGuard] },
   { path: 'add-user', component: AddUserComponent, canActivate: [authGuard] },
   { path: 'add-merchant', component: AddMerchantComponent, canActivate: [authGuard] },
   { path: '', redirectTo: '/login', pathMatch: 'full' },

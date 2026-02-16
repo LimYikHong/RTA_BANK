@@ -6,6 +6,7 @@
       <li routerLink="/incoming-batch" routerLinkActive="active"><b>Incoming Batch File</b></li>
       <li routerLink="/profile" routerLinkActive="active">View Profile</li>
       <li routerLink="/users" routerLinkActive="active"><b>User Management</b></li>
+      <li routerLink="/merchant-maintenance" routerLinkActive="active"><b>Merchant Maintenance</b></li>
     </ul>
   </aside>
 
@@ -16,7 +17,7 @@
 
     <div class="user-info">
       <p>
-        🧾 User ID: <b>{{ user?.merchantId }}</b>
+        🧾 User ID: <b>{{ user?.userId }}</b>
       </p>
       <p>
         🏢 Company: <b>{{ user?.company }}</b>

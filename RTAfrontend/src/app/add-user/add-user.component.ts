@@ -14,7 +14,7 @@ import { AuthService } from '../services/auth.service';
 })
 export class AddUserComponent implements OnInit {
   newUser: UserProfile = {
-    merchantId: '',
+    userId: '',
     name: '',
     email: '',
     company: '',
@@ -59,11 +59,11 @@ export class AddUserComponent implements OnInit {
     this.isLoadingId = true;
     this.profileService.getNextAdminId().subscribe({
       next: (res) => {
-        this.newUser.merchantId = res.nextId;
+        this.newUser.userId = res.nextId;
         this.isLoadingId = false;
       },
       error: () => {
-        this.newUser.merchantId = 'A001';
+        this.newUser.userId = 'A001';
         this.isLoadingId = false;
       }
     });

@@ -7,6 +7,7 @@
       <li routerLink="/incoming-batch" routerLinkActive="active"><b>Incoming Batch File</b></li>
       <li routerLink="/profile" routerLinkActive="active">View Profile</li>
       <li routerLink="/users" routerLinkActive="active"><b>User Management</b></li>
+      <li routerLink="/merchant-maintenance" routerLinkActive="active"><b>Merchant Maintenance</b></li>
     </ul>
   </aside>
 
@@ -14,7 +15,7 @@
   <button class="logout-btn" (click)="logout()">Logout</button>
   <main class="main-content">
     <div class="page-header">
-      <button class="back-btn" routerLink="/users">&lt; Back to Users</button>
+      <button class="back-btn" routerLink="/merchant-maintenance">&lt; Back to Merchants</button>
       <h1>Add New Merchant</h1>
       <p class="subtitle">Fill in the details below to create a new merchant. This will publish a Kafka event to notify all sub-systems.</p>
     </div>
@@ -34,21 +35,33 @@
               <span class="field-info" *ngIf="!isLoadingId">Auto-generated (read-only)</span>
             </div>
             <div class="form-group">
-              <label class="form-label" for="merchantName">Merchant Name <span class="required">*</span></label>
-              <input type="text" id="merchantName" class="form-input" [(ngModel)]="merchant.merchantName"
-                name="merchantName" placeholder="Enter merchant name" required (ngModelChange)="onMerchantNameChange()" />
+              <label class="form-label" for="name">Name <span class="required">*</span></label>
+              <input type="text" id="name" class="form-input" [(ngModel)]="merchant.name"
+                name="name" placeholder="Enter merchant name" required (ngModelChange)="onMerchantNameChange()" />
             </div>
           </div>
           <div class="form-row">
             <div class="form-group">
-              <label class="form-label" for="merchantCode">Merchant Code <span class="required">*</span></label>
-              <input type="text" id="merchantCode" class="form-input" [(ngModel)]="merchant.merchantCode"
-                name="merchantCode" placeholder="Auto-filled from Merchant ID" required />
+              <label class="form-label" for="username">Username <span class="required">*</span></label>
+              <input type="text" id="username" class="form-input" [(ngModel)]="merchant.username"
+                name="username" placeholder="Enter username" required />
             </div>
             <div class="form-group">
-              <label class="form-label" for="merchantBank">Merchant Bank <span class="required">*</span></label>
-              <input type="text" id="merchantBank" class="form-input" [(ngModel)]="merchant.merchantBank"
-                name="merchantBank" placeholder="e.g. RTA Bank" required />
+              <label class="form-label" for="password">Password <span class="required">*</span></label>
+              <input type="password" id="password" class="form-input" [(ngModel)]="merchant.password"
+                name="password" placeholder="Enter password" required />
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label" for="email">Email <span class="required">*</span></label>
+              <input type="email" id="email" class="form-input" [(ngModel)]="merchant.email"
+                name="email" placeholder="Enter email address" required />
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="company">Company <span class="required">*</span></label>
+              <input type="text" id="company" class="form-input" [(ngModel)]="merchant.company"
+                name="company" placeholder="Enter company name" required />
             </div>
           </div>
         </div>
@@ -58,21 +71,21 @@
           <h3>Contact Information</h3>
           <div class="form-row">
             <div class="form-group">
-              <label class="form-label" for="merchantContactPerson">Contact Person <span class="required">*</span></label>
-              <input type="text" id="merchantContactPerson" class="form-input" [(ngModel)]="merchant.merchantContactPerson"
-                name="merchantContactPerson" placeholder="Enter contact person name" required />
+              <label class="form-label" for="contact">Contact Person <span class="required">*</span></label>
+              <input type="text" id="contact" class="form-input" [(ngModel)]="merchant.contact"
+                name="contact" placeholder="Enter contact person name" required />
             </div>
             <div class="form-group">
-              <label class="form-label" for="merchantPhoneNum">Phone Number <span class="required">*</span></label>
-              <input type="text" id="merchantPhoneNum" class="form-input" [(ngModel)]="merchant.merchantPhoneNum"
-                name="merchantPhoneNum" placeholder="Enter phone number" required />
+              <label class="form-label" for="phone">Phone Number <span class="required">*</span></label>
+              <input type="text" id="phone" class="form-input" [(ngModel)]="merchant.phone"
+                name="phone" placeholder="Enter phone number" required />
             </div>
           </div>
           <div class="form-row">
             <div class="form-group full-width">
-              <label class="form-label" for="merchantAddress">Address <span class="required">*</span></label>
-              <input type="text" id="merchantAddress" class="form-input" [(ngModel)]="merchant.merchantAddress"
-                name="merchantAddress" placeholder="Enter merchant address" required />
+              <label class="form-label" for="address">Address <span class="required">*</span></label>
+              <input type="text" id="address" class="form-input" [(ngModel)]="merchant.address"
+                name="address" placeholder="Enter merchant address" required />
             </div>
           </div>
         </div>

@@ -5,13 +5,10 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
-import rta.entity.MerchantInfo;
 import rta.model.UserProfile;
 import rta.repository.ProfileRepository;
-import rta.service.MerchantService;
 import rta.service.ProfileService;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -25,7 +22,6 @@ public class ProfileController {
 
     private final ProfileService profileService;
     private final ProfileRepository profileRepository;
-    private final MerchantService merchantService;
 
     /**
      * POST /api/profile/register - Creates a new user profile (demo
@@ -53,36 +49,36 @@ public class ProfileController {
     }
 
     /**
-     * GET /api/profile/{merchantId} - Fetches a merchant profile by merchantId.
+     * GET /api/profile/{userId} - Fetches a user profile by userId.
      */
-    @GetMapping("/{merchantId}")
-    public ResponseEntity<UserProfile> getProfile(@PathVariable String merchantId) {
-        UserProfile profile = profileService.getProfile(merchantId);
+    @GetMapping("/{userId}")
+    public ResponseEntity<UserProfile> getProfile(@PathVariable String userId) {
+        UserProfile profile = profileService.getProfile(userId);
         return ResponseEntity.ok(profile);
     }
 
     /**
-     * PUT /api/profile/{merchantId} - Updates profile fields
+     * PUT /api/profile/{userId} - Updates profile fields
      * (company/contact/address/etc).
      */
-    @PutMapping("/{merchantId}")
+    @PutMapping("/{userId}")
     public ResponseEntity<UserProfile> updateProfile(
-            @PathVariable String merchantId,
+            @PathVariable String userId,
             @RequestBody UserProfile updatedProfile) {
-        UserProfile updated = profileService.updateProfile(merchantId, updatedProfile);
+        UserProfile updated = profileService.updateProfile(userId, updatedProfile);
         return ResponseEntity.ok(updated);
     }
 
     /**
-     * POST /api/profile/{merchantId}/photo - Uploads a profile photo
+     * POST /api/profile/{userId}/photo - Uploads a profile photo
      * (multipart/form-data). - Returns the updated profile including new photo
      * URL/path.
      */
-    @PostMapping("/{merchantId}/photo")
+    @PostMapping("/{userId}/photo")
     public ResponseEntity<UserProfile> uploadProfilePhoto(
-            @PathVariable String merchantId,
+            @PathVariable String userId,
             @RequestParam("profilePhoto") MultipartFile file) {
-        UserProfile updatedProfile = profileService.uploadProfilePhoto(merchantId, file);
+        UserProfile updatedProfile = profileService.uploadProfilePhoto(userId, file);
         return ResponseEntity.ok(updatedProfile);
     }
 
@@ -120,7 +116,7 @@ public class ProfileController {
     @GetMapping("/check-userid")
     public ResponseEntity<Map<String, Boolean>> checkUserId(@RequestParam String userId) {
         try {
-            boolean exists = profileRepository.findByMerchantId(userId).isPresent();
+            boolean exists = profileRepository.findByUserId(userId).isPresent();
             Map<String, Boolean> result = new HashMap<>();
             result.put("exists", exists);
             return ResponseEntity.ok(result);
@@ -145,100 +141,48 @@ public class ProfileController {
     }
 
     /**
-     * GET /api/profile/users - List all users (admins + merchants) with their
-     * roles.
+     * GET /api/profile/users - List all admin users with their roles.
      */
     @GetMapping("/users")
     public ResponseEntity<List<Map<String, Object>>> getAllUsers() {
-        // 1. Admin users from rta_bank_user
         List<UserProfile> users = profileService.getAllUsers();
-        List<Map<String, Object>> result = new ArrayList<>(users.stream().map(u -> {
+        List<Map<String, Object>> result = users.stream().map(u -> {
             Map<String, Object> map = new HashMap<>();
             map.put("id", u.getId());
             map.put("username", u.getUsername());
             map.put("name", u.getName());
             map.put("email", u.getEmail());
-            map.put("merchantId", u.getMerchantId());
+            map.put("userId", u.getUserId());
             map.put("company", u.getCompany());
             map.put("phone", u.getPhone());
             map.put("status", u.getStatus());
             map.put("joinedOn", u.getJoinedOn());
             map.put("role", profileService.getUserRole(u.getId()));
-            map.put("type", "ADMIN");
             return map;
-        }).collect(Collectors.toList()));
-
-        // 2. Merchants from merchant_info
-        List<MerchantInfo> merchants = merchantService.getAllMerchants();
-        for (MerchantInfo m : merchants) {
-            Map<String, Object> map = new HashMap<>();
-            map.put("id", null);
-            map.put("username", m.getMerchantContactPerson());
-            map.put("name", m.getMerchantName());
-            map.put("email", null);
-            map.put("merchantId", m.getMerchantId());
-            map.put("company", m.getMerchantBank());
-            map.put("phone", m.getMerchantPhoneNum());
-            map.put("status", m.getMerchantStatus());
-            map.put("joinedOn", m.getCreatedAt());
-            map.put("role", "MERCHANT");
-            map.put("type", "MERCHANT");
-            result.add(map);
-        }
-
+        }).collect(Collectors.toList());
         return ResponseEntity.ok(result);
     }
 
     /**
-     * GET /api/profile/users/search?keyword= - Search users and merchants by keyword.
+     * GET /api/profile/users/search?keyword= - Search admin users by keyword.
      */
     @GetMapping("/users/search")
     public ResponseEntity<List<Map<String, Object>>> searchUsers(@RequestParam String keyword) {
-        // 1. Search admin users
         List<UserProfile> users = profileService.searchUsers(keyword);
-        List<Map<String, Object>> result = new ArrayList<>(users.stream().map(u -> {
+        List<Map<String, Object>> result = users.stream().map(u -> {
             Map<String, Object> map = new HashMap<>();
             map.put("id", u.getId());
             map.put("username", u.getUsername());
             map.put("name", u.getName());
             map.put("email", u.getEmail());
-            map.put("merchantId", u.getMerchantId());
+            map.put("userId", u.getUserId());
             map.put("company", u.getCompany());
             map.put("phone", u.getPhone());
             map.put("status", u.getStatus());
             map.put("joinedOn", u.getJoinedOn());
             map.put("role", profileService.getUserRole(u.getId()));
-            map.put("type", "ADMIN");
             return map;
-        }).collect(Collectors.toList()));
-
-        // 2. Search merchants by keyword (name, ID, contact person, bank, phone, code)
-        String kw = keyword.toLowerCase();
-        List<MerchantInfo> merchants = merchantService.getAllMerchants();
-        for (MerchantInfo m : merchants) {
-            boolean matches = (m.getMerchantName() != null && m.getMerchantName().toLowerCase().contains(kw))
-                    || (m.getMerchantId() != null && m.getMerchantId().toLowerCase().contains(kw))
-                    || (m.getMerchantContactPerson() != null && m.getMerchantContactPerson().toLowerCase().contains(kw))
-                    || (m.getMerchantBank() != null && m.getMerchantBank().toLowerCase().contains(kw))
-                    || (m.getMerchantPhoneNum() != null && m.getMerchantPhoneNum().toLowerCase().contains(kw))
-                    || (m.getMerchantCode() != null && m.getMerchantCode().toLowerCase().contains(kw));
-            if (matches) {
-                Map<String, Object> map = new HashMap<>();
-                map.put("id", null);
-                map.put("username", m.getMerchantContactPerson());
-                map.put("name", m.getMerchantName());
-                map.put("email", null);
-                map.put("merchantId", m.getMerchantId());
-                map.put("company", m.getMerchantBank());
-                map.put("phone", m.getMerchantPhoneNum());
-                map.put("status", m.getMerchantStatus());
-                map.put("joinedOn", m.getCreatedAt());
-                map.put("role", "MERCHANT");
-                map.put("type", "MERCHANT");
-                result.add(map);
-            }
-        }
-
+        }).collect(Collectors.toList());
         return ResponseEntity.ok(result);
     }
 

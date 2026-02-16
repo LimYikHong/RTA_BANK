@@ -18,8 +18,6 @@ export class UserManagementComponent implements OnInit, OnDestroy {
   filteredUsers: UserListItem[] = [];
   searchKeyword: string = '';
   isLoading: boolean = false;
-  isSyncing: boolean = false;
-  showAddUserModal: boolean = false;
   private routerSub!: Subscription;
 
   constructor(
@@ -46,22 +44,6 @@ export class UserManagementComponent implements OnInit, OnDestroy {
     }
   }
 
-  syncUsers(): void {
-    this.isSyncing = true;
-    this.searchKeyword = '';
-    this.profileService.getAllUsers().subscribe({
-      next: (data) => {
-        this.users = data;
-        this.filteredUsers = data;
-        this.isSyncing = false;
-      },
-      error: (err) => {
-        console.error('Failed to sync users:', err);
-        this.isSyncing = false;
-      }
-    });
-  }
-
   loadUsers(): void {
     this.isLoading = true;
     this.profileService.getAllUsers().subscribe({
@@ -80,7 +62,7 @@ export class UserManagementComponent implements OnInit, OnDestroy {
   onSearch(): void {
     const keyword = this.searchKeyword.trim();
     if (!keyword) {
-      this.filteredUsers = this.users;
+      this.loadUsers();
       return;
     }
     this.profileService.searchUsers(keyword).subscribe({
@@ -116,21 +98,8 @@ export class UserManagementComponent implements OnInit, OnDestroy {
     }
   }
 
-  openAddUserModal(): void {
-    this.showAddUserModal = true;
-  }
-
-  closeAddUserModal(): void {
-    this.showAddUserModal = false;
-  }
-
-  selectAddType(type: string): void {
-    this.showAddUserModal = false;
-    if (type === 'admin') {
-      this.router.navigate(['/add-user']);
-    } else if (type === 'merchant') {
-      this.router.navigate(['/add-merchant']);
-    }
+  addUser(): void {
+    this.router.navigate(['/add-user']);
   }
 
   logout(): void {

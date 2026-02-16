@@ -7,6 +7,7 @@
       <li routerLink="/incoming-batch" routerLinkActive="active"><b>Incoming Batch File</b></li>
       <li routerLink="/profile" routerLinkActive="active">View Profile</li>
       <li routerLink="/users" routerLinkActive="active"><b>User Management</b></li>
+      <li routerLink="/merchant-maintenance" routerLinkActive="active"><b>Merchant Maintenance</b></li>
     </ul>
   </aside>
 
@@ -88,7 +89,7 @@
           <div class="form-row">
             <div class="form-group">
               <label class="form-label" for="userId">User ID <span class="required">*</span></label>
-              <input type="text" id="userId" class="form-input id-readonly" [(ngModel)]="newUser.merchantId" name="merchantId"
+              <input type="text" id="userId" class="form-input id-readonly" [(ngModel)]="newUser.userId" name="userId"
                 placeholder="Auto-generated" required readonly />
               <span class="field-info" *ngIf="isLoadingId">Generating ID...</span>
               <span class="field-info" *ngIf="!isLoadingId">Auto-generated (read-only)</span>

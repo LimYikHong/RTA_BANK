@@ -9,7 +9,7 @@ import { AuthService } from '../services/auth.service';
 /**
  * BatchListComponent
  * - Shows uploaded RTA batch files for the current user
- * - Allows uploading a new batch file (renamed with merchantId + timestamp)
+ * - Allows uploading a new batch file (renamed with userId + timestamp)
  * - Supports viewing simple batch details and deleting a batch
  * - Demonstrates Angular features: standalone component, routing links, *ngFor, pipes, service calls, error handling
  */
@@ -42,8 +42,8 @@ export class BatchListComponent implements OnInit {
   ngOnInit(): void {
     this.user = this.profileService.getProfile();
 
-    if (this.user && this.user.merchantId) {
-      this.profileService.fetchProfile(this.user.merchantId).subscribe({
+    if (this.user && this.user.userId) {
+      this.profileService.fetchProfile(this.user.userId).subscribe({
         next: (profile) => {
           this.user = profile;
         },
@@ -74,7 +74,7 @@ export class BatchListComponent implements OnInit {
 
   // Upload selected file:
   // - Guard: require both file and merchant
-  // - Rename file to {merchantId}_{yyyy-mm-dd_HH-mm-ss}.xlsx before upload
+  // - Rename file to {userId}_{yyyy-mm-dd_HH-mm-ss}.xlsx before upload
   // - Call service and refresh list; log success/error
   uploadBatch(): void {
     if (!this.selectedFile || !this.user) {
@@ -101,14 +101,14 @@ export class BatchListComponent implements OnInit {
       .padStart(2, '0')}-${timestamp.getSeconds().toString().padStart(2, '0')}`;
 
     // Create a new File object with the new name (content unchanged)
-    const newFileName = `${this.user.merchantId}_${formattedTime}.xlsx`;
+    const newFileName = `${this.user.userId}_${formattedTime}.xlsx`;
     const renamedFile = new File([this.selectedFile], newFileName, {
       type: this.selectedFile.type,
     });
 
-    // Call upload API with renamed file, merchantId and original name for audit trail
+    // Call upload API with renamed file, userId and original name for audit trail
     this.portalService
-      .uploadBatch(renamedFile, this.user.merchantId, originalFileName)
+      .uploadBatch(renamedFile, this.user.userId, originalFileName)
       .subscribe({
         next: (res) => {
           console.log(`File ${res.fileName} uploaded successfully`);

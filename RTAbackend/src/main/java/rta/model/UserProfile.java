@@ -54,8 +54,8 @@ public class UserProfile {
     @JsonProperty("isEnabled")
     private Boolean isEnabled = true;
 
-    @Column(name = "merchant_id")
-    private String merchantId;
+    @Column(name = "user_id")
+    private String userId;
 
     @Column(name = "company")
     private String company;

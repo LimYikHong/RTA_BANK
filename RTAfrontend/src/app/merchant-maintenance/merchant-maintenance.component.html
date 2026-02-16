@@ -18,8 +18,8 @@
         <div class="page-header">
             <div class="header-top">
                 <div>
-                    <h1>User Management</h1>
-                    <p class="subtitle">Manage all registered users in the system.</p>
+                    <h1>Merchant Maintenance</h1>
+                    <p class="subtitle">Manage all registered merchants in the system.</p>
                 </div>
             </div>
         </div>
@@ -28,57 +28,53 @@
         <div class="search-section">
             <div class="search-box">
                 <input type="text" class="search-input" [(ngModel)]="searchKeyword" (keyup.enter)="onSearch()"
-                    placeholder="Search by name, username, email, ID, or company..." />
+                    placeholder="Search by name, ID, username, email, company, or contact..." />
                 <button class="btn btn-search" (click)="onSearch()">Search</button>
                 <button class="btn btn-clear" *ngIf="searchKeyword" (click)="clearSearch()">Clear</button>
-                <button class="btn btn-add" (click)="addUser()">Add User</button>
+                <button class="btn btn-add" (click)="addMerchant()">Add Merchant</button>
             </div>
-            <p class="result-count">Showing {{ filteredUsers.length }} user(s)</p>
+            <p class="result-count">Showing {{ filteredMerchants.length }} merchant(s)</p>
         </div>
 
         <!-- Loading Indicator -->
-        <div class="loading-text" *ngIf="isLoading">Loading users...</div>
+        <div class="loading-text" *ngIf="isLoading">Loading merchants...</div>
 
-        <!-- User Table -->
+        <!-- Merchant Table -->
         <div class="table-card" *ngIf="!isLoading">
-            <table *ngIf="filteredUsers.length > 0; else noUsers">
+            <table *ngIf="filteredMerchants.length > 0; else noMerchants">
                 <thead>
                     <tr>
+                        <th>Merchant ID</th>
+                        <th>Name</th>
                         <th>Username</th>
-                        <th>Full Name</th>
                         <th>Email</th>
-                        <th>User ID</th>
                         <th>Company</th>
-                        <th>Role</th>
-                        <th>Status</th>
+                        <th>Contact</th>
+                        <th>Phone</th>
+                        <th>Address</th>
                         <th>Joined On</th>
+                        <th>Created By</th>
                     </tr>
                 </thead>
                 <tbody>
-                    <tr *ngFor="let user of filteredUsers">
-                        <td>{{ user.username }}</td>
-                        <td>{{ user.name || '-' }}</td>
-                        <td>{{ user.email || '-' }}</td>
-                        <td>{{ user.userId || '-' }}</td>
-                        <td>{{ user.company || '-' }}</td>
-                        <td>
-                            <span class="role-badge" [ngClass]="getRoleBadgeClass(user.role)">
-                                {{ user.role }}
-                            </span>
-                        </td>
-                        <td>
-                            <span class="status-badge" [ngClass]="getStatusClass(user.status)">
-                                {{ user.status }}
-                            </span>
-                        </td>
-                        <td>{{ user.joinedOn | date: 'mediumDate' }}</td>
+                    <tr *ngFor="let m of filteredMerchants">
+                        <td class="merchant-id">{{ m.merchantId }}</td>
+                        <td>{{ m.name || '-' }}</td>
+                        <td>{{ m.username || '-' }}</td>
+                        <td>{{ m.email || '-' }}</td>
+                        <td>{{ m.company || '-' }}</td>
+                        <td>{{ m.contact || '-' }}</td>
+                        <td>{{ m.phone || '-' }}</td>
+                        <td>{{ m.address || '-' }}</td>
+                        <td>{{ m.joinedOn | date: 'mediumDate' }}</td>
+                        <td>{{ m.createBy || '-' }}</td>
                     </tr>
                 </tbody>
             </table>
 
-            <ng-template #noUsers>
+            <ng-template #noMerchants>
                 <div class="empty-state">
-                    <p>No users found.</p>
+                    <p>No merchants found.</p>
                 </div>
             </ng-template>
         </div>

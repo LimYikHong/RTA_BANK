@@ -15,12 +15,14 @@ import { AuthService } from '../services/auth.service';
 export class AddMerchantComponent implements OnInit {
   merchant: MerchantInfoPayload = {
     merchantId: '',
-    merchantName: '',
-    merchantBank: '',
-    merchantCode: '',
-    merchantPhoneNum: '',
-    merchantAddress: '',
-    merchantContactPerson: '',
+    name: '',
+    email: '',
+    username: '',
+    password: '',
+    company: '',
+    contact: '',
+    phone: '',
+    address: '',
     merchantAccNum: '',
     merchantAccName: '',
     transactionCurrency: 'MYR',
@@ -42,20 +44,18 @@ export class AddMerchantComponent implements OnInit {
     this.profileService.getNextMerchantId().subscribe({
       next: (res) => {
         this.merchant.merchantId = res.nextId;
-        this.merchant.merchantCode = res.nextId;
         this.isLoadingId = false;
       },
       error: () => {
         this.merchant.merchantId = 'M001';
-        this.merchant.merchantCode = 'M001';
         this.isLoadingId = false;
       }
     });
   }
 
   onMerchantNameChange(): void {
-    // Auto-fill account name when merchant name changes
-    this.merchant.merchantAccName = this.merchant.merchantName;
+    // Auto-fill account name when name changes
+    this.merchant.merchantAccName = this.merchant.name;
   }
 
   saveMerchant(): void {
@@ -67,7 +67,7 @@ export class AddMerchantComponent implements OnInit {
       next: () => {
         this.isSubmitting = false;
         alert('Merchant created successfully! A Kafka event has been published to notify sub-systems.');
-        this.router.navigate(['/users']);
+        this.router.navigate(['/merchant-maintenance']);
       },
       error: (err) => {
         this.isSubmitting = false;
@@ -78,7 +78,7 @@ export class AddMerchantComponent implements OnInit {
   }
 
   cancel(): void {
-    this.router.navigate(['/users']);
+    this.router.navigate(['/merchant-maintenance']);
   }
 
   logout(): void {

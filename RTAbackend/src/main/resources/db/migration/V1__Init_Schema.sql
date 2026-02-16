@@ -1,3 +1,42 @@
+-- Merchant Bank Account Table
+CREATE TABLE merchant_bank_acc (
+    account_id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    merchant_acc_num VARCHAR(50) NOT NULL,
+    merchant_acc_name VARCHAR(100) NOT NULL,
+    transaction_currency VARCHAR(10) NOT NULL,
+    settlement_currency VARCHAR(10) NOT NULL,
+    is_default BOOLEAN DEFAULT FALSE,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    create_by VARCHAR(100),
+    last_modified_at DATETIME ON UPDATE CURRENT_TIMESTAMP,
+    last_modified_by VARCHAR(100),
+    deleted_at DATETIME
+);
+
+-- Merchant Info Table
+CREATE TABLE merchant_info (
+    merchant_id VARCHAR(50) PRIMARY KEY,
+    account_id BIGINT NOT NULL,
+    name VARCHAR(255) NOT NULL,
+    address VARCHAR(255),
+    phone VARCHAR(255),
+    email VARCHAR(255),
+    password VARCHAR(255) NOT NULL,
+    username VARCHAR(255) NOT NULL,
+    company VARCHAR(255) NOT NULL,
+    contact VARCHAR(255) NOT NULL,
+    joined_on DATETIME,
+    profile_photo_url VARCHAR(255),
+    two_factor_secret VARCHAR(255),
+    is_two_factor_enabled BOOLEAN DEFAULT FALSE,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    create_by VARCHAR(100),
+    last_modified_at DATETIME ON UPDATE CURRENT_TIMESTAMP,
+    last_modified_by VARCHAR(100),
+    deleted_at DATETIME,
+    FOREIGN KEY (account_id) REFERENCES merchant_bank_acc(account_id)
+);
+
 -- User Table (Consolidated rta_bank_user and rta_role management)
 CREATE TABLE rta_bank_user (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
@@ -14,15 +53,12 @@ CREATE TABLE rta_bank_user (
     last_login_at DATETIME,
     failed_attempts INT DEFAULT 0,
     is_enabled BOOLEAN DEFAULT TRUE,
-    
-    -- Merchant/Profile fields
-    merchant_id VARCHAR(50),
-    company VARCHAR(100),
+    user_id VARCHAR(50),
+    company VARCHAR(255),
     address VARCHAR(255),
-    contact VARCHAR(100),
+    contact VARCHAR(255),
     two_factor_secret VARCHAR(255),
     is_two_factor_enabled BOOLEAN DEFAULT FALSE,
-
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     created_by VARCHAR(100),
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -87,41 +123,6 @@ CREATE TABLE rta_role_permission (
     FOREIGN KEY (role_id) REFERENCES rta_role(id),
     FOREIGN KEY (permission_id) REFERENCES rta_permission(id),
     UNIQUE KEY uk_role_permission (role_id, permission_id)
-);
-
--- Merchant Bank Account Table
-CREATE TABLE merchant_bank_acc (
-    account_id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    merchant_acc_num VARCHAR(50) NOT NULL,
-    merchant_acc_name VARCHAR(100) NOT NULL,
-    transaction_currency VARCHAR(10) NOT NULL,
-    settlement_currency VARCHAR(10) NOT NULL,
-    is_default BOOLEAN DEFAULT FALSE,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    create_by VARCHAR(100),
-    last_modified_at DATETIME ON UPDATE CURRENT_TIMESTAMP,
-    last_modified_by VARCHAR(100),
-    deleted_at DATETIME
-);
-
--- Merchant Info Table
-CREATE TABLE merchant_info (
-    merchant_id VARCHAR(50) PRIMARY KEY,
-    account_id BIGINT,
-    merchant_name VARCHAR(100) NOT NULL,
-    merchant_bank VARCHAR(100),
-    merchant_code VARCHAR(50),
-    merchant_phone_num VARCHAR(20),
-    merchant_address VARCHAR(255),
-    merchant_contact_person VARCHAR(100),
-    merchant_status VARCHAR(20),
-    profile_photo_url VARCHAR(255),
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    create_by VARCHAR(100),
-    last_modified_at DATETIME ON UPDATE CURRENT_TIMESTAMP,
-    last_modified_by VARCHAR(100),
-    deleted_at DATETIME,
-    FOREIGN KEY (account_id) REFERENCES merchant_bank_acc(account_id)
 );
 
 -- Merchant Key Table

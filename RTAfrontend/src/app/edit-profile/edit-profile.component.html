@@ -7,6 +7,7 @@
       <li routerLink="/incoming-batch" routerLinkActive="active"><b>Incoming Batch File</b></li>
       <li routerLink="/profile" routerLinkActive="active">View Profile</li>
       <li routerLink="/users" routerLinkActive="active"><b>User Management</b></li>
+      <li routerLink="/merchant-maintenance" routerLinkActive="active"><b>Merchant Maintenance</b></li>
     </ul>
   </aside>
 
@@ -40,7 +41,7 @@
           <div class="form-row">
             <div class="form-group">
               <label class="form-label" for="userId">User ID</label>
-              <input type="text" id="userId" class="form-input readonly-input" [value]="editData.merchantId" readonly />
+              <input type="text" id="userId" class="form-input readonly-input" [value]="editData.userId" readonly />
               <small class="readonly-hint">User ID cannot be changed</small>
             </div>
           </div>

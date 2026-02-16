@@ -37,15 +37,17 @@ public class MerchantController {
         try {
             MerchantInfo merchantInfo = new MerchantInfo();
             merchantInfo.setMerchantId(payload.get("merchantId"));
-            merchantInfo.setMerchantName(payload.get("merchantName"));
-            merchantInfo.setMerchantBank(payload.get("merchantBank"));
-            merchantInfo.setMerchantCode(payload.get("merchantCode"));
-            merchantInfo.setMerchantPhoneNum(payload.get("merchantPhoneNum"));
-            merchantInfo.setMerchantAddress(payload.get("merchantAddress"));
-            merchantInfo.setMerchantContactPerson(payload.get("merchantContactPerson"));
+            merchantInfo.setName(payload.get("name"));
+            merchantInfo.setEmail(payload.get("email"));
+            merchantInfo.setUsername(payload.get("username"));
+            merchantInfo.setPassword(payload.get("password"));
+            merchantInfo.setCompany(payload.get("company"));
+            merchantInfo.setContact(payload.get("contact"));
+            merchantInfo.setPhone(payload.get("phone"));
+            merchantInfo.setAddress(payload.get("address"));
 
             String merchantAccNum = payload.getOrDefault("merchantAccNum", "ACC-" + payload.get("merchantId") + "-001");
-            String merchantAccName = payload.getOrDefault("merchantAccName", payload.get("merchantName"));
+            String merchantAccName = payload.getOrDefault("merchantAccName", payload.get("name"));
             String txnCurrency = payload.getOrDefault("transactionCurrency", "MYR");
             String settleCurrency = payload.getOrDefault("settlementCurrency", "MYR");
             String createdBy = payload.getOrDefault("createdBy", "system");

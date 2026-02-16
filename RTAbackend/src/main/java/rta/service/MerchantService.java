@@ -43,6 +43,11 @@ public class MerchantService {
             throw new RuntimeException("Merchant ID already exists: " + merchantInfo.getMerchantId());
         }
 
+        // Validate username uniqueness
+        if (merchantInfoRepository.findByUsername(merchantInfo.getUsername()).isPresent()) {
+            throw new RuntimeException("Username already exists: " + merchantInfo.getUsername());
+        }
+
         // 1. Create the bank account
         MerchantBankAcc bankAcc = new MerchantBankAcc();
         bankAcc.setMerchantAccNum(merchantAccNum);
@@ -52,27 +57,26 @@ public class MerchantService {
         bankAcc.setIsDefault(true);
         bankAcc.setCreatedAt(LocalDateTime.now());
         bankAcc.setCreateBy(createdBy);
-        MerchantBankAcc savedAcc = merchantBankAccRepository.save(bankAcc);
+        merchantBankAccRepository.save(bankAcc);
 
-        // 2. Create merchant_info linked to the bank account
-        merchantInfo.setAccountId(savedAcc.getAccountId());
+        // 2. Create merchant_info (link to the bank account)
+        merchantInfo.setAccountId(bankAcc.getAccountId());
+        merchantInfo.setJoinedOn(LocalDateTime.now());
         merchantInfo.setCreatedAt(LocalDateTime.now());
         merchantInfo.setCreateBy(createdBy);
-        if (merchantInfo.getMerchantStatus() == null) {
-            merchantInfo.setMerchantStatus("ACTIVE");
-        }
+        merchantInfo.setIsTwoFactorEnabled(false);
         MerchantInfo savedMerchant = merchantInfoRepository.save(merchantInfo);
 
         // 3. Publish Kafka event for sub-systems
         MerchantCreatedEvent event = MerchantCreatedEvent.builder()
                 .merchantId(savedMerchant.getMerchantId())
-                .merchantName(savedMerchant.getMerchantName())
-                .merchantBank(savedMerchant.getMerchantBank())
-                .merchantCode(savedMerchant.getMerchantCode())
-                .merchantPhoneNum(savedMerchant.getMerchantPhoneNum())
-                .merchantAddress(savedMerchant.getMerchantAddress())
-                .merchantContactPerson(savedMerchant.getMerchantContactPerson())
-                .merchantStatus(savedMerchant.getMerchantStatus())
+                .name(savedMerchant.getName())
+                .email(savedMerchant.getEmail())
+                .username(savedMerchant.getUsername())
+                .company(savedMerchant.getCompany())
+                .contact(savedMerchant.getContact())
+                .phone(savedMerchant.getPhone())
+                .address(savedMerchant.getAddress())
                 .createdBy(createdBy)
                 .createdAt(savedMerchant.getCreatedAt().toString())
                 .merchantAccNum(merchantAccNum)

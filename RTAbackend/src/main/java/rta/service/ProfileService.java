@@ -109,20 +109,20 @@ public class ProfileService {
     }
 
     /**
-     * Fetch profile by merchantId. - Throws if not found.
+     * Fetch profile by userId. - Throws if not found.
      */
-    public UserProfile getProfile(String merchantId) {
-        return profileRepository.findByMerchantId(merchantId)
-                .orElseThrow(() -> new RuntimeException("User profile not found: " + merchantId));
+    public UserProfile getProfile(String userId) {
+        return profileRepository.findByUserId(userId)
+                .orElseThrow(() -> new RuntimeException("User profile not found: " + userId));
     }
 
     /**
      * Update mutable profile fields. - Copies selected fields from newProfile
      * to existing record.
      */
-    public UserProfile updateProfile(String merchantId, UserProfile newProfile) {
-        UserProfile existing = profileRepository.findByMerchantId(merchantId)
-                .orElseThrow(() -> new RuntimeException("User profile not found: " + merchantId));
+    public UserProfile updateProfile(String userId, UserProfile newProfile) {
+        UserProfile existing = profileRepository.findByUserId(userId)
+                .orElseThrow(() -> new RuntimeException("User profile not found: " + userId));
 
         existing.setName(newProfile.getName());
         existing.setEmail(newProfile.getEmail());
@@ -140,8 +140,8 @@ public class ProfileService {
      * under "uploads/profile-photos" (relative to app working dir). - Stores
      * "/uploads/profile-photos/{uuid.ext}" as profilePhotoUrl.
      */
-    public UserProfile uploadProfilePhoto(String merchantId, MultipartFile file) {
-        UserProfile profile = getProfile(merchantId);
+    public UserProfile uploadProfilePhoto(String userId, MultipartFile file) {
+        UserProfile profile = getProfile(userId);
 
         if (file.isEmpty()) {
             throw new RuntimeException("Failed to store empty file.");
@@ -180,7 +180,7 @@ public class ProfileService {
         if (profileRepository.findByUsername(user.getUsername()).isPresent()) {
             throw new RuntimeException("Username already exists");
         }
-        if (profileRepository.findByMerchantId(user.getMerchantId()).isPresent()) {
+        if (profileRepository.findByUserId(user.getUserId()).isPresent()) {
             throw new RuntimeException("User ID already exists");
         }
 
@@ -222,8 +222,7 @@ public class ProfileService {
     }
 
     /**
-     * Search users by keyword (matches username, name, email, merchantId,
-     * company).
+     * Search users by keyword (matches username, name, email, userId, company).
      */
     public List<UserProfile> searchUsers(String keyword) {
         if (keyword == null || keyword.trim().isEmpty()) {
