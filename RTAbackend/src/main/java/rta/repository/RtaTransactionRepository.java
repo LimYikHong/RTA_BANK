@@ -20,4 +20,16 @@ public interface RtaTransactionRepository extends JpaRepository<RtaTransaction, 
 
     @Query("SELECT COALESCE(SUM(t.amount), 0) FROM RtaTransaction t WHERE t.batch.batchId = :batchId AND t.status = 'SUCCESS'")
     long sumAmountByBatchIdAndStatusSuccess(Long batchId);
+
+    // Recurring transaction queries
+    @Query("SELECT DISTINCT t.recurringReference, t.merchantId FROM RtaTransaction t WHERE t.recurringReference IS NOT NULL AND t.recurringReference <> ''")
+    List<Object[]> findDistinctRecurringReferences();
+
+    List<RtaTransaction> findByRecurringReferenceOrderByCreatedAtDesc(String recurringReference);
+
+    @Query("SELECT COUNT(t) FROM RtaTransaction t WHERE t.recurringReference = :recurringReference")
+    int countByRecurringReference(String recurringReference);
+
+    @Query("SELECT COUNT(t) FROM RtaTransaction t WHERE t.recurringReference = :recurringReference AND t.status = :status")
+    int countByRecurringReferenceAndStatus(String recurringReference, String status);
 }

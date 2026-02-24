@@ -5,6 +5,7 @@
     <ul>
       <li routerLink="/batch-list" routerLinkActive="active"><b>Upload Batch File</b></li>
       <li routerLink="/incoming-batch" routerLinkActive="active"><b>Incoming Batch File</b></li>
+      <li routerLink="/recurring-list" routerLinkActive="active"><b>Recurring Transactions</b></li>
       <li routerLink="/profile" routerLinkActive="active">View Profile</li>
       <li routerLink="/users" routerLinkActive="active"><b>User Management</b></li>
       <li routerLink="/merchant-maintenance" routerLinkActive="active"><b>Merchant Maintenance</b></li>
@@ -67,16 +68,23 @@
               <span *ngIf="file.totalRecordCount != null">
                 {{ file.totalRecordCount }}
                 <span class="record-detail" *ngIf="file.successCount != null">
-                  ({{ file.successCount }}✓ / {{ file.failCount || 0 }}✗)
+                  ({{ file.successCount }} / {{ file.totalRecordCount }})
                 </span>
               </span>
               <span *ngIf="file.totalRecordCount == null">-</span>
             </td>
             <td>{{ file.createBy || '-' }}</td>
             <td>{{ file.createdAt ? (file.createdAt | date: 'short') : '-' }}</td>
-            <td>
+            <td class="action-cell">
               <button class="btn btn-view" (click)="viewBatchDetail(file.batchId)">
                 View
+              </button>
+              <button 
+                *ngIf="file.fileStatus?.toUpperCase() === 'RECEIVED'"
+                class="btn btn-retry" 
+                (click)="retryValidation(file)"
+                [disabled]="retryingFileId === file.batchFileId">
+                {{ retryingFileId === file.batchFileId ? 'Retrying...' : 'Retry' }}
               </button>
             </td>
           </tr>
@@ -84,4 +92,20 @@
       </table>
     </div>
   </main>
+</div>
+
+<!-- Error Modal -->
+<div class="modal-overlay" *ngIf="showErrorModal" (click)="closeErrorModal()">
+  <div class="modal-content" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h3>{{ errorTitle }}</h3>
+      <button class="modal-close" (click)="closeErrorModal()">&times;</button>
+    </div>
+    <div class="modal-body">
+      <p>{{ errorMessage }}</p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-primary" (click)="closeErrorModal()">Close</button>
+    </div>
+  </div>
 </div>

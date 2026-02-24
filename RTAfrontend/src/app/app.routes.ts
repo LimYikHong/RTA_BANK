@@ -9,6 +9,8 @@ import { IncomingBatchComponent } from './incoming-batch/incoming-batch.componen
 import { BatchDetailComponent } from './batch-detail/batch-detail.component';
 import { UserManagementComponent } from './user-management/user-management.component';
 import { MerchantMaintenanceComponent } from './merchant-maintenance/merchant-maintenance.component';
+import { RecurringListComponent } from './recurring-list/recurring-list.component';
+import { RecurringDetailComponent } from './recurring-detail/recurring-detail.component';
 import { authGuard } from './services/auth.guard';
 
 export const routes: Routes = [
@@ -20,6 +22,8 @@ export const routes: Routes = [
   { path: 'edit-profile', component: EditProfileComponent, canActivate: [authGuard] },
   { path: 'users', component: UserManagementComponent, canActivate: [authGuard] },
   { path: 'merchant-maintenance', component: MerchantMaintenanceComponent, canActivate: [authGuard] },
+  { path: 'recurring-list', component: RecurringListComponent, canActivate: [authGuard] },
+  { path: 'recurring-detail/:recurringReference', component: RecurringDetailComponent, canActivate: [authGuard] },
   { path: 'add-user', component: AddUserComponent, canActivate: [authGuard] },
   { path: 'add-merchant', component: AddMerchantComponent, canActivate: [authGuard] },
   { path: '', redirectTo: '/login', pathMatch: 'full' },

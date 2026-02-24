@@ -55,6 +55,18 @@ public class RtaTransaction {
     @Column(name = "recurring_indicator")
     private String recurringIndicator;
 
+    @Column(name = "is_recurring")
+    private Boolean isRecurring;
+
+    @Column(name = "recurring_reference")
+    private String recurringReference;
+
+    @Column(name = "frequency_value")
+    private Integer frequencyValue;
+
+    @Column(name = "additional_data", columnDefinition = "JSON")
+    private String additionalData;
+
     @Column(name = "amount_cents")
     private Long amount;
 

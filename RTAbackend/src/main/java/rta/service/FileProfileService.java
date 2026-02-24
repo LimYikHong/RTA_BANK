@@ -22,33 +22,42 @@ public class FileProfileService {
 
     /**
      * Required canonical fields that every merchant file profile must include.
+     * Transaction fields first, then recurring-related fields at the bottom.
      */
     public static final List<String> REQUIRED_CANONICAL_FIELDS = List.of(
+            // Transaction fields
             "customer_reference",
             "account_num",
             "bank_code",
             "amount",
             "currency",
             "transaction_date",
+            "start_date",
+            // Recurring fields
+            "is_recurring",
             "recurring_type",
             "frequency_value",
-            "start_date"
+            "recurring_reference"
     );
 
     /**
      * Default data types for each required canonical field.
      */
-    private static final Map<String, String> DEFAULT_DATA_TYPES = Map.of(
-            "customer_reference", "STRING",
-            "account_num", "STRING",
-            "bank_code", "STRING",
-            "amount", "DECIMAL",
-            "currency", "STRING",
-            "transaction_date", "DATE",
-            "recurring_type", "STRING",
-            "frequency_value", "INTEGER",
-            "start_date", "DATE"
-    );
+    private static final Map<String, String> DEFAULT_DATA_TYPES = new java.util.HashMap<>(Map.ofEntries(
+            // Transaction fields
+            Map.entry("customer_reference", "STRING"),
+            Map.entry("account_num", "STRING"),
+            Map.entry("bank_code", "STRING"),
+            Map.entry("amount", "DECIMAL"),
+            Map.entry("currency", "STRING"),
+            Map.entry("transaction_date", "DATE"),
+            Map.entry("start_date", "DATE"),
+            // Recurring fields
+            Map.entry("is_recurring", "BOOLEAN"),
+            Map.entry("recurring_type", "STRING"),
+            Map.entry("frequency_value", "INTEGER"),
+            Map.entry("recurring_reference", "STRING")
+    ));
 
     /**
      * Create a default file profile with the 9 required field mappings for a
@@ -300,6 +309,18 @@ public class FileProfileService {
                                             + mapping.getCanonicalField() + "': " + value
                                             + " (expected format: " + profile.getDateFormat() + ")");
                                 }
+                            }
+                            break;
+                        case "BOOLEAN":
+                            // Accept: true, false, 1, 0, yes, no, y, n (case-insensitive)
+                            String boolVal = value.toLowerCase();
+                            if (!boolVal.equals("true") && !boolVal.equals("false")
+                                    && !boolVal.equals("1") && !boolVal.equals("0")
+                                    && !boolVal.equals("yes") && !boolVal.equals("no")
+                                    && !boolVal.equals("y") && !boolVal.equals("n")) {
+                                errors.add("Row " + (rowIdx + 1) + ": Invalid boolean for '"
+                                        + mapping.getCanonicalField() + "': " + value
+                                        + " (expected: true/false, 1/0, yes/no, y/n)");
                             }
                             break;
                     }

@@ -5,6 +5,7 @@
     <ul>
       <li routerLink="/batch-list" routerLinkActive="active"><b>Upload Batch File</b></li>
       <li routerLink="/incoming-batch" routerLinkActive="active"><b>Incoming Batch File</b></li>
+      <li routerLink="/recurring-list" routerLinkActive="active"><b>Recurring Transactions</b></li>
       <li routerLink="/profile" routerLinkActive="active">View Profile</li>
       <li routerLink="/users" routerLinkActive="active"><b>User Management</b></li>
       <li routerLink="/merchant-maintenance" routerLinkActive="active"><b>Merchant Maintenance</b></li>
@@ -176,7 +177,7 @@
 
           <!-- Field Mapping Table -->
           <div class="mapping-section">
-            <h4>Field Mapping</h4>
+            <h4>Field Mapping — Transaction Fields</h4>
             <p class="section-desc">Map each required field to the actual column name in your CSV file. The "CSV Column Name" must match your file header exactly.</p>
             <div class="mapping-table-wrapper">
               <table class="mapping-table">
@@ -192,7 +193,7 @@
                   </tr>
                 </thead>
                 <tbody>
-                  <!-- Required fields (locked) -->
+                  <!-- Required transaction fields (locked) -->
                   <tr *ngFor="let field of requiredFields; let i = index" class="required-row">
                     <td class="idx-col">{{ i + 1 }}</td>
                     <td class="canonical-col">
@@ -214,9 +215,73 @@
                     </td>
                     <td></td>
                   </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <!-- Recurring Fields Section -->
+            <h4 class="recurring-header">🔁 Recurring Information Fields</h4>
+            <p class="section-desc">These fields capture recurring payment details.</p>
+            <div class="mapping-table-wrapper">
+              <table class="mapping-table">
+                <thead>
+                  <tr>
+                    <th>#</th>
+                    <th>Field Name</th>
+                    <th>CSV Column Name</th>
+                    <th>Data Type</th>
+                    <th>Column Index</th>
+                    <th>Required</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <!-- Required recurring fields (locked) -->
+                  <tr *ngFor="let field of recurringFields; let k = index" class="required-row recurring-row">
+                    <td class="idx-col">{{ requiredFields.length + k + 1 }}</td>
+                    <td class="canonical-col">
+                      <span class="canonical-badge recurring-badge">{{ formatFieldName(field.canonicalField) }}</span>
+                    </td>
+                    <td>
+                      <input type="text" class="form-input compact-input csv-col-input" [(ngModel)]="field.sourceColumnName"
+                        [name]="'recSrcCol_' + k" placeholder="e.g. Is Recurring" required />
+                    </td>
+                    <td>
+                      <span class="type-badge">{{ field.dataType }}</span>
+                    </td>
+                    <td>
+                      <input type="number" class="form-input compact-input idx-input" [(ngModel)]="field.sourceColumnIdx"
+                        [name]="'recSrcIdx_' + k" min="0" required />
+                    </td>
+                    <td class="center-col">
+                      <span class="lock-icon" title="Required field — cannot be removed">🔒</span>
+                    </td>
+                    <td></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <!-- Custom Fields Section -->
+            <h4 class="custom-header">➕ Custom Fields (Optional)</h4>
+            <p class="section-desc">Add any additional fields your batch file may contain.</p>
+            <div class="mapping-table-wrapper" *ngIf="customFields.length > 0">
+              <table class="mapping-table">
+                <thead>
+                  <tr>
+                    <th>#</th>
+                    <th>Field Name</th>
+                    <th>CSV Column Name</th>
+                    <th>Data Type</th>
+                    <th>Column Index</th>
+                    <th>Required</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody>
                   <!-- Custom fields (user-added, removable) -->
                   <tr *ngFor="let field of customFields; let j = index" class="custom-row">
-                    <td class="idx-col">{{ requiredFields.length + j + 1 }}</td>
+                    <td class="idx-col">{{ requiredFields.length + recurringFields.length + j + 1 }}</td>
                     <td>
                       <input type="text" class="form-input compact-input" [(ngModel)]="field.canonicalField"
                         [name]="'customField_' + j" placeholder="Enter field name" required />
@@ -231,6 +296,7 @@
                         <option value="INTEGER">INTEGER</option>
                         <option value="DECIMAL">DECIMAL</option>
                         <option value="DATE">DATE</option>
+                        <option value="BOOLEAN">BOOLEAN</option>
                       </select>
                     </td>
                     <td>

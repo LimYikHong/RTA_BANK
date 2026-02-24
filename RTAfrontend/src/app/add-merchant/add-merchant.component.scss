@@ -411,6 +411,30 @@
   background-color: #fafbfc;
 }
 
+.recurring-row {
+  background-color: #f0fdf4;
+}
+
+.recurring-header {
+  margin-top: 24px;
+  margin-bottom: 8px;
+  color: #16a34a;
+  font-size: 15px;
+}
+
+.custom-header {
+  margin-top: 24px;
+  margin-bottom: 8px;
+  color: #d97706;
+  font-size: 15px;
+}
+
+.canonical-badge.recurring-badge {
+  background-color: #dcfce7;
+  color: #166534;
+  border-color: #86efac;
+}
+
 .custom-row {
   background-color: #fffbeb;
 }

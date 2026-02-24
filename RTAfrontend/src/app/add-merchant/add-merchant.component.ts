@@ -39,15 +39,22 @@ export class AddMerchantComponent implements OnInit {
 
   /** The 9 required canonical fields for file format */
   requiredFields: FieldMappingPayload[] = [
+    // Transaction fields
     { canonicalField: 'customer_reference', dataType: 'STRING', required: true, sourceColumnName: 'customer_reference', sourceColumnIdx: 0 },
     { canonicalField: 'account_num', dataType: 'STRING', required: true, sourceColumnName: 'account_num', sourceColumnIdx: 1 },
     { canonicalField: 'bank_code', dataType: 'STRING', required: true, sourceColumnName: 'bank_code', sourceColumnIdx: 2 },
     { canonicalField: 'amount', dataType: 'DECIMAL', required: true, sourceColumnName: 'amount', sourceColumnIdx: 3 },
     { canonicalField: 'currency', dataType: 'STRING', required: true, sourceColumnName: 'currency', sourceColumnIdx: 4 },
     { canonicalField: 'transaction_date', dataType: 'DATE', required: true, sourceColumnName: 'transaction_date', sourceColumnIdx: 5 },
-    { canonicalField: 'recurring_type', dataType: 'STRING', required: true, sourceColumnName: 'recurring_type', sourceColumnIdx: 6 },
-    { canonicalField: 'frequency_value', dataType: 'INTEGER', required: true, sourceColumnName: 'frequency_value', sourceColumnIdx: 7 },
-    { canonicalField: 'start_date', dataType: 'DATE', required: true, sourceColumnName: 'start_date', sourceColumnIdx: 8 }
+    { canonicalField: 'start_date', dataType: 'DATE', required: true, sourceColumnName: 'start_date', sourceColumnIdx: 6 }
+  ];
+
+  /** Recurring-related required fields (grouped separately) */
+  recurringFields: FieldMappingPayload[] = [
+    { canonicalField: 'is_recurring', dataType: 'BOOLEAN', required: true, sourceColumnName: 'is_recurring', sourceColumnIdx: 7 },
+    { canonicalField: 'recurring_type', dataType: 'STRING', required: true, sourceColumnName: 'recurring_type', sourceColumnIdx: 8 },
+    { canonicalField: 'frequency_value', dataType: 'INTEGER', required: true, sourceColumnName: 'frequency_value', sourceColumnIdx: 9 },
+    { canonicalField: 'recurring_reference', dataType: 'STRING', required: true, sourceColumnName: 'recurring_reference', sourceColumnIdx: 10 }
   ];
 
   /** User-added optional custom fields */
@@ -118,7 +125,7 @@ export class AddMerchantComponent implements OnInit {
   }
 
   addCustomField(): void {
-    const nextIdx = this.requiredFields.length + this.customFields.length;
+    const nextIdx = this.requiredFields.length + this.recurringFields.length + this.customFields.length;
     this.customFields.push({
       canonicalField: '',
       dataType: 'STRING',
@@ -136,10 +143,11 @@ export class AddMerchantComponent implements OnInit {
     this.isSubmitting = true;
     const currentUser = this.profileService.getProfile();
     this.merchant.createdBy = currentUser?.username || 'unknown';
-    // Merge required + custom fields, set sourceColumnName = canonicalField for custom
+    // Merge required + recurring + custom fields
     const allFields = [
       ...this.requiredFields,
-      ...this.customFields.map(f => ({ ...f, sourceColumnName: f.canonicalField }))
+      ...this.recurringFields,
+      ...this.customFields.map(f => ({ ...f, sourceColumnName: f.sourceColumnName || f.canonicalField }))
     ];
     this.merchant.fieldMappings = allFields;
 
