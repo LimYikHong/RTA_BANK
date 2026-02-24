@@ -25,8 +25,8 @@ export class ViewProfileComponent implements OnInit {
 
   ngOnInit(): void {
     const cached = this.profileService.getProfile();
-    if (cached && cached.merchantId) {
-      this.profileService.fetchProfile(cached.merchantId).subscribe({
+    if (cached && cached.userId) {
+      this.profileService.fetchProfile(cached.userId).subscribe({
         next: (data) => {
           this.profile = data;
         },
@@ -46,7 +46,7 @@ export class ViewProfileComponent implements OnInit {
   onFileSelected(event: any): void {
     const file = event.target.files[0];
     if (file && this.profile) {
-      this.profileService.uploadProfilePhoto(this.profile.merchantId, file).subscribe({
+      this.profileService.uploadProfilePhoto(this.profile.userId, file).subscribe({
         next: (res) => {
           this.profile = res;
           this.profileService.setProfile(res);

@@ -1,0 +1,139 @@
+<div class="page-container">
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <h2>RTA Upload</h2>
+    <ul>
+      <li routerLink="/batch-list" routerLinkActive="active"><b>Upload Batch File</b></li>
+      <li routerLink="/incoming-batch" routerLinkActive="active"><b>Incoming Batch File</b></li>
+      <li routerLink="/recurring-list" routerLinkActive="active"><b>Recurring Transactions</b></li>
+      <li routerLink="/profile" routerLinkActive="active">View Profile</li>
+      <li routerLink="/users" routerLinkActive="active"><b>User Management</b></li>
+      <li routerLink="/merchant-maintenance" routerLinkActive="active"><b>Merchant Maintenance</b></li>
+    </ul>
+  </aside>
+
+  <!-- Main Content -->
+  <button class="logout-btn" (click)="logout()">Logout</button>
+  <main class="main-content">
+    <!-- Header -->
+    <div class="page-header">
+      <button class="btn btn-back" (click)="goBack()"> < Back </button>
+      <h1>Batch File Details</h1>
+      <p class="subtitle" *ngIf="summary">{{ summary.fileName }} — Batch #{{ summary.batchId }}</p>
+    </div>
+
+    <!-- Loading -->
+    <div *ngIf="isLoading" class="loading-text">Loading batch details...</div>
+
+    <!-- Summary Section -->
+    <div *ngIf="!isLoading && summary" class="summary-section">
+      <div class="summary-header">
+        <h2>📊 Batch Summary</h2>
+        <span class="status-badge large" [ngClass]="getStatusClass(summary.status)">{{ summary.status }}</span>
+      </div>
+
+      <div class="summary-cards">
+        <div class="summary-card total">
+          <div class="card-icon">📄</div>
+          <div class="card-value">{{ summary.totalRecords }}</div>
+          <div class="card-label">Total Records</div>
+        </div>
+        <div class="summary-card success">
+          <div class="card-icon">✅</div>
+          <div class="card-value">{{ summary.successCount }}</div>
+          <div class="card-label">Successful</div>
+        </div>
+        <div class="summary-card failed">
+          <div class="card-icon">❌</div>
+          <div class="card-value">{{ summary.failCount }}</div>
+          <div class="card-label">Failed</div>
+        </div>
+        <div class="summary-card amount">
+          <div class="card-icon">💰</div>
+          <div class="card-value">{{ summary.totalAmount | number:'1.2-2' }}</div>
+          <div class="card-label">Total Amount (Success)</div>
+        </div>
+      </div>
+
+      <!-- Progress bar -->
+      <div class="progress-section" *ngIf="summary.totalRecords > 0">
+        <div class="progress-bar">
+          <div class="progress-fill success-fill" [style.width.%]="getSuccessRate()"></div>
+        </div>
+        <p class="progress-text">{{ getSuccessRate() }}% success rate</p>
+      </div>
+
+      <!-- Batch Info -->
+      <div class="batch-info">
+        <div class="info-row">
+          <span class="info-label">Merchant ID:</span>
+          <span class="info-value">{{ summary.merchantId }}</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Created By:</span>
+          <span class="info-value">{{ summary.createdBy }}</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Created At:</span>
+          <span class="info-value">{{ summary.createdAt | date:'medium' }}</span>
+        </div>
+      </div>
+
+      <!-- Validation Errors (header-level) -->
+      <div class="validation-errors" *ngIf="summary.validationRemark && summary.status === 'VALIDATION_FAILED'">
+        <h3>⚠️ Validation Errors</h3>
+        <pre class="error-details">{{ summary.validationRemark }}</pre>
+      </div>
+    </div>
+
+    <!-- Failed Transactions Section -->
+    <div *ngIf="!isLoading && summary" class="failed-section">
+      <h2>❌ Failed Transaction Records</h2>
+
+      <!-- Show different message based on status -->
+      <div *ngIf="summary.status === 'VALIDATION_FAILED' && failedTransactions.length === 0" class="error-state">
+        <p>⚠️ File structure validation failed — no transactions were processed.</p>
+        <p class="hint">Check the validation errors above for details about missing or incorrect columns.</p>
+      </div>
+
+      <div *ngIf="summary.status !== 'VALIDATION_FAILED' && failedTransactions.length === 0" class="empty-state">
+        <p>🎉 No failed transactions — all records passed validation!</p>
+      </div>
+
+      <div class="table-wrapper" *ngIf="failedTransactions.length > 0">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Row #</th>
+              <th>Customer Ref</th>
+              <th>Account</th>
+              <th>Bank Code</th>
+              <th>Amount</th>
+              <th>Currency</th>
+              <th>Txn Date</th>
+              <th>Recurring</th>
+              <th>Status</th>
+              <th>Error Details</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let txn of failedTransactions" class="failed-row">
+              <td>{{ txn.batchSeq }}</td>
+              <td>{{ txn.customerReference || '-' }}</td>
+              <td>{{ txn.accountNum || '-' }}</td>
+              <td>{{ txn.bankCode || '-' }}</td>
+              <td>{{ txn.amount != null ? (txn.amount | number:'1.2-2') : '-' }}</td>
+              <td>{{ txn.currency || '-' }}</td>
+              <td>{{ txn.transactionDate || '-' }}</td>
+              <td>{{ txn.recurringType || '-' }}</td>
+              <td>
+                <span class="status-badge" [ngClass]="getStatusClass(txn.status)">{{ txn.status }}</span>
+              </td>
+              <td class="error-cell">{{ txn.remark || '-' }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+</div>

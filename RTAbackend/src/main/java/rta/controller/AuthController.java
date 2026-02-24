@@ -12,7 +12,7 @@ import java.nio.charset.StandardCharsets;
 
 @RestController
 @RequestMapping("/api/auth")
-@CrossOrigin(origins = "http://localhost:4200")
+@CrossOrigin(origins = {"http://localhost:4200", "https://localhost:4200"})
 public class AuthController {
 
     private final ProfileService profileService;

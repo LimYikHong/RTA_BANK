@@ -1,0 +1,58 @@
+// Component-specific styles only
+// Global styles are inherited from _global-components.scss
+
+.search-section {
+  margin-bottom: 20px;
+
+  .search-box {
+    max-width: 400px;
+  }
+}
+
+.recurring-table {
+  width: 100%;
+  border-collapse: collapse;
+
+  th, td {
+    padding: 14px 16px;
+    text-align: left;
+    border-bottom: 1px solid #f1f5f9;
+  }
+
+  th {
+    background-color: #f8fafc;
+    font-weight: 600;
+    color: #475569;
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  td {
+    font-size: 14px;
+    color: #1e293b;
+  }
+
+  tbody tr:hover {
+    background-color: #f8fafc;
+  }
+
+  .recurring-ref {
+    font-family: 'Courier New', monospace;
+    font-weight: 500;
+    color: #1e2a38;
+  }
+
+  .count-cell {
+    text-align: center;
+    font-weight: 500;
+  }
+
+  .success-count {
+    color: #16a34a;
+  }
+
+  .failed-count {
+    color: #dc2626;
+  }
+}

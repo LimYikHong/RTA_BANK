@@ -7,7 +7,7 @@ import { Observable, catchError, of, tap, throwError } from 'rxjs';
  * Optional fields (username/password/photoUrl) support simple demo flows.
  */
 export interface UserProfile {
-  merchantId: string;
+  userId: string;
   name: string;
   email: string;
   company: string;
@@ -37,12 +37,44 @@ export interface UserListItem {
   username: string;
   name: string;
   email: string;
-  merchantId: string;
+  userId: string;
   company: string;
   phone: string;
   status: string;
   joinedOn: string;
   role: string;
+}
+
+export interface MerchantInfoPayload {
+  merchantId: string;
+  name: string;
+  email: string;
+  username: string;
+  password: string;
+  company: string;
+  contact: string;
+  phone: string;
+  address: string;
+  merchantAccNum: string;
+  merchantAccName: string;
+  transactionCurrency: string;
+  settlementCurrency: string;
+  createdBy: string;
+  fileType?: string;
+  fieldDelimiter?: string;
+  hasHeader?: boolean;
+  dateFormat?: string;
+  fieldMappings?: FieldMappingPayload[];
+}
+
+export interface FieldMappingPayload {
+  canonicalField: string;
+  dataType: string;
+  required: boolean;
+  sourceColumnName: string;
+  sourceColumnIdx: number;
+  validationRegex?: string;
+  defaultValue?: string;
 }
 
 @Injectable({
@@ -57,17 +89,19 @@ export interface UserListItem {
  */
 export class ProfileService {
   private apiUrl = 'https://localhost:8086/api/profile';
+  private merchantApiUrl = 'https://localhost:8086/api/merchants';
+  private fileProfileApiUrl = 'https://localhost:8086/api/file-profiles';
   private cachedProfile: UserProfile | null = null;
 
   constructor(private http: HttpClient) {}
   /**
-   * GET /api/profile/{merchantId}
+   * GET /api/profile/{userId}
    * - Fetches profile from server
    * - On success: cache + return
    * - On error: log and return an empty profile (keeps UI flowing)
    */
-  fetchProfile(merchantId: string): Observable<UserProfile> {
-    return this.http.get<UserProfile>(`${this.apiUrl}/${merchantId}`).pipe(
+  fetchProfile(userId: string): Observable<UserProfile> {
+    return this.http.get<UserProfile>(`${this.apiUrl}/${userId}`).pipe(
       tap((profile) => this.setProfile(profile)),
       catchError((err) => {
         console.error('Failed to fetch profile:', err);
@@ -77,18 +111,18 @@ export class ProfileService {
   }
 
   /**
-   * PUT /api/profile/{merchantId}
+   * PUT /api/profile/{userId}
    * - Sends updated profile to server
    * - On success: refresh cache + return updated profile
    * - On error: propagate error to the caller (form can show message)
    */
 
   updateProfile(
-    merchantId: string,
+    userId: string,
     updatedProfile: UserProfile
   ): Observable<UserProfile> {
     return this.http
-      .put<UserProfile>(`${this.apiUrl}/${merchantId}`, updatedProfile)
+      .put<UserProfile>(`${this.apiUrl}/${userId}`, updatedProfile)
       .pipe(
         tap((profile) => {
           this.setProfile(profile);
@@ -102,21 +136,21 @@ export class ProfileService {
   }
 
   /**
-   * POST /api/profile/{merchantId}/photo
+   * POST /api/profile/{userId}/photo
    * - Uploads a profile photo via multipart/form-data
    * - On success: cache refreshed profile returned by backend
    * - On error: propagate error to the caller
    */
 
   uploadProfilePhoto(
-    merchantId: string,
+    userId: string,
     file: File
   ): Observable<UserProfile> {
     const formData = new FormData();
     formData.append('profilePhoto', file);
 
     return this.http
-      .post<UserProfile>(`${this.apiUrl}/${merchantId}/photo`, formData)
+      .post<UserProfile>(`${this.apiUrl}/${userId}/photo`, formData)
       .pipe(
         tap((profile) => {
           this.setProfile(profile);
@@ -159,6 +193,26 @@ export class ProfileService {
     );
   }
 
+  createMerchant(payload: MerchantInfoPayload): Observable<any> {
+    return this.http.post<any>(`${this.merchantApiUrl}`, payload);
+  }
+
+  checkMerchantId(merchantId: string): Observable<{ exists: boolean }> {
+    return this.http.get<{ exists: boolean }>(`${this.merchantApiUrl}/check-id?merchantId=${encodeURIComponent(merchantId)}`);
+  }
+
+  checkMerchantUsername(username: string): Observable<{ exists: boolean }> {
+    return this.http.get<{ exists: boolean }>(`${this.merchantApiUrl}/check-username?username=${encodeURIComponent(username)}`);
+  }
+
+  getNextAdminId(): Observable<{ nextId: string }> {
+    return this.http.get<{ nextId: string }>(`${this.apiUrl}/next-admin-id`);
+  }
+
+  getNextMerchantId(): Observable<{ nextId: string }> {
+    return this.http.get<{ nextId: string }>(`${this.merchantApiUrl}/next-id`);
+  }
+
   setProfile(profile: UserProfile): void {
     this.cachedProfile = profile;
     localStorage.setItem('userProfile', JSON.stringify(profile));
@@ -186,7 +240,7 @@ export class ProfileService {
 
   private emptyProfile(): UserProfile {
     return {
-      merchantId: '',
+      userId: '',
       name: '',
       email: '',
       company: '',

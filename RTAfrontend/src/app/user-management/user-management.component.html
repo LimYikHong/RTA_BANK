@@ -5,8 +5,10 @@
         <ul>
             <li routerLink="/batch-list" routerLinkActive="active"><b>Upload Batch File</b></li>
             <li routerLink="/incoming-batch" routerLinkActive="active"><b>Incoming Batch File</b></li>
+            <li routerLink="/recurring-list" routerLinkActive="active"><b>Recurring Transactions</b></li>
             <li routerLink="/profile" routerLinkActive="active">View Profile</li>
             <li routerLink="/users" routerLinkActive="active"><b>User Management</b></li>
+            <li routerLink="/merchant-maintenance" routerLinkActive="active"><b>Merchant Maintenance</b></li>
         </ul>
     </aside>
 
@@ -30,7 +32,7 @@
                     placeholder="Search by name, username, email, ID, or company..." />
                 <button class="btn btn-search" (click)="onSearch()">Search</button>
                 <button class="btn btn-clear" *ngIf="searchKeyword" (click)="clearSearch()">Clear</button>
-                <button class="btn btn-add" routerLink="/add-user">Add User</button>
+                <button class="btn btn-add" (click)="addUser()">Add User</button>
             </div>
             <p class="result-count">Showing {{ filteredUsers.length }} user(s)</p>
         </div>
@@ -57,8 +59,8 @@
                     <tr *ngFor="let user of filteredUsers">
                         <td>{{ user.username }}</td>
                         <td>{{ user.name || '-' }}</td>
-                        <td>{{ user.email }}</td>
-                        <td>{{ user.merchantId || '-' }}</td>
+                        <td>{{ user.email || '-' }}</td>
+                        <td>{{ user.userId || '-' }}</td>
                         <td>{{ user.company || '-' }}</td>
                         <td>
                             <span class="role-badge" [ngClass]="getRoleBadgeClass(user.role)">

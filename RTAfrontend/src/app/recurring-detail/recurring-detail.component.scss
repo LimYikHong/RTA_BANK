@@ -1,0 +1,160 @@
+// Component-specific styles only
+// Global styles are inherited from _global-components.scss
+
+.summary-card {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+  margin-bottom: 25px;
+  overflow: hidden;
+
+  .summary-header {
+    background: #1e2a38;
+    padding: 15px 20px;
+
+    h3 {
+      color: white;
+      margin: 0;
+      font-size: 16px;
+    }
+  }
+
+  .summary-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+    padding: 20px;
+    border-bottom: 1px solid #eee;
+
+    .summary-item {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+
+      .label {
+        font-size: 12px;
+        color: #64748b;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+
+      .value {
+        font-size: 15px;
+        color: #1e293b;
+        font-weight: 500;
+
+        &.recurring-ref {
+          font-family: 'Courier New', monospace;
+          color: #1e2a38;
+        }
+      }
+    }
+  }
+
+  .stats-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0;
+
+    .stat-box {
+      padding: 20px;
+      text-align: center;
+      border-right: 1px solid #eee;
+
+      &:last-child {
+        border-right: none;
+      }
+
+      .stat-value {
+        display: block;
+        font-size: 24px;
+        font-weight: 600;
+        margin-bottom: 6px;
+      }
+
+      .stat-label {
+        font-size: 12px;
+        color: #64748b;
+        text-transform: uppercase;
+      }
+
+      &.total .stat-value {
+        color: #1e2a38;
+      }
+
+      &.success .stat-value {
+        color: #16a34a;
+      }
+
+      &.failed .stat-value {
+        color: #dc2626;
+      }
+
+      &.amount .stat-value {
+        color: #0284c7;
+        font-size: 20px;
+      }
+    }
+  }
+}
+
+.transactions-section {
+  h3 {
+    color: #1e293b;
+    font-size: 18px;
+    margin: 0 0 15px 0;
+  }
+}
+
+.transactions-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 1000px;
+
+  th, td {
+    padding: 12px 14px;
+    text-align: left;
+    border-bottom: 1px solid #f1f5f9;
+  }
+
+  th {
+    background-color: #f8fafc;
+    font-weight: 600;
+    color: #475569;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    white-space: nowrap;
+  }
+
+  td {
+    font-size: 13px;
+    color: #1e293b;
+  }
+
+  tbody tr:hover {
+    background-color: #f8fafc;
+  }
+
+  .txn-id {
+    font-family: 'Courier New', monospace;
+    color: #64748b;
+  }
+
+  .masked-pan {
+    font-family: 'Courier New', monospace;
+  }
+
+  .amount-cell {
+    font-weight: 500;
+    white-space: nowrap;
+  }
+
+  .remark-cell {
+    max-width: 200px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: #dc2626;
+  }
+}

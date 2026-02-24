@@ -1,0 +1,124 @@
+<div class="page-container">
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <h2>RTA Upload</h2>
+    <ul>
+      <li routerLink="/batch-list" routerLinkActive="active"><b>Upload Batch File</b></li>
+      <li routerLink="/incoming-batch" routerLinkActive="active"><b>Incoming Batch File</b></li>
+      <li routerLink="/recurring-list" routerLinkActive="active"><b>Recurring Transactions</b></li>
+      <li routerLink="/profile" routerLinkActive="active">View Profile</li>
+      <li routerLink="/users" routerLinkActive="active"><b>User Management</b></li>
+      <li routerLink="/merchant-maintenance" routerLinkActive="active"><b>Merchant Maintenance</b></li>
+    </ul>
+  </aside>
+
+  <!-- Main Content -->
+  <main class="main-content">
+    <div class="page-header">
+      <button class="btn-back" (click)="goBack()">← Back to List</button>
+      <h1>Recurring Transaction Details</h1>
+    </div>
+
+    <div class="loading" *ngIf="isLoading">
+      <p>Loading details...</p>
+    </div>
+
+    <div class="error" *ngIf="errorMessage && !isLoading">
+      <p>{{ errorMessage }}</p>
+    </div>
+
+    <div class="detail-content" *ngIf="detail && !isLoading">
+    <!-- Summary Card -->
+    <div class="summary-card">
+      <div class="summary-header">
+        <h3>Reference Summary</h3>
+      </div>
+      <div class="summary-grid">
+        <div class="summary-item">
+          <span class="label">Recurring Reference</span>
+          <span class="value recurring-ref">{{ detail.recurringReference }}</span>
+        </div>
+        <div class="summary-item">
+          <span class="label">Merchant ID</span>
+          <span class="value">{{ detail.merchantId }}</span>
+        </div>
+        <div class="summary-item">
+          <span class="label">Customer</span>
+          <span class="value">{{ detail.merchantCustomer || '-' }}</span>
+        </div>
+        <div class="summary-item">
+          <span class="label">Recurring Type</span>
+          <span class="value">{{ detail.recurringIndicator || '-' }}</span>
+        </div>
+        <div class="summary-item">
+          <span class="label">Frequency Value</span>
+          <span class="value">{{ detail.frequencyValue || '-' }}</span>
+        </div>
+        <div class="summary-item">
+          <span class="label">Is Recurring</span>
+          <span class="value">{{ detail.isRecurring ? 'Yes' : 'No' }}</span>
+        </div>
+      </div>
+      <div class="stats-row">
+        <div class="stat-box total">
+          <span class="stat-value">{{ detail.totalTransactions }}</span>
+          <span class="stat-label">Total Transactions</span>
+        </div>
+        <div class="stat-box success">
+          <span class="stat-value">{{ detail.successCount }}</span>
+          <span class="stat-label">Success</span>
+        </div>
+        <div class="stat-box failed">
+          <span class="stat-value">{{ detail.failedCount }}</span>
+          <span class="stat-label">Failed</span>
+        </div>
+        <div class="stat-box amount">
+          <span class="stat-value">{{ formatAmount(detail.totalAmountCents, 'MYR') }}</span>
+          <span class="stat-label">Total Amount</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Transactions Table -->
+    <div class="transactions-section">
+      <h3>Transaction History</h3>
+      <div class="table-container">
+        <table class="transactions-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Transaction ID</th>
+              <th>Batch ID</th>
+              <th>Customer</th>
+              <th>Account</th>
+              <th>Amount</th>
+              <th>Billing Date</th>
+              <th>Status</th>
+              <th>Remark</th>
+              <th>Created At</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let txn of detail.transactions; let i = index">
+              <td>{{ i + 1 }}</td>
+              <td class="txn-id">{{ txn.transactionId }}</td>
+              <td>{{ txn.batchId || '-' }}</td>
+              <td>{{ txn.merchantCustomer || '-' }}</td>
+              <td class="masked-pan">{{ txn.maskedPan || '-' }}</td>
+              <td class="amount-cell">{{ formatAmount(txn.amount, txn.currency) }}</td>
+              <td>{{ formatDate(txn.actualBillingDate) }}</td>
+              <td>
+                <span class="status-badge" [ngClass]="getStatusClass(txn.status)">
+                  {{ txn.status }}
+                </span>
+              </td>
+              <td class="remark-cell" [title]="txn.remark || ''">{{ txn.remark || '-' }}</td>
+              <td>{{ formatDateTime(txn.createdAt) }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  </main>
+</div>

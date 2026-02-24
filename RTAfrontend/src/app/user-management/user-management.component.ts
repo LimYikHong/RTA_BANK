@@ -1,9 +1,10 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterModule, Router } from '@angular/router';
+import { RouterModule, Router, NavigationEnd } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { ProfileService, UserListItem } from '../services/profile.service';
 import { AuthService } from '../services/auth.service';
+import { Subscription, filter } from 'rxjs';
 
 @Component({
   selector: 'app-user-management',
@@ -12,11 +13,12 @@ import { AuthService } from '../services/auth.service';
   templateUrl: './user-management.component.html',
   styleUrl: './user-management.component.scss'
 })
-export class UserManagementComponent implements OnInit {
+export class UserManagementComponent implements OnInit, OnDestroy {
   users: UserListItem[] = [];
   filteredUsers: UserListItem[] = [];
   searchKeyword: string = '';
   isLoading: boolean = false;
+  private routerSub!: Subscription;
 
   constructor(
     private profileService: ProfileService,
@@ -26,6 +28,20 @@ export class UserManagementComponent implements OnInit {
 
   ngOnInit(): void {
     this.loadUsers();
+
+    // Auto-refresh when navigating back to this page (e.g. after creating a user)
+    this.routerSub = this.router.events.pipe(
+      filter((event): event is NavigationEnd => event instanceof NavigationEnd),
+      filter(event => event.urlAfterRedirects === '/users')
+    ).subscribe(() => {
+      this.loadUsers();
+    });
+  }
+
+  ngOnDestroy(): void {
+    if (this.routerSub) {
+      this.routerSub.unsubscribe();
+    }
   }
 
   loadUsers(): void {
@@ -46,7 +62,7 @@ export class UserManagementComponent implements OnInit {
   onSearch(): void {
     const keyword = this.searchKeyword.trim();
     if (!keyword) {
-      this.filteredUsers = this.users;
+      this.loadUsers();
       return;
     }
     this.profileService.searchUsers(keyword).subscribe({
@@ -80,6 +96,10 @@ export class UserManagementComponent implements OnInit {
       case 'MERCHANT': return 'role-merchant';
       default: return 'role-default';
     }
+  }
+
+  addUser(): void {
+    this.router.navigate(['/add-user']);
   }
 
   logout(): void {

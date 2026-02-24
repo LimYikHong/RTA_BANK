@@ -14,7 +14,7 @@ import { AuthService } from '../services/auth.service';
 })
 export class EditProfileComponent implements OnInit {
   editData: UserProfile = {
-    merchantId: '',
+    userId: '',
     name: '',
     email: '',
     company: '',
@@ -39,8 +39,8 @@ export class EditProfileComponent implements OnInit {
     if (cached) {
       this.editData = { ...cached };
       // Also fetch fresh data from backend
-      if (cached.merchantId) {
-        this.profileService.fetchProfile(cached.merchantId).subscribe({
+      if (cached.userId) {
+        this.profileService.fetchProfile(cached.userId).subscribe({
           next: (data) => {
             this.editData = { ...data };
           },
@@ -56,10 +56,10 @@ export class EditProfileComponent implements OnInit {
   }
 
   saveProfile(): void {
-    if (!this.editData.merchantId) return;
+    if (!this.editData.userId) return;
     this.isSubmitting = true;
 
-    this.profileService.updateProfile(this.editData.merchantId, this.editData).subscribe({
+    this.profileService.updateProfile(this.editData.userId, this.editData).subscribe({
       next: (res) => {
         this.isSubmitting = false;
         this.profileService.setProfile(res);

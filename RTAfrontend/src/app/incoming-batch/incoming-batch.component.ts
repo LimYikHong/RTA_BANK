@@ -36,6 +36,14 @@ export class IncomingBatchComponent implements OnInit {
   filteredFiles: IncomingBatchFile[] = [];
   searchTerm = '';
   isLoading = true;
+  
+  // Retry validation
+  retryingFileId: number | null = null;
+  
+  // Error modal
+  showErrorModal = false;
+  errorTitle = '';
+  errorMessage = '';
 
   constructor(
     private http: HttpClient,
@@ -80,6 +88,10 @@ export class IncomingBatchComponent implements OnInit {
     switch (status?.toUpperCase()) {
       case 'RECEIVED': return 'status-received';
       case 'PROCESSING': return 'status-processing';
+      case 'VALIDATED': return 'status-validated';
+      case 'PARTIAL': return 'status-partial';
+      case 'VALIDATION_FAILED': return 'status-failed';
+      case 'VALIDATION_ERROR': return 'status-error';
       case 'COMPLETED': return 'status-completed';
       case 'FAILED': return 'status-failed';
       default: return '';
@@ -91,6 +103,40 @@ export class IncomingBatchComponent implements OnInit {
     if (bytes < 1024) return bytes + ' B';
     if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
     return (bytes / (1024 * 1024)).toFixed(2) + ' MB';
+  }
+
+  viewBatchDetail(batchId: number): void {
+    this.router.navigate(['/batch-detail', batchId]);
+  }
+
+  retryValidation(file: IncomingBatchFile): void {
+    if (this.retryingFileId) return; // Prevent multiple clicks
+    
+    this.retryingFileId = file.batchFileId;
+    
+    this.http.post<any>(`${this.apiUrl}/retry-validation/${file.batchFileId}`, {}).subscribe({
+      next: (response) => {
+        this.retryingFileId = null;
+        // Reload the files to see updated status
+        this.loadIncomingFiles();
+      },
+      error: (err) => {
+        this.retryingFileId = null;
+        console.error('Retry validation failed:', err);
+        
+        // Show error modal
+        const errorData = err.error || {};
+        this.errorTitle = errorData.error || 'Validation Failed';
+        this.errorMessage = errorData.detail || err.message || 'An unexpected error occurred during validation retry.';
+        this.showErrorModal = true;
+      }
+    });
+  }
+
+  closeErrorModal(): void {
+    this.showErrorModal = false;
+    this.errorTitle = '';
+    this.errorMessage = '';
   }
 
   logout(): void {
