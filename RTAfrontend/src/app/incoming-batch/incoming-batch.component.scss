@@ -209,14 +209,41 @@
   color: #d97706;
 }
 
-.status-completed {
+.status-completed,
+.status-validated {
   background-color: #dcfce7;
   color: #16a34a;
+}
+
+.status-partial {
+  background-color: #fef3c7;
+  color: #d97706;
 }
 
 .status-failed {
   background-color: #fee2e2;
   color: #dc2626;
+}
+
+.status-error {
+  background-color: #fce7f3;
+  color: #be185d;
+}
+
+.btn-view {
+  background-color: #3b82f6;
+  color: white;
+  padding: 5px 14px;
+  border: none;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.btn-view:hover {
+  background-color: #2563eb;
 }
 
 .record-detail {

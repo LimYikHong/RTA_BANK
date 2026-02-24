@@ -48,6 +48,7 @@
             <th>Records</th>
             <th>Created By</th>
             <th>Created At</th>
+            <th>Action</th>
           </tr>
         </thead>
         <tbody>
@@ -73,6 +74,11 @@
             </td>
             <td>{{ file.createBy || '-' }}</td>
             <td>{{ file.createdAt ? (file.createdAt | date: 'short') : '-' }}</td>
+            <td>
+              <button class="btn btn-view" (click)="viewBatchDetail(file.batchId)">
+                View
+              </button>
+            </td>
           </tr>
         </tbody>
       </table>

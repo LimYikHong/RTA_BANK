@@ -12,6 +12,7 @@ import rta.repository.MerchantInfoRepository;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 
 /**
  * MerchantService - Handles creation and management of merchant records. - On
@@ -25,6 +26,7 @@ public class MerchantService {
     private final MerchantInfoRepository merchantInfoRepository;
     private final MerchantBankAccRepository merchantBankAccRepository;
     private final MerchantKafkaProducer kafkaProducer;
+    private final FileProfileService fileProfileService;
 
     /**
      * Create a new merchant (merchant_bank_acc + merchant_info) and publish a
@@ -36,7 +38,12 @@ public class MerchantService {
             String merchantAccName,
             String transactionCurrency,
             String settlementCurrency,
-            String createdBy) {
+            String createdBy,
+            String fileType,
+            String fieldDelimiter,
+            Boolean hasHeader,
+            String dateFormat,
+            List<Map<String, Object>> fieldMappings) {
 
         // Validate merchantId uniqueness
         if (merchantInfoRepository.findByMerchantId(merchantInfo.getMerchantId()).isPresent()) {
@@ -87,6 +94,11 @@ public class MerchantService {
 
         kafkaProducer.sendMerchantCreatedEvent(event);
 
+        // 4. Create file profile with field mappings
+        fileProfileService.createDefaultFileProfile(
+                savedMerchant.getMerchantId(), createdBy,
+                fileType, fieldDelimiter, hasHeader, dateFormat, fieldMappings);
+
         log.info("Merchant created successfully: merchantId={}", savedMerchant.getMerchantId());
         return savedMerchant;
     }
@@ -103,6 +115,10 @@ public class MerchantService {
      */
     public boolean merchantIdExists(String merchantId) {
         return merchantInfoRepository.findByMerchantId(merchantId).isPresent();
+    }
+
+    public boolean usernameExists(String username) {
+        return merchantInfoRepository.findByUsername(username).isPresent();
     }
 
     /**

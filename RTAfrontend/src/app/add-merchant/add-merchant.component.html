@@ -44,7 +44,11 @@
             <div class="form-group">
               <label class="form-label" for="username">Username <span class="required">*</span></label>
               <input type="text" id="username" class="form-input" [(ngModel)]="merchant.username"
-                name="username" placeholder="Enter username" required />
+                name="username" placeholder="Enter username" required
+                (ngModelChange)="onUsernameChange()"
+                [class.input-error]="usernameExists" />
+              <span class="field-error" *ngIf="usernameExists">Username already exists</span>
+              <span class="field-info" *ngIf="isCheckingUsername">Checking availability...</span>
             </div>
             <div class="form-group">
               <label class="form-label" for="password">Password <span class="required">*</span></label>
@@ -127,11 +131,134 @@
           </div>
         </div>
 
+        <!-- File Format Configuration -->
+        <div class="form-section">
+          <h3>File Format Configuration</h3>
+          <p class="section-desc">Define the expected file format for incoming batch files from this merchant. All 9 fields below are required.</p>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label" for="fileType">File Type <span class="required">*</span></label>
+              <select id="fileType" class="form-input" [(ngModel)]="merchant.fileType" name="fileType" required>
+                <option value="CSV">CSV</option>
+                <option value="TXT">TXT</option>
+                <option value="XLSX">XLSX</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="fieldDelimiter">Field Delimiter <span class="required">*</span></label>
+              <select id="fieldDelimiter" class="form-input" [(ngModel)]="merchant.fieldDelimiter" name="fieldDelimiter" required>
+                <option value=",">Comma ( , )</option>
+                <option value="|">Pipe ( | )</option>
+                <option value="&#9;">Tab</option>
+                <option value=";">Semicolon ( ; )</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label" for="hasHeader">Has Header Row</label>
+              <select id="hasHeader" class="form-input" [(ngModel)]="merchant.hasHeader" name="hasHeader">
+                <option [ngValue]="true">Yes</option>
+                <option [ngValue]="false">No</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="dateFormat">Date Format <span class="required">*</span></label>
+              <select id="dateFormat" class="form-input" [(ngModel)]="merchant.dateFormat" name="dateFormat" required>
+                <option value="yyyy-MM-dd">yyyy-MM-dd</option>
+                <option value="dd/MM/yyyy">dd/MM/yyyy</option>
+                <option value="MM/dd/yyyy">MM/dd/yyyy</option>
+                <option value="dd-MM-yyyy">dd-MM-yyyy</option>
+                <option value="yyyyMMdd">yyyyMMdd</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Field Mapping Table -->
+          <div class="mapping-section">
+            <h4>Field Mapping</h4>
+            <p class="section-desc">Map each required field to the actual column name in your CSV file. The "CSV Column Name" must match your file header exactly.</p>
+            <div class="mapping-table-wrapper">
+              <table class="mapping-table">
+                <thead>
+                  <tr>
+                    <th>#</th>
+                    <th>Field Name</th>
+                    <th>CSV Column Name</th>
+                    <th>Data Type</th>
+                    <th>Column Index</th>
+                    <th>Required</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <!-- Required fields (locked) -->
+                  <tr *ngFor="let field of requiredFields; let i = index" class="required-row">
+                    <td class="idx-col">{{ i + 1 }}</td>
+                    <td class="canonical-col">
+                      <span class="canonical-badge">{{ formatFieldName(field.canonicalField) }}</span>
+                    </td>
+                    <td>
+                      <input type="text" class="form-input compact-input csv-col-input" [(ngModel)]="field.sourceColumnName"
+                        [name]="'srcCol_' + i" placeholder="e.g. Customer Reference" required />
+                    </td>
+                    <td>
+                      <span class="type-badge">{{ field.dataType }}</span>
+                    </td>
+                    <td>
+                      <input type="number" class="form-input compact-input idx-input" [(ngModel)]="field.sourceColumnIdx"
+                        [name]="'srcIdx_' + i" min="0" required />
+                    </td>
+                    <td class="center-col">
+                      <span class="lock-icon" title="Required field — cannot be removed">🔒</span>
+                    </td>
+                    <td></td>
+                  </tr>
+                  <!-- Custom fields (user-added, removable) -->
+                  <tr *ngFor="let field of customFields; let j = index" class="custom-row">
+                    <td class="idx-col">{{ requiredFields.length + j + 1 }}</td>
+                    <td>
+                      <input type="text" class="form-input compact-input" [(ngModel)]="field.canonicalField"
+                        [name]="'customField_' + j" placeholder="Enter field name" required />
+                    </td>
+                    <td>
+                      <input type="text" class="form-input compact-input csv-col-input" [(ngModel)]="field.sourceColumnName"
+                        [name]="'customSrcCol_' + j" placeholder="CSV column name" required />
+                    </td>
+                    <td>
+                      <select class="form-input compact-input" [(ngModel)]="field.dataType" [name]="'customType_' + j">
+                        <option value="STRING">STRING</option>
+                        <option value="INTEGER">INTEGER</option>
+                        <option value="DECIMAL">DECIMAL</option>
+                        <option value="DATE">DATE</option>
+                      </select>
+                    </td>
+                    <td>
+                      <input type="number" class="form-input compact-input idx-input" [(ngModel)]="field.sourceColumnIdx"
+                        [name]="'customIdx_' + j" min="0" required />
+                    </td>
+                    <td class="center-col">
+                      <span class="optional-label">Optional</span>
+                    </td>
+                    <td class="center-col">
+                      <button type="button" class="btn-remove" (click)="removeCustomField(j)" title="Remove this field">&times;</button>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <button type="button" class="btn btn-add-field" (click)="addCustomField()">
+              + Add Custom Column
+            </button>
+            <span class="field-info">Column Index is the 0-based position of the column in the file.</span>
+          </div>
+        </div>
+
         <!-- Form Actions -->
         <div class="form-actions">
           <button type="button" class="btn btn-cancel" (click)="cancel()">Cancel</button>
           <button type="submit" class="btn btn-submit"
-            [disabled]="isSubmitting || !addMerchantForm.valid || isLoadingId">
+            [disabled]="isSubmitting || !addMerchantForm.valid || isLoadingId || usernameExists || isCheckingUsername">
             {{ isSubmitting ? 'Creating...' : 'Create Merchant' }}
           </button>
         </div>

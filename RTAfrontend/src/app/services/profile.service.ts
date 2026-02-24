@@ -60,6 +60,21 @@ export interface MerchantInfoPayload {
   transactionCurrency: string;
   settlementCurrency: string;
   createdBy: string;
+  fileType?: string;
+  fieldDelimiter?: string;
+  hasHeader?: boolean;
+  dateFormat?: string;
+  fieldMappings?: FieldMappingPayload[];
+}
+
+export interface FieldMappingPayload {
+  canonicalField: string;
+  dataType: string;
+  required: boolean;
+  sourceColumnName: string;
+  sourceColumnIdx: number;
+  validationRegex?: string;
+  defaultValue?: string;
 }
 
 @Injectable({
@@ -75,6 +90,7 @@ export interface MerchantInfoPayload {
 export class ProfileService {
   private apiUrl = 'https://localhost:8086/api/profile';
   private merchantApiUrl = 'https://localhost:8086/api/merchants';
+  private fileProfileApiUrl = 'https://localhost:8086/api/file-profiles';
   private cachedProfile: UserProfile | null = null;
 
   constructor(private http: HttpClient) {}
@@ -183,6 +199,10 @@ export class ProfileService {
 
   checkMerchantId(merchantId: string): Observable<{ exists: boolean }> {
     return this.http.get<{ exists: boolean }>(`${this.merchantApiUrl}/check-id?merchantId=${encodeURIComponent(merchantId)}`);
+  }
+
+  checkMerchantUsername(username: string): Observable<{ exists: boolean }> {
+    return this.http.get<{ exists: boolean }>(`${this.merchantApiUrl}/check-username?username=${encodeURIComponent(username)}`);
   }
 
   getNextAdminId(): Observable<{ nextId: string }> {

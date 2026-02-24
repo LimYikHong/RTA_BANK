@@ -80,6 +80,10 @@ export class IncomingBatchComponent implements OnInit {
     switch (status?.toUpperCase()) {
       case 'RECEIVED': return 'status-received';
       case 'PROCESSING': return 'status-processing';
+      case 'VALIDATED': return 'status-validated';
+      case 'PARTIAL': return 'status-partial';
+      case 'VALIDATION_FAILED': return 'status-failed';
+      case 'VALIDATION_ERROR': return 'status-error';
       case 'COMPLETED': return 'status-completed';
       case 'FAILED': return 'status-failed';
       default: return '';
@@ -91,6 +95,10 @@ export class IncomingBatchComponent implements OnInit {
     if (bytes < 1024) return bytes + ' B';
     if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
     return (bytes / (1024 * 1024)).toFixed(2) + ' MB';
+  }
+
+  viewBatchDetail(batchId: number): void {
+    this.router.navigate(['/batch-detail', batchId]);
   }
 
   logout(): void {

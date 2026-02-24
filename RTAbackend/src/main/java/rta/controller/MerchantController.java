@@ -32,29 +32,47 @@ public class MerchantController {
      * "merchantAccName": "New Merchant", "transactionCurrency": "MYR",
      * "settlementCurrency": "MYR", "createdBy": "bank_admin" }
      */
+    @SuppressWarnings("unchecked")
     @PostMapping
-    public ResponseEntity<?> createMerchant(@RequestBody Map<String, String> payload) {
+    public ResponseEntity<?> createMerchant(@RequestBody Map<String, Object> payload) {
         try {
             MerchantInfo merchantInfo = new MerchantInfo();
-            merchantInfo.setMerchantId(payload.get("merchantId"));
-            merchantInfo.setName(payload.get("name"));
-            merchantInfo.setEmail(payload.get("email"));
-            merchantInfo.setUsername(payload.get("username"));
-            merchantInfo.setPassword(payload.get("password"));
-            merchantInfo.setCompany(payload.get("company"));
-            merchantInfo.setContact(payload.get("contact"));
-            merchantInfo.setPhone(payload.get("phone"));
-            merchantInfo.setAddress(payload.get("address"));
+            merchantInfo.setMerchantId((String) payload.get("merchantId"));
+            merchantInfo.setName((String) payload.get("name"));
+            merchantInfo.setEmail((String) payload.get("email"));
+            merchantInfo.setUsername((String) payload.get("username"));
+            merchantInfo.setPassword((String) payload.get("password"));
+            merchantInfo.setCompany((String) payload.get("company"));
+            merchantInfo.setContact((String) payload.get("contact"));
+            merchantInfo.setPhone((String) payload.get("phone"));
+            merchantInfo.setAddress((String) payload.get("address"));
 
-            String merchantAccNum = payload.getOrDefault("merchantAccNum", "ACC-" + payload.get("merchantId") + "-001");
-            String merchantAccName = payload.getOrDefault("merchantAccName", payload.get("name"));
-            String txnCurrency = payload.getOrDefault("transactionCurrency", "MYR");
-            String settleCurrency = payload.getOrDefault("settlementCurrency", "MYR");
-            String createdBy = payload.getOrDefault("createdBy", "system");
+            String merchantAccNum = payload.get("merchantAccNum") != null
+                    ? (String) payload.get("merchantAccNum")
+                    : "ACC-" + payload.get("merchantId") + "-001";
+            String merchantAccName = payload.get("merchantAccName") != null
+                    ? (String) payload.get("merchantAccName")
+                    : (String) payload.get("name");
+            String txnCurrency = payload.get("transactionCurrency") != null
+                    ? (String) payload.get("transactionCurrency") : "MYR";
+            String settleCurrency = payload.get("settlementCurrency") != null
+                    ? (String) payload.get("settlementCurrency") : "MYR";
+            String createdBy = payload.get("createdBy") != null
+                    ? (String) payload.get("createdBy") : "system";
+
+            // File profile parameters
+            String fileType = (String) payload.get("fileType");
+            String fieldDelimiter = (String) payload.get("fieldDelimiter");
+            Boolean hasHeader = payload.get("hasHeader") != null
+                    ? (Boolean) payload.get("hasHeader") : true;
+            String dateFormat = (String) payload.get("dateFormat");
+            List<Map<String, Object>> fieldMappings
+                    = (List<Map<String, Object>>) payload.get("fieldMappings");
 
             MerchantInfo created = merchantService.createMerchant(
                     merchantInfo, merchantAccNum, merchantAccName,
-                    txnCurrency, settleCurrency, createdBy);
+                    txnCurrency, settleCurrency, createdBy,
+                    fileType, fieldDelimiter, hasHeader, dateFormat, fieldMappings);
 
             return ResponseEntity.ok(created);
         } catch (RuntimeException e) {
@@ -78,6 +96,17 @@ public class MerchantController {
     public ResponseEntity<Map<String, Boolean>> checkMerchantId(@RequestParam String merchantId) {
         Map<String, Boolean> result = new HashMap<>();
         result.put("exists", merchantService.merchantIdExists(merchantId));
+        return ResponseEntity.ok(result);
+    }
+
+    /**
+     * GET /api/merchants/check-username?username= Checks if a username already
+     * exists in merchant_info.
+     */
+    @GetMapping("/check-username")
+    public ResponseEntity<Map<String, Boolean>> checkMerchantUsername(@RequestParam String username) {
+        Map<String, Boolean> result = new HashMap<>();
+        result.put("exists", merchantService.usernameExists(username));
         return ResponseEntity.ok(result);
     }
 
