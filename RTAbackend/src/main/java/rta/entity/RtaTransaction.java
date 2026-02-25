@@ -7,7 +7,10 @@ import java.time.LocalDateTime;
 import java.time.LocalDate;
 
 @Entity
-@Table(name = "rta_transaction")
+@Table(name = "rta_transaction", uniqueConstraints = {
+    @UniqueConstraint(name = "uk_transaction_unique",
+            columnNames = {"merchant_id", "merchant_customer", "amount_cents", "actual_billing_date"})
+})
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
