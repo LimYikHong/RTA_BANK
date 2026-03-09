@@ -211,48 +211,7 @@
   color: #be185d;
 }
 
-.action-cell {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-}
-
-.btn-view {
-  background-color: #3b82f6;
-  color: white;
-  padding: 5px 14px;
-  border: none;
-  border-radius: 6px;
-  font-size: 12px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background-color 0.2s;
-}
-
-.btn-view:hover {
-  background-color: #2563eb;
-}
-
-.btn-retry {
-  background-color: #f59e0b;
-  color: white;
-  padding: 5px 14px;
-  border: none;
-  border-radius: 6px;
-  font-size: 12px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background-color 0.2s;
-}
-
-.btn-retry:hover {
-  background-color: #d97706;
-}
-
-.btn-retry:disabled {
-  background-color: #9ca3af;
-  cursor: not-allowed;
-}
+/* action-cell, btn-action, btn-view, btn-retry use global _global-components.scss */
 
 .record-detail {
   font-size: 12px;

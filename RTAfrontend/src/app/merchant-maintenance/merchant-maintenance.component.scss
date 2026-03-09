@@ -278,74 +278,7 @@ tbody tr:hover {
   }
 }
 
-/* Action Buttons */
-.action-cell {
-  white-space: nowrap;
-  display: flex;
-  gap: 4px;
-  align-items: center;
-}
-
-.btn-action {
-  width: 32px;
-  height: 32px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border: 1px solid transparent;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: background-color 0.2s, transform 0.1s, box-shadow 0.2s;
-  padding: 0;
-
-  svg {
-    display: block;
-    flex-shrink: 0;
-  }
-
-  &:active {
-    transform: scale(0.92);
-  }
-}
-
-.btn-view {
-  background-color: #eff6ff;
-  color: #2563eb;
-  border-color: #bfdbfe;
-
-  &:hover {
-    background-color: #2563eb;
-    color: white;
-    border-color: #2563eb;
-    box-shadow: 0 2px 8px rgba(37, 99, 235, 0.35);
-  }
-}
-
-.btn-edit {
-  background-color: #fffbeb;
-  color: #d97706;
-  border-color: #fde68a;
-
-  &:hover {
-    background-color: #d97706;
-    color: white;
-    border-color: #d97706;
-    box-shadow: 0 2px 8px rgba(217, 119, 6, 0.35);
-  }
-}
-
-.btn-delete {
-  background-color: #fef2f2;
-  color: #dc2626;
-  border-color: #fecaca;
-
-  &:hover {
-    background-color: #dc2626;
-    color: white;
-    border-color: #dc2626;
-    box-shadow: 0 2px 8px rgba(220, 38, 38, 0.35);
-  }
-}
+/* Action buttons now use global .btn-action, .btn-view, .btn-edit, .btn-delete from _global-components.scss */
 
 /* Delete Confirmation Modal */
 .modal-overlay {

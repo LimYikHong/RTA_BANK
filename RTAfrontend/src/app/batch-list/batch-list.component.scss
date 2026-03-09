@@ -1,6 +1,6 @@
 // Page-container, sidebar, main-content, page-header, logout-btn,
-// data-table, toolbar, btn, btn-primary, btn-view, btn-danger
-// are all provided by _global-components.scss
+// data-table, toolbar, btn, btn-primary, action-cell, btn-action,
+// btn-view, btn-edit, btn-delete are all from _global-components.scss
 
 .user-info {
   display: flex;
@@ -44,14 +44,4 @@
       background-color: #e2e8f0;
     }
   }
-}
-
-.btn-sm {
-  padding: 5px 14px;
-  font-size: 12px;
-  margin-left: 6px;
-}
-
-.action-cell {
-  white-space: nowrap;
 }

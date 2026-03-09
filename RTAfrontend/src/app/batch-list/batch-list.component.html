@@ -17,7 +17,6 @@
   <main class="main-content">
     <div class="page-header">
       <h1>Upload Batch File</h1>
-      <p class="subtitle">Upload and manage your batch transaction files.</p>
     </div>
 
     <div class="user-info">
@@ -56,8 +55,8 @@
             <td>{{ batch.createdBy }}</td>
             <td>{{ batch.createdAt | date : 'short' }}</td>
             <td class="action-cell">
-              <button class="btn btn-view" (click)="viewBatch(batch.batchId!)">View</button>
-              <button class="btn btn-danger btn-sm" (click)="deleteBatch(batch.batchId!)">Delete</button>
+              <button class="btn-action btn-view" (click)="viewBatch(batch.batchId!)" title="View"></button>
+              <button class="btn-action btn-delete" (click)="deleteBatch(batch.batchId!)" title="Delete"></button>
             </td>
           </tr>
         </tbody>
