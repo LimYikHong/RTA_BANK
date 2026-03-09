@@ -14,6 +14,113 @@
 }
 
 // =============================================
+// SIDEBAR OPEN BUTTON — fixed top-left, visible only when drawer is CLOSED
+// =============================================
+.sidebar-open-btn {
+  position: fixed;
+  top: 18px;
+  left: 18px;
+  z-index: 300;
+  width: 40px;
+  height: 40px;
+  background: #1e2a38;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding: 0;
+  transition: background 0.2s;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.18);
+
+  &:hover {
+    background: #243447;
+  }
+
+  span {
+    display: block;
+    width: 22px;
+    height: 2px;
+    background: #e2e8f0;
+    border-radius: 2px;
+  }
+}
+
+// Hide open button when drawer is open
+.page-container.drawer-open .sidebar-open-btn,
+.profile-container.drawer-open .sidebar-open-btn {
+  display: none;
+}
+
+// =============================================
+// SIDEBAR CLOSE BUTTON — inside <aside>, top-left, visible only when drawer is OPEN
+// =============================================
+.sidebar-toggle {
+  position: absolute;
+  top: 14px;
+  left: 14px;
+  z-index: 201;
+  width: 32px;
+  height: 32px;
+  background: rgba(255,255,255,0.08);
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding: 0;
+  transition: background 0.2s;
+
+  &:hover {
+    background: rgba(255,255,255,0.18);
+  }
+
+  // Always shows X (close icon)
+  span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+  span:nth-child(2) { opacity: 0; }
+  span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+
+  span {
+    display: block;
+    width: 18px;
+    height: 2px;
+    background: #e2e8f0;
+    border-radius: 2px;
+  }
+}
+
+// =============================================
+// SIDEBAR OPEN TAB — remove old tab (replaced by sidebar-open-btn)
+// =============================================
+.sidebar-open-tab {
+  display: none;
+}
+
+// =============================================
+// DRAWER OPEN STATE — push content right
+// =============================================
+.page-container.drawer-open,
+.profile-container.drawer-open {
+  .main-content,
+  .profile-content {
+    margin-left: 220px;
+  }
+}
+
+// =============================================
+// SIDEBAR OVERLAY (backdrop) — mobile only
+// =============================================
+.sidebar-overlay {
+  display: none;
+}
+
+// =============================================
 // SIDEBAR NAVIGATION
 // =============================================
 .sidebar {
@@ -28,7 +135,15 @@
   position: fixed;
   top: 0;
   left: 0;
-  z-index: 100;
+  z-index: 200;
+  overflow: visible;        // allow toggle button to poke out to the right
+  transform: translateX(-220px);
+  transition: transform 0.3s ease;
+  box-shadow: 4px 0 16px rgba(0, 0, 0, 0.15);
+
+  &.open {
+    transform: translateX(0);
+  }
 
   h2 {
     font-size: 20px;
@@ -69,8 +184,9 @@
 // =============================================
 .main-content {
   flex: 1;
-  margin-left: 220px;
+  margin-left: 0;
   padding: 40px 60px;
+  transition: margin-left 0.3s ease;
 }
 
 // =============================================
@@ -494,11 +610,20 @@
 @media (max-width: 768px) {
   .main-content {
     padding: 20px;
-    margin-left: 0;
   }
 
-  .sidebar {
-    display: none;
+  .page-container.drawer-open,
+  .profile-container.drawer-open {
+    .main-content,
+    .profile-content {
+      margin-left: 0;
+    }
+    .logout-btn {
+      margin-left: 0;
+    }
+    .sidebar-toggle {
+      left: 238px;
+    }
   }
 
   .toolbar {
@@ -512,7 +637,6 @@
   .logout-btn {
     top: 10px;
     right: 10px;
-    padding: 6px 12px;
     font-size: 12px;
   }
 }

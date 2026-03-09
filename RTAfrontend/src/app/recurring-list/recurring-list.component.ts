@@ -20,6 +20,9 @@ interface RecurringItem {
   styleUrl: './recurring-list.component.scss'
 })
 export class RecurringListComponent implements OnInit {
+  drawerOpen = true;
+  toggleDrawer() { this.drawerOpen = !this.drawerOpen; }
+
   private apiUrl = 'https://localhost:8086/api/recurring';
 
   recurringItems: RecurringItem[] = [];

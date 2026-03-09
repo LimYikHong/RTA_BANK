@@ -29,6 +29,9 @@ export interface MerchantListItem {
   styleUrl: './merchant-maintenance.component.scss'
 })
 export class MerchantMaintenanceComponent implements OnInit, OnDestroy {
+  drawerOpen = true;
+  toggleDrawer() { this.drawerOpen = !this.drawerOpen; }
+
   merchants: MerchantListItem[] = [];
   filteredMerchants: MerchantListItem[] = [];
   searchKeyword: string = '';

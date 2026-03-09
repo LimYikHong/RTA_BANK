@@ -15,6 +15,9 @@ import { debounceTime, distinctUntilChanged, switchMap } from 'rxjs/operators';
   styleUrl: './add-merchant.component.scss'
 })
 export class AddMerchantComponent implements OnInit {
+  drawerOpen = true;
+  toggleDrawer() { this.drawerOpen = !this.drawerOpen; }
+
   merchant: MerchantInfoPayload = {
     merchantId: '',
     name: '',

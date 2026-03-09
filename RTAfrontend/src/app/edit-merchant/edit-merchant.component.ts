@@ -14,6 +14,9 @@ import { HttpClient } from '@angular/common/http';
   styleUrl: './edit-merchant.component.scss'
 })
 export class EditMerchantComponent implements OnInit {
+  drawerOpen = true;
+  toggleDrawer() { this.drawerOpen = !this.drawerOpen; }
+
   merchant: MerchantInfoPayload = {
     merchantId: '',
     name: '',

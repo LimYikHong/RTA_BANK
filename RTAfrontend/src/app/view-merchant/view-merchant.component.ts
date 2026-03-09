@@ -38,6 +38,9 @@ export interface ViewFieldMapping {
   styleUrl: './view-merchant.component.scss'
 })
 export class ViewMerchantComponent implements OnInit {
+  drawerOpen = true;
+  toggleDrawer() { this.drawerOpen = !this.drawerOpen; }
+
   merchant: MerchantViewData = {
     merchantId: '',
     name: '',

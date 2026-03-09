@@ -22,6 +22,9 @@ import { AuthService } from '../services/auth.service';
   styleUrl: './batch-list.component.scss'
 })
 export class BatchListComponent implements OnInit {
+  drawerOpen = true;
+  toggleDrawer() { this.drawerOpen = !this.drawerOpen; }
+
   batches: RtaBatch[] = [];
   // Holds the file chosen from the input
   selectedFile?: File;

@@ -13,6 +13,9 @@ import { AuthService } from '../services/auth.service';
   styleUrl: './edit-profile.component.scss'
 })
 export class EditProfileComponent implements OnInit {
+  drawerOpen = true;
+  toggleDrawer() { this.drawerOpen = !this.drawerOpen; }
+
   editData: UserProfile = {
     userId: '',
     name: '',

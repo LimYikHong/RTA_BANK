@@ -13,6 +13,9 @@ import { AuthService } from '../services/auth.service';
   styleUrl: './add-user.component.scss'
 })
 export class AddUserComponent implements OnInit {
+  drawerOpen = true;
+  toggleDrawer() { this.drawerOpen = !this.drawerOpen; }
+
   newUser: UserProfile = {
     userId: '',
     name: '',
