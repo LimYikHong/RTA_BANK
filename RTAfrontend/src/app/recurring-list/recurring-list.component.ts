@@ -2,7 +2,7 @@ import { Component, OnInit, HostListener, ElementRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 
 interface RecurringItem {
   recurringReference: string;
@@ -10,6 +10,14 @@ interface RecurringItem {
   totalTransactions: number;
   successCount: number;
   failedCount: number;
+}
+
+interface PagedResponse {
+  content: RecurringItem[];
+  totalElements: number;
+  totalPages: number;
+  currentPage: number;
+  pageSize: number;
 }
 
 @Component({
@@ -25,8 +33,6 @@ export class RecurringListComponent implements OnInit {
 
   private apiUrl = 'https://localhost:8086/api/recurring';
 
-  recurringItems: RecurringItem[] = [];
-  filteredItems: RecurringItem[] = [];
   pagedItems: RecurringItem[] = [];
   searchTerm = '';
   merchantIdInput = '';        // text shown in the combobox input
@@ -34,13 +40,17 @@ export class RecurringListComponent implements OnInit {
   showDropdown = false;        // controls combobox dropdown visibility
   isLoading = true;
 
-  // Pagination
-  currentPage = 1;
+  // Pagination (server-side)
+  currentPage = 1;             // 1-based for UI
   pageSize = 10;
   pageSizeOptions = [10, 25, 50, 100];
   totalPages = 1;
+  totalElements = 0;
 
-  // Merchant ID lists
+  // Debounce timer for search
+  private searchTimer: any;
+
+  // Merchant ID lists (loaded once from dedicated endpoint)
   merchantIds: string[] = [];          // full list from API
   filteredMerchantIds: string[] = [];  // subset shown in dropdown based on text input
 
@@ -59,51 +69,66 @@ export class RecurringListComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    this.loadRecurringList();
+    this.loadMerchantIds();
+    this.loadPage();
   }
 
-  loadRecurringList(): void {
-    this.isLoading = true;
-    this.http.get<RecurringItem[]>(`${this.apiUrl}/list`).subscribe({
-      next: (data) => {
-        this.recurringItems = data;
-        // Extract unique merchant IDs for the filter dropdown
-        this.merchantIds = [...new Set(data.map(item => item.merchantId))].sort();
+  /** Load merchant IDs for filter dropdown (one-time call) */
+  loadMerchantIds(): void {
+    this.http.get<string[]>(`${this.apiUrl}/merchant-ids`).subscribe({
+      next: (ids) => {
+        this.merchantIds = ids;
         this.filteredMerchantIds = [...this.merchantIds];
-        this.applyFilters();
+      },
+      error: (err) => console.error('Failed to load merchant IDs:', err)
+    });
+  }
+
+  /** Load one page of data from the server */
+  loadPage(): void {
+    this.isLoading = true;
+
+    let params = new HttpParams()
+      .set('page', (this.currentPage - 1).toString())   // API is 0-based
+      .set('size', this.pageSize.toString());
+
+    if (this.searchTerm.trim()) {
+      params = params.set('search', this.searchTerm.trim());
+    }
+    if (this.merchantSelectedId) {
+      params = params.set('merchantId', this.merchantSelectedId);
+    }
+
+    this.http.get<PagedResponse>(`${this.apiUrl}/list`, { params }).subscribe({
+      next: (data) => {
+        this.pagedItems = data.content;
+        this.totalElements = data.totalElements;
+        this.totalPages = Math.max(1, data.totalPages);
+        this.currentPage = data.currentPage + 1;  // convert 0-based → 1-based
         this.isLoading = false;
       },
       error: (err) => {
         console.error('Failed to load recurring transactions:', err);
+        this.pagedItems = [];
+        this.totalElements = 0;
+        this.totalPages = 1;
         this.isLoading = false;
       }
     });
   }
 
-  applyFilters(): void {
-    let result = this.recurringItems;
-
-    // Filter by selected merchant ID from dropdown
-    if (this.merchantSelectedId) {
-      result = result.filter(item => item.merchantId === this.merchantSelectedId);
-    }
-
-    // Filter by search term
-    const term = this.searchTerm.toLowerCase().trim();
-    if (term) {
-      result = result.filter(item =>
-        item.recurringReference?.toLowerCase().includes(term) ||
-        item.merchantId?.toLowerCase().includes(term)
-      );
-    }
-
-    this.filteredItems = result;
-    this.currentPage = 1;
-    this.updatePagination();
+  onSearch(): void {
+    // Debounce: wait 400ms after user stops typing before calling API
+    clearTimeout(this.searchTimer);
+    this.searchTimer = setTimeout(() => {
+      this.currentPage = 1;
+      this.loadPage();
+    }, 400);
   }
 
-  onSearch(): void {
-    this.applyFilters();
+  applyFilters(): void {
+    this.currentPage = 1;
+    this.loadPage();
   }
 
   onMerchantInputChange(): void {
@@ -131,7 +156,7 @@ export class RecurringListComponent implements OnInit {
 
   selectMerchant(id: string): void {
     this.merchantSelectedId = id;
-    this.merchantIdInput = id;  // show selected value in input
+    this.merchantIdInput = id;
     this.showDropdown = false;
     this.filteredMerchantIds = [...this.merchantIds];
     this.applyFilters();
@@ -148,31 +173,22 @@ export class RecurringListComponent implements OnInit {
 
   onPageSizeChange(): void {
     this.currentPage = 1;
-    this.updatePagination();
-  }
-
-  updatePagination(): void {
-    this.totalPages = Math.max(1, Math.ceil(this.filteredItems.length / this.pageSize));
-    if (this.currentPage > this.totalPages) {
-      this.currentPage = this.totalPages;
-    }
-    const start = (this.currentPage - 1) * this.pageSize;
-    this.pagedItems = this.filteredItems.slice(start, start + this.pageSize);
+    this.loadPage();
   }
 
   goToPage(page: number): void {
     if (page >= 1 && page <= this.totalPages) {
       this.currentPage = page;
-      this.updatePagination();
+      this.loadPage();
     }
   }
 
   get startRecord(): number {
-    return this.filteredItems.length === 0 ? 0 : (this.currentPage - 1) * this.pageSize + 1;
+    return this.totalElements === 0 ? 0 : (this.currentPage - 1) * this.pageSize + 1;
   }
 
   get endRecord(): number {
-    return Math.min(this.currentPage * this.pageSize, this.filteredItems.length);
+    return Math.min(this.currentPage * this.pageSize, this.totalElements);
   }
 
   get visiblePages(): number[] {

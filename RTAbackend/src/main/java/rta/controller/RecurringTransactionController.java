@@ -1,5 +1,8 @@
 package rta.controller;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import rta.entity.RtaTransaction;
@@ -18,35 +21,66 @@ public class RecurringTransactionController {
     }
 
     /**
-     * GET /api/recurring/list Returns list of unique recurring references with
-     * merchant info
+     * GET /api/recurring/list?page=0&size=10&search=&merchantId= Returns
+     * paginated list of unique recurring references with aggregated counts.
+     * Uses a single GROUP BY query instead of N+1 queries for much better
+     * performance.
      */
     @GetMapping("/list")
-    public ResponseEntity<List<Map<String, Object>>> getRecurringList() {
-        List<Object[]> results = transactionRepository.findDistinctRecurringReferences();
+    public ResponseEntity<Map<String, Object>> getRecurringList(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "") String search,
+            @RequestParam(defaultValue = "") String merchantId) {
 
-        List<Map<String, Object>> recurringList = new ArrayList<>();
+        Pageable pageable = PageRequest.of(page, size);
+        Page<Object[]> resultPage;
 
-        for (Object[] row : results) {
-            String recurringRef = (String) row[0];
-            String merchantId = (String) row[1];
+        boolean hasSearch = search != null && !search.trim().isEmpty();
+        boolean hasMerchant = merchantId != null && !merchantId.trim().isEmpty();
 
-            // Get transaction counts for this recurring reference
-            int totalCount = transactionRepository.countByRecurringReference(recurringRef);
-            int successCount = transactionRepository.countByRecurringReferenceAndStatus(recurringRef, "SUCCESS");
-            int failedCount = transactionRepository.countByRecurringReferenceAndStatus(recurringRef, "FAILED");
-
-            Map<String, Object> item = new LinkedHashMap<>();
-            item.put("recurringReference", recurringRef);
-            item.put("merchantId", merchantId);
-            item.put("totalTransactions", totalCount);
-            item.put("successCount", successCount);
-            item.put("failedCount", failedCount);
-
-            recurringList.add(item);
+        if (hasSearch && hasMerchant) {
+            resultPage = transactionRepository.findRecurringListPagedByMerchantAndSearch(
+                    merchantId.trim(), search.trim(), pageable);
+        } else if (hasMerchant) {
+            resultPage = transactionRepository.findRecurringListPagedByMerchant(
+                    merchantId.trim(), pageable);
+        } else if (hasSearch) {
+            resultPage = transactionRepository.findRecurringListPagedBySearch(
+                    search.trim(), pageable);
+        } else {
+            resultPage = transactionRepository.findRecurringListPaged(pageable);
         }
 
-        return ResponseEntity.ok(recurringList);
+        List<Map<String, Object>> content = new ArrayList<>();
+        for (Object[] row : resultPage.getContent()) {
+            Map<String, Object> item = new LinkedHashMap<>();
+            item.put("recurringReference", row[0]);
+            item.put("merchantId", row[1]);
+            item.put("totalTransactions", row[2]);
+            item.put("successCount", row[3]);
+            item.put("failedCount", row[4]);
+            content.add(item);
+        }
+
+        Map<String, Object> response = new LinkedHashMap<>();
+        response.put("content", content);
+        response.put("totalElements", resultPage.getTotalElements());
+        response.put("totalPages", resultPage.getTotalPages());
+        response.put("currentPage", resultPage.getNumber());
+        response.put("pageSize", resultPage.getSize());
+
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * GET /api/recurring/merchant-ids Returns distinct merchant IDs that have
+     * recurring transactions (for filter dropdown).
+     */
+    @GetMapping("/merchant-ids")
+    public ResponseEntity<List<String>> getRecurringMerchantIds() {
+        List<String> merchantIds = transactionRepository.findDistinctMerchantIdsWithRecurring();
+        return ResponseEntity.ok(merchantIds);
     }
 
     /**

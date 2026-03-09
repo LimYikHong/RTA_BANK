@@ -111,7 +111,7 @@
               <button class="btn-action btn-view" (click)="viewDetail(item.recurringReference)" title="View"></button>
             </td>
           </tr>
-          <tr *ngIf="filteredItems.length === 0">
+          <tr *ngIf="totalElements === 0">
             <td colspan="7" class="no-data-cell">
               <div class="no-data">
                 <p>No recurring transactions found.</p>
@@ -122,9 +122,9 @@
       </table>
 
       <!-- Pagination -->
-      <div class="pagination-section" *ngIf="filteredItems.length > 0">
+      <div class="pagination-section" *ngIf="totalElements > 0">
         <div class="pagination-info">
-          Showing {{ startRecord }} – {{ endRecord }} of {{ filteredItems.length }} records
+          Showing {{ startRecord }} – {{ endRecord }} of {{ totalElements }} records
         </div>
         <div class="pagination-controls">
           <button class="page-btn" (click)="goToPage(1)" [disabled]="currentPage === 1">«</button>
