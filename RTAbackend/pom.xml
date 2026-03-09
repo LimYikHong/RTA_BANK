@@ -110,7 +110,12 @@
             <artifactId>spring-kafka</artifactId>
         </dependency>
 
-
+        <!-- MinIO Java SDK for object storage -->
+        <dependency>
+            <groupId>io.minio</groupId>
+            <artifactId>minio</artifactId>
+            <version>8.5.7</version>
+        </dependency>
 
     </dependencies>
 

@@ -1,11 +1,237 @@
 // Component-specific styles only
 // Global styles are inherited from _global-components.scss
 
-.search-section {
+.filter-section {
   margin-bottom: 20px;
 
+  .filter-row {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+
   .search-box {
-    max-width: 400px;
+    flex: 1;
+    min-width: 200px;
+    max-width: 350px;
+  }
+
+  .merchant-filter {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+
+    label {
+      font-size: 13px;
+      font-weight: 600;
+      color: #475569;
+      white-space: nowrap;
+    }
+
+    .merchant-filter-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+
+      .btn-search {
+        padding: 8px 16px;
+        background: #3b82f6;
+        color: #fff;
+        border: none;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        white-space: nowrap;
+        transition: background 0.2s;
+
+        &:hover {
+          background: #2563eb;
+        }
+
+        &:active {
+          background: #1d4ed8;
+        }
+      }
+    }
+
+    .merchant-combobox {
+      position: relative;
+      width: 200px;
+
+      .combobox-input-wrapper {
+        display: flex;
+        align-items: center;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        background: #fff;
+        transition: border-color 0.2s;
+
+        &:focus-within {
+          border-color: #3b82f6;
+          box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+
+        input {
+          flex: 1;
+          padding: 8px 10px;
+          border: none;
+          outline: none;
+          font-size: 14px;
+          color: #1e293b;
+          background: transparent;
+          border-radius: 8px 0 0 8px;
+          min-width: 0;
+
+          &::placeholder {
+            color: #94a3b8;
+          }
+        }
+
+        .combobox-toggle {
+          padding: 8px 8px;
+          border: none;
+          background: transparent;
+          color: #94a3b8;
+          cursor: pointer;
+          font-size: 10px;
+          line-height: 1;
+          border-radius: 0 8px 8px 0;
+
+          &:hover {
+            color: #475569;
+          }
+        }
+      }
+
+      .combobox-dropdown {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        margin: 4px 0 0;
+        padding: 4px 0;
+        background: #fff;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        max-height: 200px;
+        overflow-y: auto;
+        z-index: 100;
+        list-style: none;
+
+        li {
+          padding: 8px 12px;
+          font-size: 14px;
+          color: #1e293b;
+          cursor: pointer;
+          transition: background 0.15s;
+
+          &:hover {
+            background: #f1f5f9;
+          }
+
+          &.active {
+            background: #eff6ff;
+            color: #3b82f6;
+            font-weight: 600;
+          }
+
+          &.no-match {
+            color: #ef4444;
+            font-style: italic;
+            cursor: default;
+
+            &:hover {
+              background: transparent;
+            }
+          }
+        }
+      }
+    }
+  }
+
+  .page-size-selector {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+
+    label {
+      font-size: 13px;
+      font-weight: 600;
+      color: #475569;
+      white-space: nowrap;
+    }
+  }
+
+  .filter-select {
+    padding: 8px 12px;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    font-size: 14px;
+    color: #1e293b;
+    background: #fff;
+    cursor: pointer;
+    outline: none;
+    transition: border-color 0.2s;
+
+    &:focus {
+      border-color: #3b82f6;
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    }
+  }
+}
+
+.pagination-section {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 0;
+  border-top: 1px solid #f1f5f9;
+  margin-top: 8px;
+
+  .pagination-info {
+    font-size: 13px;
+    color: #64748b;
+  }
+
+  .pagination-controls {
+    display: flex;
+    gap: 4px;
+
+    .page-btn {
+      min-width: 36px;
+      height: 36px;
+      padding: 0 8px;
+      border: 1px solid #e2e8f0;
+      border-radius: 6px;
+      background: #fff;
+      color: #475569;
+      font-size: 14px;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+
+      &:hover:not(:disabled) {
+        background: #f1f5f9;
+        border-color: #cbd5e1;
+      }
+
+      &.active {
+        background: #3b82f6;
+        color: #fff;
+        border-color: #3b82f6;
+        font-weight: 600;
+      }
+
+      &:disabled {
+        opacity: 0.4;
+        cursor: not-allowed;
+      }
+    }
   }
 }
 

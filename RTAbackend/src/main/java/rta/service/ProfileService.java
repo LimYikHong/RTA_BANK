@@ -10,10 +10,6 @@ import rta.entity.RtaUserRole;
 import rta.repository.RtaRoleRepository;
 import rta.repository.RtaUserRoleRepository;
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
@@ -31,12 +27,16 @@ public class ProfileService {
     private final ProfileRepository profileRepository;
     private final RtaRoleRepository roleRepository;
     private final RtaUserRoleRepository userRoleRepository;
+    private final MinioStorageService minioStorageService;
     private final GoogleAuthenticator gAuth = new GoogleAuthenticator();
 
-    public ProfileService(ProfileRepository profileRepository, RtaRoleRepository roleRepository, RtaUserRoleRepository userRoleRepository) {
+    private static final String PROFILE_PHOTOS_DIR = "uploads/profile-photos";
+
+    public ProfileService(ProfileRepository profileRepository, RtaRoleRepository roleRepository, RtaUserRoleRepository userRoleRepository, MinioStorageService minioStorageService) {
         this.profileRepository = profileRepository;
         this.roleRepository = roleRepository;
         this.userRoleRepository = userRoleRepository;
+        this.minioStorageService = minioStorageService;
     }
 
     /**
@@ -136,9 +136,8 @@ public class ProfileService {
     }
 
     /**
-     * Save profile photo to disk and update profile with a public URL. - Writes
-     * under "uploads/profile-photos" (relative to app working dir). - Stores
-     * "/uploads/profile-photos/{uuid.ext}" as profilePhotoUrl.
+     * Save profile photo to MinIO and update profile with a public URL. -
+     * Stores "/uploads/profile-photos/{uuid.ext}" as profilePhotoUrl.
      */
     public UserProfile uploadProfilePhoto(String userId, MultipartFile file) {
         UserProfile profile = getProfile(userId);
@@ -155,20 +154,17 @@ public class ProfileService {
             }
             String newFilename = UUID.randomUUID().toString() + fileExtension;
 
-            Path uploadPath = Paths.get("uploads/profile-photos");
-            if (!Files.exists(uploadPath)) {
-                Files.createDirectories(uploadPath);
-            }
+            // Upload to MinIO
+            String objectName = PROFILE_PHOTOS_DIR + "/" + newFilename;
+            minioStorageService.uploadFile(objectName, file);
 
-            Path filePath = uploadPath.resolve(newFilename);
-            Files.copy(file.getInputStream(), filePath);
-
-            String fileUrl = "/uploads/profile-photos/" + newFilename;
+            // Store MinIO public URL as profile photo URL
+            String fileUrl = minioStorageService.getPublicUrl(objectName);
             profile.setProfilePhotoUrl(fileUrl);
 
             UserProfile saved = profileRepository.save(profile);
             return saved;
-        } catch (IOException e) {
+        } catch (Exception e) {
             throw new RuntimeException("Failed to store file.", e);
         }
     }

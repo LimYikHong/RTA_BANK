@@ -10,6 +10,7 @@ import { Observable } from 'rxjs';
 export interface RtaBatch {
   batchId?: number;
   fileName: string;
+  originalFileName?: string;
   status: string;
   merchantId: string;
   createdBy?: string;

@@ -55,7 +55,7 @@
         <tbody>
           <tr *ngFor="let file of filteredFiles">
             <td>{{ file.batchFileId }}</td>
-            <td class="filename-cell">{{ file.originalFilename || '-' }}</td>
+            <td class="filename-cell">{{ getDisplayFilename(file) }}</td>
             <td>{{ file.merchantId }}</td>
             <td>{{ file.batchId }}</td>
             <td>{{ formatBytes(file.sizeBytes) }}</td>

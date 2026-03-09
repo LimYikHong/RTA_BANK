@@ -10,6 +10,7 @@ interface IncomingBatchFile {
   merchantId: string;
   batchId: number;
   originalFilename: string;
+  storedFilename: string;
   storageUri: string;
   sizeBytes: number;
   totalRecordCount: number;
@@ -77,6 +78,7 @@ export class IncomingBatchComponent implements OnInit {
       return;
     }
     this.filteredFiles = this.incomingFiles.filter(f =>
+      f.storedFilename?.toLowerCase().includes(term) ||
       f.originalFilename?.toLowerCase().includes(term) ||
       f.merchantId?.toLowerCase().includes(term) ||
       f.fileStatus?.toLowerCase().includes(term) ||
@@ -103,6 +105,28 @@ export class IncomingBatchComponent implements OnInit {
     if (bytes < 1024) return bytes + ' B';
     if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
     return (bytes / (1024 * 1024)).toFixed(2) + ' MB';
+  }
+
+  /**
+   * Get display filename - shows the renamed file (merchantId_datetime.ext format)
+   * Extracts from storedFilename by removing the leading timestamp prefix
+   */
+  getDisplayFilename(file: IncomingBatchFile): string {
+    // Use storedFilename if available
+    const filename = file.storedFilename || file.originalFilename;
+    if (!filename) return '-';
+    
+    // The storedFilename format is: timestamp_merchantId_datetime.ext
+    // We want to show: merchantId_datetime.ext (remove the leading timestamp_)
+    const underscoreIndex = filename.indexOf('_');
+    if (underscoreIndex > 0) {
+      // Check if the part before first underscore looks like a timestamp (all digits)
+      const prefix = filename.substring(0, underscoreIndex);
+      if (/^\d+$/.test(prefix)) {
+        return filename.substring(underscoreIndex + 1);
+      }
+    }
+    return filename;
   }
 
   viewBatchDetail(batchId: number): void {

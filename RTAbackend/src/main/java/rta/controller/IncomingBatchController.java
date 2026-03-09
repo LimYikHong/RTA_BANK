@@ -17,6 +17,7 @@ import rta.repository.RtaIncomingBatchFileRepository;
 import rta.repository.RtaTransactionRepository;
 import rta.repository.MerchantInfoRepository;
 import rta.service.FileProfileService;
+import rta.service.MinioStorageService;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -50,6 +51,7 @@ public class IncomingBatchController {
     private final RtaTransactionRepository transactionRepository;
     private final MerchantInfoRepository merchantInfoRepository;
     private final FileProfileService fileProfileService;
+    private final MinioStorageService minioStorageService;
 
     private static final String UPLOAD_DIR = "incoming-uploads";
 
@@ -58,42 +60,50 @@ public class IncomingBatchController {
             RtaIncomingBatchFileRepository incomingFileRepository,
             RtaTransactionRepository transactionRepository,
             MerchantInfoRepository merchantInfoRepository,
-            FileProfileService fileProfileService) {
+            FileProfileService fileProfileService,
+            MinioStorageService minioStorageService) {
         this.batchRepository = batchRepository;
         this.batchFileRepository = batchFileRepository;
         this.incomingFileRepository = incomingFileRepository;
         this.transactionRepository = transactionRepository;
         this.merchantInfoRepository = merchantInfoRepository;
         this.fileProfileService = fileProfileService;
+        this.minioStorageService = minioStorageService;
     }
 
     /**
      * POST /api/incoming/upload - Merchant-side app uploads a batch file over
      * HTTPS. - Params: file (multipart), merchantId, createdBy (optional),
-     * originalFileName (optional) - Creates batch record + incoming file
-     * record, stores file on disk.
+     * fileName (renamed file), originalFileName (original file name) - Creates
+     * batch record + incoming file record, stores file on disk.
      */
     @PostMapping("/upload")
     public ResponseEntity<?> receiveIncomingFile(
             @RequestParam("file") MultipartFile file,
             @RequestParam("merchantId") String merchantId,
             @RequestParam(value = "createdBy", required = false, defaultValue = "merchant") String createdBy,
+            @RequestParam(value = "fileName", required = false) String fileNameParam,
             @RequestParam(value = "originalFileName", required = false) String originalFileNameParam) {
         try {
             if (file.isEmpty()) {
                 return ResponseEntity.badRequest().body(Map.of("error", "No file uploaded"));
             }
 
-            // Use provided originalFileName parameter if available, otherwise get from multipart file
+            // Get original filename - from param or multipart
             String originalFilename = (originalFileNameParam != null && !originalFileNameParam.isBlank())
                     ? originalFileNameParam
                     : file.getOriginalFilename();
             if (originalFilename == null || originalFilename.isBlank()) {
-                return ResponseEntity.badRequest().body(Map.of("error", "Invalid file name"));
+                return ResponseEntity.badRequest().body(Map.of("error", "Invalid original file name"));
             }
 
-            // Validate file extension
-            String lowerName = originalFilename.toLowerCase();
+            // Get renamed filename (merchantId_datetime format) - from param or generate
+            String renamedFilename = (fileNameParam != null && !fileNameParam.isBlank())
+                    ? fileNameParam
+                    : originalFilename;
+
+            // Validate file extension using renamed filename
+            String lowerName = renamedFilename.toLowerCase();
             if (!lowerName.endsWith(".csv") && !lowerName.endsWith(".xlsx") && !lowerName.endsWith(".xls") && !lowerName.endsWith(".txt")) {
                 return ResponseEntity.badRequest().body(Map.of("error", "Unsupported file type. Allowed: csv, xlsx, xls, txt"));
             }
@@ -125,16 +135,15 @@ public class IncomingBatchController {
                 ));
             }
 
-            // Create upload directory if not exists
-            Path uploadPath = Paths.get(UPLOAD_DIR);
-            if (!Files.exists(uploadPath)) {
-                Files.createDirectories(uploadPath);
-            }
+            // Generate stored filename: timestamp + renamed filename (merchantId_datetime format)
+            String storedFileName = System.currentTimeMillis() + "_" + renamedFilename;
+            String objectName = UPLOAD_DIR + "/" + storedFileName;
 
-            // Generate unique filename
-            String storedFileName = System.currentTimeMillis() + "_" + originalFilename;
-            Path filePath = uploadPath.resolve(storedFileName);
-            Files.copy(file.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
+            // Upload file to MinIO
+            String storageUri = minioStorageService.uploadFile(objectName, file);
+
+            // Download file content for validation
+            byte[] fileContent = minioStorageService.downloadFileAsBytes(objectName);
 
             // Validate file format against merchant's file profile and insert transaction records
             List<String> validationErrors = new ArrayList<>();
@@ -185,7 +194,7 @@ public class IncomingBatchController {
                     } else {
                         // Proceed with file parsing and validation
                         if (lowerName.endsWith(".csv") || lowerName.endsWith(".txt")) {
-                            try (BufferedReader reader = new BufferedReader(new FileReader(filePath.toFile()))) {
+                            try (BufferedReader reader = new BufferedReader(new InputStreamReader(new ByteArrayInputStream(fileContent)))) {
                                 List<String> allLines = new ArrayList<>();
                                 String line;
                                 while ((line = reader.readLine()) != null) {
@@ -594,7 +603,7 @@ public class IncomingBatchController {
                             }
                         } else if (lowerName.endsWith(".xlsx") || lowerName.endsWith(".xls")) {
                             // Process Excel files (xlsx/xls)
-                            try (InputStream is = new FileInputStream(filePath.toFile()); Workbook workbook = lowerName.endsWith(".xlsx") ? new XSSFWorkbook(is) : new HSSFWorkbook(is)) {
+                            try (InputStream is = new ByteArrayInputStream(fileContent); Workbook workbook = lowerName.endsWith(".xlsx") ? new XSSFWorkbook(is) : new HSSFWorkbook(is)) {
 
                                 Sheet sheet = workbook.getSheetAt(0);
                                 if (sheet == null || sheet.getPhysicalNumberOfRows() == 0) {
@@ -1062,7 +1071,8 @@ public class IncomingBatchController {
             incomingFile.setMerchantId(merchantId);
             incomingFile.setBatchId(savedBatch.getBatchId());
             incomingFile.setOriginalFilename(originalFilename);
-            incomingFile.setStorageUri(filePath.toString());
+            incomingFile.setStoredFilename(storedFileName);
+            incomingFile.setStorageUri(storageUri);
             incomingFile.setSizeBytes(file.getSize());
             incomingFile.setTotalRecordCount(totalRecordCount);
             incomingFile.setSuccessCount(successCount);
@@ -1125,7 +1135,8 @@ public class IncomingBatchController {
                             : "File received with " + failCount + " failed records out of " + totalRecordCount);
             response.put("batchId", savedBatch.getBatchId());
             response.put("batchFileId", savedFile.getBatchFileId());
-            response.put("fileName", originalFilename);
+            response.put("fileName", renamedFilename);
+            response.put("originalFileName", originalFilename);
             response.put("fileHash", fileHash);
             response.put("sizeBytes", file.getSize());
             response.put("status", validationStatus);
@@ -1325,13 +1336,16 @@ public class IncomingBatchController {
             String merchantId = incomingFile.getMerchantId();
             String storagePath = incomingFile.getStorageUri();
 
-            // Check if file exists
-            Path filePath = Paths.get(storagePath);
-            if (!Files.exists(filePath)) {
+            // Check if file exists in MinIO
+            String objectName = minioStorageService.extractObjectName(storagePath);
+            if (!minioStorageService.fileExists(objectName)) {
                 return ResponseEntity.badRequest().body(Map.of(
                         "error", "File not found",
-                        "detail", "The batch file no longer exists on disk: " + storagePath));
+                        "detail", "The batch file no longer exists in storage: " + storagePath));
             }
+
+            // Download file content from MinIO for validation
+            byte[] fileContent = minioStorageService.downloadFileAsBytes(objectName);
 
             // Re-run validation
             List<String> validationErrors = new ArrayList<>();
@@ -1346,7 +1360,7 @@ public class IncomingBatchController {
             String lowerName = incomingFile.getOriginalFilename().toLowerCase();
 
             if (lowerName.endsWith(".csv") || lowerName.endsWith(".txt")) {
-                try (BufferedReader reader = new BufferedReader(new FileReader(filePath.toFile()))) {
+                try (BufferedReader reader = new BufferedReader(new InputStreamReader(new ByteArrayInputStream(fileContent)))) {
                     List<String> allLines = new ArrayList<>();
                     String line;
                     while ((line = reader.readLine()) != null) {
@@ -1572,7 +1586,7 @@ public class IncomingBatchController {
                 }
             } else if (lowerName.endsWith(".xlsx") || lowerName.endsWith(".xls")) {
                 // Process Excel files (xlsx/xls)
-                try (InputStream is = new FileInputStream(filePath.toFile()); Workbook workbook = lowerName.endsWith(".xlsx") ? new XSSFWorkbook(is) : new HSSFWorkbook(is)) {
+                try (InputStream is = new ByteArrayInputStream(fileContent); Workbook workbook = lowerName.endsWith(".xlsx") ? new XSSFWorkbook(is) : new HSSFWorkbook(is)) {
 
                     Sheet sheet = workbook.getSheetAt(0);
                     if (sheet == null || sheet.getPhysicalNumberOfRows() == 0) {
