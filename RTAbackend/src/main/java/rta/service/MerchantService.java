@@ -13,6 +13,7 @@ import rta.repository.MerchantInfoRepository;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 /**
  * MerchantService - Handles creation and management of merchant records. - On
@@ -119,6 +120,56 @@ public class MerchantService {
 
     public boolean usernameExists(String username) {
         return merchantInfoRepository.findByUsername(username).isPresent();
+    }
+
+    /**
+     * Get a single merchant by merchantId.
+     */
+    public Optional<MerchantInfo> getMerchantById(String merchantId) {
+        return merchantInfoRepository.findByMerchantId(merchantId);
+    }
+
+    /**
+     * Update an existing merchant's basic info.
+     */
+    @Transactional
+    public MerchantInfo updateMerchant(String merchantId, MerchantInfo updates) {
+        MerchantInfo existing = merchantInfoRepository.findByMerchantId(merchantId)
+                .orElseThrow(() -> new RuntimeException("Merchant not found: " + merchantId));
+
+        if (updates.getName() != null) {
+            existing.setName(updates.getName());
+        }
+        if (updates.getEmail() != null) {
+            existing.setEmail(updates.getEmail());
+        }
+        if (updates.getCompany() != null) {
+            existing.setCompany(updates.getCompany());
+        }
+        if (updates.getContact() != null) {
+            existing.setContact(updates.getContact());
+        }
+        if (updates.getPhone() != null) {
+            existing.setPhone(updates.getPhone());
+        }
+        if (updates.getAddress() != null) {
+            existing.setAddress(updates.getAddress());
+        }
+        if (updates.getPassword() != null && !updates.getPassword().isBlank()) {
+            existing.setPassword(updates.getPassword());
+        }
+        existing.setLastModifiedAt(java.time.LocalDateTime.now());
+        return merchantInfoRepository.save(existing);
+    }
+
+    /**
+     * Delete a merchant by merchantId.
+     */
+    @Transactional
+    public void deleteMerchant(String merchantId) {
+        MerchantInfo existing = merchantInfoRepository.findByMerchantId(merchantId)
+                .orElseThrow(() -> new RuntimeException("Merchant not found: " + merchantId));
+        merchantInfoRepository.delete(existing);
     }
 
     /**

@@ -97,22 +97,23 @@
 // LOGOUT BUTTON
 // =============================================
 .logout-btn {
-  position: fixed;
+  position: absolute;
   top: 20px;
   right: 40px;
-  background-color: #ef4444;
-  color: white;
+  background: none;
+  color: #1e293b;
   border: none;
-  padding: 8px 16px;
-  border-radius: 4px;
+  padding: 0;
   cursor: pointer;
-  font-weight: bold;
-  z-index: 9999;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-  transition: background-color 0.2s;
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  z-index: 100;
+  transition: color 0.2s;
 
   &:hover {
-    background-color: #dc2626;
+    color: #475569;
   }
 }
 
@@ -168,19 +169,131 @@
   }
 }
 
-.btn-view {
-  background-color: #3b82f6;
-  color: white;
-  padding: 5px 14px;
-  border: none;
-  border-radius: 6px;
-  font-size: 12px;
-  font-weight: 600;
+// =============================================
+// ACTION ICON BUTTONS (View/Edit/Delete/Retry)
+// =============================================
+.action-cell {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  white-space: nowrap;
+}
+
+.btn-action {
+  width: 32px;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid transparent;
+  border-radius: 8px;
   cursor: pointer;
-  transition: background-color 0.2s;
+  transition: background-color 0.2s, transform 0.1s, box-shadow 0.2s;
+  padding: 0;
+
+  // Hide any leftover inline SVG (legacy)
+  svg { display: none; }
+
+  // Icon rendered via pseudo-element — no inline SVG needed in HTML
+  &::after {
+    content: '';
+    display: block;
+    width: 16px;
+    height: 16px;
+    background-color: currentColor;
+    -webkit-mask-size: contain;
+    mask-size: contain;
+    -webkit-mask-repeat: no-repeat;
+    mask-repeat: no-repeat;
+    -webkit-mask-position: center;
+    mask-position: center;
+  }
+
+  &:active {
+    transform: scale(0.92);
+  }
+}
+
+.btn-view {
+  background-color: transparent;
+  color: #1e293b;
+  border-color: transparent;
+
+  &::after {
+    -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z'/%3E%3Ccircle cx='12' cy='12' r='3'/%3E%3C/svg%3E");
+    mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z'/%3E%3Ccircle cx='12' cy='12' r='3'/%3E%3C/svg%3E");
+  }
 
   &:hover {
-    background-color: #2563eb;
+    background-color: #eff6ff;
+    color: #2563eb;
+    border-color: #bfdbfe;
+    box-shadow: 0 2px 8px rgba(37, 99, 235, 0.15);
+  }
+}
+
+.btn-edit {
+  background-color: transparent;
+  color: #1e293b;
+  border-color: transparent;
+
+  &::after {
+    -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7'/%3E%3Cpath d='M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z'/%3E%3C/svg%3E");
+    mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7'/%3E%3Cpath d='M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z'/%3E%3C/svg%3E");
+  }
+
+  &:hover {
+    background-color: #fffbeb;
+    color: #2563eb;
+    border-color: #fde68a;
+    box-shadow: 0 2px 8px rgba(217, 119, 6, 0.15);
+  }
+}
+
+.btn-delete {
+  background-color: transparent;
+  color: #1e293b;
+  border-color: transparent;
+
+  &::after {
+    -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='3 6 5 6 21 6'/%3E%3Cpath d='M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6'/%3E%3Cpath d='M10 11v6'/%3E%3Cpath d='M14 11v6'/%3E%3Cpath d='M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2'/%3E%3C/svg%3E");
+    mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='3 6 5 6 21 6'/%3E%3Cpath d='M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6'/%3E%3Cpath d='M10 11v6'/%3E%3Cpath d='M14 11v6'/%3E%3Cpath d='M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2'/%3E%3C/svg%3E");
+  }
+
+  &:hover {
+    background-color: #fef2f2;
+    color: #2563eb;
+    border-color: #fecaca;
+    box-shadow: 0 2px 8px rgba(220, 38, 38, 0.15);
+  }
+}
+
+.btn-retry {
+  background-color: transparent;
+  color: #16a34a;
+  border-color: transparent;
+
+  &::after {
+    -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='23 4 23 10 17 10'/%3E%3Cpath d='M20.49 15a9 9 0 1 1-2.12-9.36L23 10'/%3E%3C/svg%3E");
+    mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='23 4 23 10 17 10'/%3E%3Cpath d='M20.49 15a9 9 0 1 1-2.12-9.36L23 10'/%3E%3C/svg%3E");
+  }
+
+  &:hover {
+    background-color: #f0fdf4;
+    color: #16a34a;
+    border-color: #bbf7d0;
+    box-shadow: 0 2px 8px rgba(22, 163, 74, 0.15);
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    &:hover {
+      background-color: transparent;
+      color: #16a34a;
+      border-color: transparent;
+      box-shadow: none;
+    }
   }
 }
 

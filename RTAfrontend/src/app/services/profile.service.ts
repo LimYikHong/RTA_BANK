@@ -197,6 +197,18 @@ export class ProfileService {
     return this.http.post<any>(`${this.merchantApiUrl}`, payload);
   }
 
+  getMerchant(merchantId: string): Observable<any> {
+    return this.http.get<any>(`${this.merchantApiUrl}/${encodeURIComponent(merchantId)}`);
+  }
+
+  updateMerchant(merchantId: string, payload: Partial<MerchantInfoPayload>): Observable<any> {
+    return this.http.put<any>(`${this.merchantApiUrl}/${encodeURIComponent(merchantId)}`, payload);
+  }
+
+  deleteMerchant(merchantId: string): Observable<any> {
+    return this.http.delete<any>(`${this.merchantApiUrl}/${encodeURIComponent(merchantId)}`);
+  }
+
   checkMerchantId(merchantId: string): Observable<{ exists: boolean }> {
     return this.http.get<{ exists: boolean }>(`${this.merchantApiUrl}/check-id?merchantId=${encodeURIComponent(merchantId)}`);
   }

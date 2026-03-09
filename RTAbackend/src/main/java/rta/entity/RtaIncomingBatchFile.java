@@ -25,6 +25,9 @@ public class RtaIncomingBatchFile {
     @Column(name = "original_filename")
     private String originalFilename;
 
+    @Column(name = "stored_filename")
+    private String storedFilename;
+
     @Column(name = "storage_uri")
     private String storageUri;
 

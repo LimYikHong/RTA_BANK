@@ -3,7 +3,6 @@ package rta.config;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;
-import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 @Configuration
@@ -11,8 +10,8 @@ public class WebConfig {
 
     /**
      * WebMvcConfigurer bean - Configures CORS for MVC endpoints (controller
-     * layer). - Also exposes a static resource handler for serving uploaded
-     * files under /uploads/**.
+     * layer). Files are now served from MinIO object storage via
+     * FileController.
      */
     @Bean
     public WebMvcConfigurer corsConfigurer() {
@@ -33,18 +32,9 @@ public class WebConfig {
                         .allowCredentials(true);
             }
 
-            /**
-             * Static resource handler: - Maps URL path /uploads/** to the local
-             * folder "uploads/" on the server. - Example: GET
-             * /uploads/avatar.png -> file:uploads/avatar.png - Make sure the
-             * process has read permissions; for prod, consider a CDN or object
-             * storage.
-             */
-            @Override
-            public void addResourceHandlers(ResourceHandlerRegistry registry) {
-                registry.addResourceHandler("/uploads/**")
-                        .addResourceLocations("file:uploads/");
-            }
+            // Note: Static resource handler for local files removed.
+            // Files are now stored in MinIO and served via FileController
+            // or directly from MinIO endpoint (http://localhost:9000/rta-bank/...)
         };
     }
 }

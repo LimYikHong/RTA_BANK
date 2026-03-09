@@ -1,0 +1,230 @@
+<div class="page-container">
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <h2>RTA Upload</h2>
+    <ul>
+      <li routerLink="/batch-list" routerLinkActive="active"><b>Upload Batch File</b></li>
+      <li routerLink="/incoming-batch" routerLinkActive="active"><b>Incoming Batch File</b></li>
+      <li routerLink="/recurring-list" routerLinkActive="active"><b>Recurring Transactions</b></li>
+      <li routerLink="/profile" routerLinkActive="active">View Profile</li>
+      <li routerLink="/users" routerLinkActive="active"><b>User Management</b></li>
+      <li routerLink="/merchant-maintenance" routerLinkActive="active"><b>Merchant Maintenance</b></li>
+    </ul>
+  </aside>
+
+  <!-- Main Content -->
+  <button class="logout-btn" (click)="logout()">Logout</button>
+  <main class="main-content">
+    <div class="page-header">
+      <button class="back-btn" (click)="back()">&lt; Back to Merchants</button>
+      <h1>View Merchant</h1>
+      <p class="subtitle">Merchant details — read-only view.</p>
+    </div>
+
+    <div class="loading-text" *ngIf="isLoading">Loading merchant data...</div>
+
+    <div class="form-card" *ngIf="!isLoading">
+
+      <!-- Merchant Identity -->
+      <div class="form-section">
+        <h3>Merchant Identity</h3>
+        <div class="form-row">
+          <div class="detail-group">
+            <label class="detail-label">Merchant ID</label>
+            <div class="detail-value id-value">{{ merchant.merchantId || '-' }}</div>
+          </div>
+          <div class="detail-group">
+            <label class="detail-label">Name</label>
+            <div class="detail-value">{{ merchant.name || '-' }}</div>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="detail-group">
+            <label class="detail-label">Username</label>
+            <div class="detail-value">{{ merchant.username || '-' }}</div>
+          </div>
+          <div class="detail-group">
+            <label class="detail-label">Password</label>
+            <div class="detail-value password-mask">••••••••</div>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="detail-group">
+            <label class="detail-label">Email</label>
+            <div class="detail-value">{{ merchant.email || '-' }}</div>
+          </div>
+          <div class="detail-group">
+            <label class="detail-label">Company</label>
+            <div class="detail-value">{{ merchant.company || '-' }}</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Contact Information -->
+      <div class="form-section">
+        <h3>Contact Information</h3>
+        <div class="form-row">
+          <div class="detail-group">
+            <label class="detail-label">Contact Person</label>
+            <div class="detail-value">{{ merchant.contact || '-' }}</div>
+          </div>
+          <div class="detail-group">
+            <label class="detail-label">Phone Number</label>
+            <div class="detail-value">{{ merchant.phone || '-' }}</div>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="detail-group full-width">
+            <label class="detail-label">Address</label>
+            <div class="detail-value">{{ merchant.address || '-' }}</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Metadata -->
+      <div class="form-section">
+        <h3>Record Information</h3>
+        <div class="form-row">
+          <div class="detail-group">
+            <label class="detail-label">Created By</label>
+            <div class="detail-value">{{ merchant.createBy || '-' }}</div>
+          </div>
+          <div class="detail-group">
+            <label class="detail-label">Joined On</label>
+            <div class="detail-value">{{ merchant.createdAt ? (merchant.createdAt | date: 'mediumDate') : '-' }}</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- File Format Configuration -->
+      <div class="form-section">
+        <h3>
+          File Format Configuration
+          <span class="profile-badge" [class.configured]="hasFileProfile" [class.default]="!hasFileProfile">
+            {{ hasFileProfile ? 'Configured' : 'Default / Not Set' }}
+          </span>
+        </h3>
+        <p class="section-desc" *ngIf="!hasFileProfile">No file format profile has been saved for this merchant. Showing default field mapping layout.</p>
+        <div class="form-row">
+          <div class="detail-group">
+            <label class="detail-label">File Type</label>
+            <div class="detail-value">{{ merchant.fileType || '-' }}</div>
+          </div>
+          <div class="detail-group">
+            <label class="detail-label">Field Delimiter</label>
+            <div class="detail-value">{{ getDelimiterLabel(merchant.fieldDelimiter || '') }}</div>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="detail-group">
+            <label class="detail-label">Has Header Row</label>
+            <div class="detail-value">{{ merchant.hasHeader ? 'Yes' : 'No' }}</div>
+          </div>
+          <div class="detail-group">
+            <label class="detail-label">Date Format</label>
+            <div class="detail-value">{{ merchant.dateFormat || '-' }}</div>
+          </div>
+        </div>
+
+        <!-- Transaction Fields -->
+        <div class="mapping-section" *ngIf="requiredFields.length > 0">
+          <h4>Field Mapping — Transaction Fields</h4>
+          <div class="mapping-table-wrapper">
+            <table class="mapping-table">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Field Name</th>
+                  <th>CSV Column Name</th>
+                  <th>Data Type</th>
+                  <th>Column Index</th>
+                  <th>Required</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let field of requiredFields; let i = index" class="required-row">
+                  <td class="idx-col">{{ i + 1 }}</td>
+                  <td class="canonical-col">
+                    <span class="canonical-badge">{{ formatFieldName(field.canonicalField) }}</span>
+                  </td>
+                  <td>{{ field.sourceColumnName || '-' }}</td>
+                  <td><span class="type-badge">{{ field.dataType }}</span></td>
+                  <td>{{ field.sourceColumnIdx }}</td>
+                  <td class="center-col"><span class="lock-icon">🔒</span></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Recurring Fields -->
+        <div class="mapping-section" *ngIf="recurringFields.length > 0">
+          <h4 class="recurring-header">🔁 Recurring Information Fields</h4>
+          <div class="mapping-table-wrapper">
+            <table class="mapping-table">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Field Name</th>
+                  <th>CSV Column Name</th>
+                  <th>Data Type</th>
+                  <th>Column Index</th>
+                  <th>Required</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let field of recurringFields; let k = index" class="required-row recurring-row">
+                  <td class="idx-col">{{ requiredFields.length + k + 1 }}</td>
+                  <td class="canonical-col">
+                    <span class="canonical-badge recurring-badge">{{ formatFieldName(field.canonicalField) }}</span>
+                  </td>
+                  <td>{{ field.sourceColumnName || '-' }}</td>
+                  <td><span class="type-badge">{{ field.dataType }}</span></td>
+                  <td>{{ field.sourceColumnIdx }}</td>
+                  <td class="center-col"><span class="lock-icon">🔒</span></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Custom Fields -->
+        <div class="mapping-section" *ngIf="customFields.length > 0">
+          <h4 class="custom-header">➕ Custom Fields</h4>
+          <div class="mapping-table-wrapper">
+            <table class="mapping-table">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Field Name</th>
+                  <th>CSV Column Name</th>
+                  <th>Data Type</th>
+                  <th>Column Index</th>
+                  <th>Required</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let field of customFields; let j = index" class="custom-row">
+                  <td class="idx-col">{{ requiredFields.length + recurringFields.length + j + 1 }}</td>
+                  <td>{{ formatFieldName(field.canonicalField) || '-' }}</td>
+                  <td>{{ field.sourceColumnName || '-' }}</td>
+                  <td><span class="type-badge">{{ field.dataType }}</span></td>
+                  <td>{{ field.sourceColumnIdx }}</td>
+                  <td class="center-col"><span class="optional-label">Optional</span></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Actions -->
+      <div class="form-actions">
+        <button type="button" class="btn btn-cancel" (click)="back()">Back</button>
+        <button type="button" class="btn btn-edit-nav" [routerLink]="['/edit-merchant', merchant.merchantId]">
+          Edit Merchant
+        </button>
+      </div>
+    </div>
+  </main>
+</div>

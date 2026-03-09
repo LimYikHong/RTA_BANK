@@ -55,7 +55,7 @@
         <tbody>
           <tr *ngFor="let file of filteredFiles">
             <td>{{ file.batchFileId }}</td>
-            <td class="filename-cell">{{ file.originalFilename || '-' }}</td>
+            <td class="filename-cell">{{ getDisplayFilename(file) }}</td>
             <td>{{ file.merchantId }}</td>
             <td>{{ file.batchId }}</td>
             <td>{{ formatBytes(file.sizeBytes) }}</td>
@@ -76,16 +76,13 @@
             <td>{{ file.createBy || '-' }}</td>
             <td>{{ file.createdAt ? (file.createdAt | date: 'short') : '-' }}</td>
             <td class="action-cell">
-              <button class="btn btn-view" (click)="viewBatchDetail(file.batchId)">
-                View
-              </button>
+              <button class="btn-action btn-view" (click)="viewBatchDetail(file.batchId)" title="View"></button>
               <button 
                 *ngIf="file.fileStatus?.toUpperCase() === 'RECEIVED'"
-                class="btn btn-retry" 
+                class="btn-action btn-retry" 
                 (click)="retryValidation(file)"
-                [disabled]="retryingFileId === file.batchFileId">
-                {{ retryingFileId === file.batchFileId ? 'Retrying...' : 'Retry' }}
-              </button>
+                [disabled]="retryingFileId === file.batchFileId"
+                title="Retry"></button>
             </td>
           </tr>
         </tbody>

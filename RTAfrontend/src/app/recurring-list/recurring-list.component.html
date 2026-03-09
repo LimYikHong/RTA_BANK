@@ -19,20 +19,63 @@
       <p class="subtitle">View and monitor recurring payment references</p>
     </div>
 
-    <div class="search-section">
-      <div class="search-box">
-        <input 
-          type="text" 
-          [(ngModel)]="searchTerm" 
-          (input)="onSearch()" 
-          placeholder="Search by recurring reference or merchant..."
-          class="search-input"
-        />
+    <div class="filter-section">
+      <div class="filter-row">
+        <div class="search-box">
+          <input 
+            type="text" 
+            [(ngModel)]="searchTerm" 
+            (input)="onSearch()" 
+            placeholder="Search by recurring reference..."
+            class="search-input"
+          />
+        </div>
+
+        <div class="merchant-filter">
+          <label>Merchant:</label>
+          <div class="merchant-filter-group">
+            <div class="merchant-combobox">
+              <div class="combobox-input-wrapper">
+                <input
+                  type="text"
+                  [(ngModel)]="merchantIdInput"
+                  (input)="onMerchantInputChange()"
+                  (focus)="showDropdown = true"
+                  (keyup.enter)="showDropdown = false"
+                  placeholder="All Merchants"
+                  autocomplete="off"
+                />
+                <button type="button" class="combobox-toggle" (click)="toggleDropdown()" tabindex="-1">&#9660;</button>
+              </div>
+              <ul class="combobox-dropdown" *ngIf="showDropdown">
+                <li (click)="selectMerchant('')" [class.active]="merchantSelectedId === ''">All Merchants</li>
+                <li *ngFor="let mid of filteredMerchantIds"
+                    (click)="selectMerchant(mid)"
+                    [class.active]="merchantSelectedId === mid"
+                >{{ mid }}</li>
+                <li *ngIf="filteredMerchantIds.length === 0" class="no-match">Merchant not exist</li>
+              </ul>
+            </div>
+            <button type="button" class="btn-search" (click)="applyFilters()">Search</button>
+          </div>
+        </div>
+
+        <div class="page-size-selector">
+          <label for="pageSize">Rows:</label>
+          <select 
+            id="pageSize" 
+            [(ngModel)]="pageSize" 
+            (change)="onPageSizeChange()"
+            class="filter-select"
+          >
+            <option *ngFor="let size of pageSizeOptions" [ngValue]="size">{{ size }}</option>
+          </select>
+        </div>
       </div>
     </div>
 
     <div class="table-container" *ngIf="!isLoading">
-      <table class="recurring-table" *ngIf="filteredItems.length > 0">
+      <table class="recurring-table">
         <thead>
           <tr>
             <th>Recurring Reference</th>
@@ -45,7 +88,7 @@
           </tr>
         </thead>
         <tbody>
-          <tr *ngFor="let item of filteredItems">
+          <tr *ngFor="let item of pagedItems">
             <td class="recurring-ref">{{ item.recurringReference }}</td>
             <td>{{ item.merchantId }}</td>
             <td class="count-cell">{{ item.totalTransactions }}</td>
@@ -62,11 +105,33 @@
               </button>
             </td>
           </tr>
+          <tr *ngIf="filteredItems.length === 0">
+            <td colspan="7" class="no-data-cell">
+              <div class="no-data">
+                <p>No recurring transactions found.</p>
+              </div>
+            </td>
+          </tr>
         </tbody>
       </table>
 
-      <div class="no-data" *ngIf="filteredItems.length === 0">
-        <p>No recurring transactions found.</p>
+      <!-- Pagination -->
+      <div class="pagination-section" *ngIf="filteredItems.length > 0">
+        <div class="pagination-info">
+          Showing {{ startRecord }} – {{ endRecord }} of {{ filteredItems.length }} records
+        </div>
+        <div class="pagination-controls">
+          <button class="page-btn" (click)="goToPage(1)" [disabled]="currentPage === 1">«</button>
+          <button class="page-btn" (click)="goToPage(currentPage - 1)" [disabled]="currentPage === 1">‹</button>
+          <button 
+            *ngFor="let p of visiblePages" 
+            class="page-btn" 
+            [class.active]="p === currentPage" 
+            (click)="goToPage(p)"
+          >{{ p }}</button>
+          <button class="page-btn" (click)="goToPage(currentPage + 1)" [disabled]="currentPage === totalPages">›</button>
+          <button class="page-btn" (click)="goToPage(totalPages)" [disabled]="currentPage === totalPages">»</button>
+        </div>
       </div>
     </div>
 

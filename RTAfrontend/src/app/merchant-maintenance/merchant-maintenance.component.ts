@@ -33,6 +33,12 @@ export class MerchantMaintenanceComponent implements OnInit, OnDestroy {
   filteredMerchants: MerchantListItem[] = [];
   searchKeyword: string = '';
   isLoading: boolean = false;
+
+  // Delete confirmation modal
+  showDeleteModal: boolean = false;
+  merchantToDelete: MerchantListItem | null = null;
+  isDeleting: boolean = false;
+
   private routerSub!: Subscription;
   private merchantApiUrl = 'https://localhost:8086/api/merchants';
 
@@ -105,6 +111,40 @@ export class MerchantMaintenanceComponent implements OnInit, OnDestroy {
 
   addMerchant(): void {
     this.router.navigate(['/add-merchant']);
+  }
+
+  viewMerchant(merchantId: string): void {
+    this.router.navigate(['/view-merchant', merchantId]);
+  }
+
+  editMerchant(merchantId: string): void {
+    this.router.navigate(['/edit-merchant', merchantId]);
+  }
+
+  openDeleteModal(merchant: MerchantListItem): void {
+    this.merchantToDelete = merchant;
+    this.showDeleteModal = true;
+  }
+
+  closeDeleteModal(): void {
+    this.merchantToDelete = null;
+    this.showDeleteModal = false;
+    this.isDeleting = false;
+  }
+
+  confirmDelete(): void {
+    if (!this.merchantToDelete) return;
+    this.isDeleting = true;
+    this.profileService.deleteMerchant(this.merchantToDelete.merchantId).subscribe({
+      next: () => {
+        this.closeDeleteModal();
+        this.loadMerchants();
+      },
+      error: (err) => {
+        this.isDeleting = false;
+        alert('Failed to delete merchant: ' + (err.error || err.message));
+      }
+    });
   }
 
   logout(): void {

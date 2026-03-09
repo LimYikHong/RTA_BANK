@@ -120,4 +120,51 @@ public class MerchantController {
         result.put("nextId", merchantService.generateNextMerchantId());
         return ResponseEntity.ok(result);
     }
+
+    /**
+     * GET /api/merchants/{merchantId} Returns a single merchant by ID.
+     */
+    @GetMapping("/{merchantId}")
+    public ResponseEntity<?> getMerchantById(@PathVariable String merchantId) {
+        return merchantService.getMerchantById(merchantId)
+                .<ResponseEntity<?>>map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
+    }
+
+    /**
+     * PUT /api/merchants/{merchantId} Updates an existing merchant's info.
+     */
+    @PutMapping("/{merchantId}")
+    public ResponseEntity<?> updateMerchant(@PathVariable String merchantId,
+            @RequestBody Map<String, Object> payload) {
+        try {
+            MerchantInfo updates = new MerchantInfo();
+            updates.setName((String) payload.get("name"));
+            updates.setEmail((String) payload.get("email"));
+            updates.setCompany((String) payload.get("company"));
+            updates.setContact((String) payload.get("contact"));
+            updates.setPhone((String) payload.get("phone"));
+            updates.setAddress((String) payload.get("address"));
+            if (payload.get("password") != null) {
+                updates.setPassword((String) payload.get("password"));
+            }
+            MerchantInfo updated = merchantService.updateMerchant(merchantId, updates);
+            return ResponseEntity.ok(updated);
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    /**
+     * DELETE /api/merchants/{merchantId} Deletes a merchant.
+     */
+    @DeleteMapping("/{merchantId}")
+    public ResponseEntity<?> deleteMerchant(@PathVariable String merchantId) {
+        try {
+            merchantService.deleteMerchant(merchantId);
+            return ResponseEntity.ok(Map.of("message", "Merchant deleted successfully"));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
 }

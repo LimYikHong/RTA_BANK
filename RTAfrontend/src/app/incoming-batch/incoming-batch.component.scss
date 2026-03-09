@@ -50,25 +50,6 @@
   background-color: #243447;
 }
 
-.logout-btn {
-  position: fixed;
-  top: 20px;
-  right: 40px;
-  background-color: #ef4444;
-  color: white;
-  border: none;
-  padding: 8px 16px;
-  border-radius: 4px;
-  cursor: pointer;
-  font-weight: bold;
-  z-index: 9999;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-}
-
-.logout-btn:hover {
-  background-color: #dc2626;
-}
-
 .main-content {
   flex: 1;
   margin-left: 220px;
@@ -230,48 +211,7 @@
   color: #be185d;
 }
 
-.action-cell {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-}
-
-.btn-view {
-  background-color: #3b82f6;
-  color: white;
-  padding: 5px 14px;
-  border: none;
-  border-radius: 6px;
-  font-size: 12px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background-color 0.2s;
-}
-
-.btn-view:hover {
-  background-color: #2563eb;
-}
-
-.btn-retry {
-  background-color: #f59e0b;
-  color: white;
-  padding: 5px 14px;
-  border: none;
-  border-radius: 6px;
-  font-size: 12px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background-color 0.2s;
-}
-
-.btn-retry:hover {
-  background-color: #d97706;
-}
-
-.btn-retry:disabled {
-  background-color: #9ca3af;
-  cursor: not-allowed;
-}
+/* action-cell, btn-action, btn-view, btn-retry use global _global-components.scss */
 
 .record-detail {
   font-size: 12px;

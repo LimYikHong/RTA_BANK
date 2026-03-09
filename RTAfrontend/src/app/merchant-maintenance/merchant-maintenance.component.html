@@ -55,6 +55,7 @@
                         <th>Address</th>
                         <th>Joined On</th>
                         <th>Created By</th>
+                        <th>Actions</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -69,6 +70,11 @@
                         <td>{{ m.address || '-' }}</td>
                         <td>{{ m.joinedOn | date: 'mediumDate' }}</td>
                         <td>{{ m.createBy || '-' }}</td>
+                        <td class="action-cell">
+                            <button class="btn-action btn-view" (click)="viewMerchant(m.merchantId)" title="View"></button>
+                            <button class="btn-action btn-edit" (click)="editMerchant(m.merchantId)" title="Edit"></button>
+                            <button class="btn-action btn-delete" (click)="openDeleteModal(m)" title="Delete"></button>
+                        </td>
                     </tr>
                 </tbody>
             </table>
@@ -80,4 +86,23 @@
             </ng-template>
         </div>
     </main>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal-overlay" *ngIf="showDeleteModal" (click)="closeDeleteModal()">
+    <div class="modal-box" (click)="$event.stopPropagation()">
+        <h3 class="modal-title">Confirm Delete</h3>
+        <p class="modal-body">
+            Are you sure you want to delete merchant
+            <strong>{{ merchantToDelete?.merchantId }}</strong>
+            ({{ merchantToDelete?.name }})?
+            <br />This action cannot be undone.
+        </p>
+        <div class="modal-actions">
+            <button class="btn btn-cancel-modal" (click)="closeDeleteModal()" [disabled]="isDeleting">Cancel</button>
+            <button class="btn btn-confirm-delete" (click)="confirmDelete()" [disabled]="isDeleting">
+                {{ isDeleting ? 'Deleting...' : 'Yes, Delete' }}
+            </button>
+        </div>
+    </div>
 </div>

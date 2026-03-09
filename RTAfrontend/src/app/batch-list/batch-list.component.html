@@ -1,4 +1,5 @@
-<div class="profile-container">
+<div class="page-container">
+  <!-- Sidebar -->
   <aside class="sidebar">
     <h2>RTA Upload</h2>
     <ul>
@@ -11,61 +12,55 @@
     </ul>
   </aside>
 
+  <!-- Main Content -->
   <button class="logout-btn" (click)="logout()">Logout</button>
-
-  <main class="profile-content">
-    <h1>Uploaded Batches</h1>
-
-    <div class="user-info">
-      <p>
-        🧾 User ID: <b>{{ user?.userId }}</b>
-      </p>
-      <p>
-        🏢 Company: <b>{{ user?.company }}</b>
-      </p>
-      <p>
-        👤 Name: <b>{{ user?.name }}</b>
-      </p>
+  <main class="main-content">
+    <div class="page-header">
+      <h1>Upload Batch File</h1>
     </div>
 
-    <div class="upload-section">
+    <div class="user-info">
+      <span>🧾 User ID: <b>{{ user?.userId }}</b></span>
+      <span>🏢 Company: <b>{{ user?.company }}</b></span>
+      <span>👤 Name: <b>{{ user?.name }}</b></span>
+    </div>
+
+    <div class="toolbar">
       <input
         type="file"
+        class="file-input"
         accept=".xlsx,.xls,.csv,.txt"
         (change)="onFileSelected($event)"
       />
-      <button (click)="uploadBatch()">Upload</button>
+      <button class="btn btn-primary" (click)="uploadBatch()">Upload</button>
     </div>
 
-    <table>
-      <thead>
-        <tr>
-          <th>File Name</th>
-          <th>Status</th>
-          <th>User</th>
-          <th>Created By</th>
-          <th>Created At</th>
-          <th>Action</th>
-        </tr>
-      </thead>
-
-      <tbody>
-        <tr *ngFor="let batch of batches">
-          <td>{{ batch.fileName }}</td>
-          <td>{{ batch.status }}</td>
-          <td>{{ batch.merchantId }}</td>
-          <td>{{ batch.createdBy }}</td>
-          <td>{{ batch.createdAt | date : 'short' }}</td>
-          <td>
-            <button class="btn-blue" (click)="viewBatch(batch.batchId!)">
-              View
-            </button>
-            <button class="btn-red" (click)="deleteBatch(batch.batchId!)">
-              Delete
-            </button>
-          </td>
-        </tr>
-      </tbody>
-    </table>
+    <div class="table-wrapper">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>File Name</th>
+            <th>Status</th>
+            <th>User</th>
+            <th>Created By</th>
+            <th>Created At</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let batch of batches">
+            <td>{{ getDisplayFileName(batch.fileName) }}</td>
+            <td>{{ batch.status }}</td>
+            <td>{{ batch.merchantId }}</td>
+            <td>{{ batch.createdBy }}</td>
+            <td>{{ batch.createdAt | date : 'short' }}</td>
+            <td class="action-cell">
+              <button class="btn-action btn-view" (click)="viewBatch(batch.batchId!)" title="View"></button>
+              <button class="btn-action btn-delete" (click)="deleteBatch(batch.batchId!)" title="Delete"></button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
   </main>
 </div>

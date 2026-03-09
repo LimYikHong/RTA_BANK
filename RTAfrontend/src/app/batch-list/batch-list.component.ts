@@ -133,6 +133,23 @@ export class BatchListComponent implements OnInit {
     );
   }
 
+  /**
+   * Strip the leading timestamp prefix from storedFileName.
+   * storedFileName format: "1771837642067_M007_2026-02-23_17-07-16.txt"
+   * Display format:                      "M007_2026-02-23_17-07-16.txt"
+   */
+  getDisplayFileName(fileName: string): string {
+    if (!fileName) return '-';
+    const underscoreIndex = fileName.indexOf('_');
+    if (underscoreIndex > 0) {
+      const prefix = fileName.substring(0, underscoreIndex);
+      if (/^\d+$/.test(prefix)) {
+        return fileName.substring(underscoreIndex + 1);
+      }
+    }
+    return fileName;
+  }
+
   // Delete a batch by id and refresh table
   deleteBatch(id: number): void {
     this.portalService.deleteBatch(id).subscribe({

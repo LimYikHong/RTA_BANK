@@ -8,6 +8,7 @@ import rta.entity.RtaBatch;
 import rta.entity.RtaTransaction;
 import rta.repository.RtaBatchRepository;
 import rta.repository.RtaTransactionRepository;
+import rta.service.MinioStorageService;
 
 import java.io.*;
 import java.nio.file.*;
@@ -25,11 +26,16 @@ public class RtaBatchController {
 
     private final RtaBatchRepository batchRepository;
     private final RtaTransactionRepository transactionRepository;
+    private final MinioStorageService minioStorageService;
+
+    private static final String UPLOAD_DIR = "uploads";
 
     public RtaBatchController(RtaBatchRepository batchRepository,
-            RtaTransactionRepository transactionRepository) {
+            RtaTransactionRepository transactionRepository,
+            MinioStorageService minioStorageService) {
         this.batchRepository = batchRepository;
         this.transactionRepository = transactionRepository;
+        this.minioStorageService = minioStorageService;
     }
 
     /**
@@ -76,10 +82,9 @@ public class RtaBatchController {
                         .body("Invalid content type: " + contentType);
             }
 
-            String uploadDir = "uploads/";
-            Files.createDirectories(Paths.get(uploadDir));
-            Path path = Paths.get(uploadDir + fileName);
-            Files.copy(file.getInputStream(), path, StandardCopyOption.REPLACE_EXISTING);
+            // Upload file to MinIO
+            String objectName = UPLOAD_DIR + "/" + fileName;
+            String storageUri = minioStorageService.uploadFile(objectName, file);
 
             RtaBatch batch = new RtaBatch();
             batch.setOriginalFileName(originalFileName);
@@ -208,15 +213,16 @@ public class RtaBatchController {
                     transactionRepository.deleteAll(transactions);
                 }
 
-                Path filePath = Paths.get("uploads/" + batch.getFileName());
-                if (Files.exists(filePath)) {
-                    Files.delete(filePath);
+                // Delete file from MinIO
+                String objectName = UPLOAD_DIR + "/" + batch.getFileName();
+                if (minioStorageService.fileExists(objectName)) {
+                    minioStorageService.deleteFile(objectName);
                 }
 
                 batchRepository.delete(batch);
 
                 return ResponseEntity.ok(Map.of("message", "Batch and related records deleted successfully"));
-            } catch (IOException e) {
+            } catch (Exception e) {
                 return ResponseEntity.internalServerError()
                         .body(Map.of("error", "Batch deleted from DB, but file removal failed"));
             }

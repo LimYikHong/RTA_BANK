@@ -31,7 +31,17 @@ public class SecurityConfig {
                 })
                 .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/api/profile/**", "/api/batches/**", "/api/incoming/**", "/api/merchants/**", "/api/file-profiles/**", "/api/recurring/**", "/uploads/**").permitAll()
+                .requestMatchers(
+                        "/api/auth/**",
+                        "/api/profile/**",
+                        "/api/batches/**",
+                        "/api/incoming/**",
+                        "/api/merchants/**",
+                        "/api/file-profiles/**",
+                        "/api/recurring/**",
+                        "/api/files/**",
+                        "/uploads/**"
+                ).permitAll()
                 .anyRequest().permitAll())
                 .httpBasic(h -> h.disable())
                 .formLogin(f -> f.disable());
