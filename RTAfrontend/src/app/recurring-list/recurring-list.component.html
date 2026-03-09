@@ -107,10 +107,8 @@
                 {{ getStatusSummary(item) }}
               </span>
             </td>
-            <td>
-              <button class="btn-view" (click)="viewDetail(item.recurringReference)">
-                View
-              </button>
+            <td class="action-cell">
+              <button class="btn-action btn-view" (click)="viewDetail(item.recurringReference)" title="View"></button>
             </td>
           </tr>
           <tr *ngIf="filteredItems.length === 0">
