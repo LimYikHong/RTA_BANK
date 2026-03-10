@@ -6,21 +6,16 @@
 
   .filter-row {
     display: flex;
-    align-items: center;
+    align-items: flex-end;
     gap: 16px;
     flex-wrap: wrap;
   }
 
-  .search-box {
-    flex: 1;
-    min-width: 200px;
-    max-width: 350px;
-  }
-
-  .merchant-filter {
+  // Each labeled field column
+  .filter-field {
     display: flex;
-    align-items: center;
-    gap: 8px;
+    flex-direction: column;
+    gap: 6px;
 
     label {
       font-size: 13px;
@@ -29,123 +24,129 @@
       white-space: nowrap;
     }
 
-    .merchant-filter-group {
+    .search-input {
+      width: 260px;
+    }
+  }
+
+  // Search button aligned to bottom of row
+  .filter-actions {
+    display: flex;
+    align-items: flex-end;
+
+    .btn-search {
+      padding: 8px 24px;
+      background: #3b82f6;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: background 0.2s;
+      height: 38px;
+
+      &:hover {
+        background: #2563eb;
+      }
+
+      &:active {
+        background: #1d4ed8;
+      }
+    }
+  }
+
+  // Merchant combobox (used inside .filter-field)
+  .merchant-combobox {
+    position: relative;
+    width: 220px;
+
+    .combobox-input-wrapper {
       display: flex;
       align-items: center;
-      gap: 8px;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      background: #fff;
+      transition: border-color 0.2s;
 
-      .btn-search {
-        padding: 8px 16px;
-        background: #3b82f6;
-        color: #fff;
+      &:focus-within {
+        border-color: #3b82f6;
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+      }
+
+      input {
+        flex: 1;
+        padding: 8px 10px;
         border: none;
-        border-radius: 8px;
+        outline: none;
         font-size: 14px;
-        font-weight: 600;
+        color: #1e293b;
+        background: transparent;
+        border-radius: 8px 0 0 8px;
+        min-width: 0;
+
+        &::placeholder {
+          color: #94a3b8;
+        }
+      }
+
+      .combobox-toggle {
+        padding: 8px 8px;
+        border: none;
+        background: transparent;
+        color: #94a3b8;
         cursor: pointer;
-        white-space: nowrap;
-        transition: background 0.2s;
+        font-size: 10px;
+        line-height: 1;
+        border-radius: 0 8px 8px 0;
 
         &:hover {
-          background: #2563eb;
-        }
-
-        &:active {
-          background: #1d4ed8;
+          color: #475569;
         }
       }
     }
 
-    .merchant-combobox {
-      position: relative;
-      width: 200px;
+    .combobox-dropdown {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      right: 0;
+      margin: 4px 0 0;
+      padding: 4px 0;
+      background: #fff;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      max-height: 200px;
+      overflow-y: auto;
+      z-index: 100;
+      list-style: none;
 
-      .combobox-input-wrapper {
-        display: flex;
-        align-items: center;
-        border: 1px solid #e2e8f0;
-        border-radius: 8px;
-        background: #fff;
-        transition: border-color 0.2s;
+      li {
+        padding: 8px 12px;
+        font-size: 14px;
+        color: #1e293b;
+        cursor: pointer;
+        transition: background 0.15s;
 
-        &:focus-within {
-          border-color: #3b82f6;
-          box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        &:hover {
+          background: #f1f5f9;
         }
 
-        input {
-          flex: 1;
-          padding: 8px 10px;
-          border: none;
-          outline: none;
-          font-size: 14px;
-          color: #1e293b;
-          background: transparent;
-          border-radius: 8px 0 0 8px;
-          min-width: 0;
-
-          &::placeholder {
-            color: #94a3b8;
-          }
+        &.active {
+          background: #eff6ff;
+          color: #3b82f6;
+          font-weight: 600;
         }
 
-        .combobox-toggle {
-          padding: 8px 8px;
-          border: none;
-          background: transparent;
-          color: #94a3b8;
-          cursor: pointer;
-          font-size: 10px;
-          line-height: 1;
-          border-radius: 0 8px 8px 0;
+        &.no-match {
+          color: #ef4444;
+          font-style: italic;
+          cursor: default;
 
           &:hover {
-            color: #475569;
-          }
-        }
-      }
-
-      .combobox-dropdown {
-        position: absolute;
-        top: 100%;
-        left: 0;
-        right: 0;
-        margin: 4px 0 0;
-        padding: 4px 0;
-        background: #fff;
-        border: 1px solid #e2e8f0;
-        border-radius: 8px;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-        max-height: 200px;
-        overflow-y: auto;
-        z-index: 100;
-        list-style: none;
-
-        li {
-          padding: 8px 12px;
-          font-size: 14px;
-          color: #1e293b;
-          cursor: pointer;
-          transition: background 0.15s;
-
-          &:hover {
-            background: #f1f5f9;
-          }
-
-          &.active {
-            background: #eff6ff;
-            color: #3b82f6;
-            font-weight: 600;
-          }
-
-          &.no-match {
-            color: #ef4444;
-            font-style: italic;
-            cursor: default;
-
-            &:hover {
-              background: transparent;
-            }
+            background: transparent;
           }
         }
       }

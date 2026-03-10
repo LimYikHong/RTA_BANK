@@ -14,6 +14,9 @@ import { Subscription, filter } from 'rxjs';
   styleUrl: './user-management.component.scss'
 })
 export class UserManagementComponent implements OnInit, OnDestroy {
+  drawerOpen = true;
+  toggleDrawer() { this.drawerOpen = !this.drawerOpen; }
+
   users: UserListItem[] = [];
   filteredUsers: UserListItem[] = [];
   searchKeyword: string = '';

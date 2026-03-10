@@ -1,6 +1,14 @@
-<div class="page-container">
+<div class="page-container" [class.drawer-open]="drawerOpen">
+  <!-- Open sidebar button (top-left, visible when closed) -->
+  <button class="sidebar-open-btn" (click)="toggleDrawer()">
+    <span></span><span></span><span></span>
+  </button>
+
   <!-- Sidebar -->
-  <aside class="sidebar">
+  <aside class="sidebar" [class.open]="drawerOpen">
+    <button class="sidebar-toggle" (click)="toggleDrawer()">
+      <span></span><span></span><span></span>
+    </button>
     <h2>RTA Upload</h2>
     <ul>
       <li routerLink="/batch-list" routerLinkActive="active"><b>Upload Batch File</b></li>

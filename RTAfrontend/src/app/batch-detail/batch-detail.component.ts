@@ -43,6 +43,9 @@ interface TransactionRecord {
   styleUrl: './batch-detail.component.scss'
 })
 export class BatchDetailComponent implements OnInit {
+  drawerOpen = true;
+  toggleDrawer() { this.drawerOpen = !this.drawerOpen; }
+
   private apiUrl = 'https://localhost:8086/api/incoming';
 
   batchId!: number;

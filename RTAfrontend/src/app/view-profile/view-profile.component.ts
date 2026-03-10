@@ -13,6 +13,9 @@ import { AuthService } from '../services/auth.service';
   styleUrl: './view-profile.component.scss'
 })
 export class ViewProfileComponent implements OnInit {
+  drawerOpen = true;
+  toggleDrawer() { this.drawerOpen = !this.drawerOpen; }
+
   profile: UserProfile | null = null;
 
   @ViewChild('fileInput') fileInput!: ElementRef;

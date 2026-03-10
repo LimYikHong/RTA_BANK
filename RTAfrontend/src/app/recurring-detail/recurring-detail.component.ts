@@ -40,6 +40,9 @@ interface RecurringDetail {
   styleUrl: './recurring-detail.component.scss'
 })
 export class RecurringDetailComponent implements OnInit {
+  drawerOpen = true;
+  toggleDrawer() { this.drawerOpen = !this.drawerOpen; }
+
   private apiUrl = 'https://localhost:8086/api/recurring';
 
   recurringReference: string = '';

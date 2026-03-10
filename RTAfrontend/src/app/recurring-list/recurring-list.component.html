@@ -1,6 +1,14 @@
-<div class="page-container">
+<div class="page-container" [class.drawer-open]="drawerOpen">
+  <!-- Open sidebar button (top-left, visible when closed) -->
+  <button class="sidebar-open-btn" (click)="toggleDrawer()">
+    <span></span><span></span><span></span>
+  </button>
+
   <!-- Sidebar -->
-  <aside class="sidebar">
+  <aside class="sidebar" [class.open]="drawerOpen">
+    <button class="sidebar-toggle" (click)="toggleDrawer()">
+      <span></span><span></span><span></span>
+    </button>
     <h2>RTA Upload</h2>
     <ul>
       <li routerLink="/batch-list" routerLinkActive="active"><b>Upload Batch File</b></li>
@@ -21,56 +29,64 @@
 
     <div class="filter-section">
       <div class="filter-row">
-        <div class="search-box">
-          <input 
-            type="text" 
-            [(ngModel)]="searchTerm" 
-            (input)="onSearch()" 
+
+        <!-- Merchant ID combobox -->
+        <div class="filter-field">
+          <label>Merchant ID</label>
+          <div class="merchant-combobox">
+            <div class="combobox-input-wrapper">
+              <input
+                type="text"
+                [(ngModel)]="merchantIdInput"
+                (input)="onMerchantInputChange()"
+                (focus)="onInputFocus()"
+                (keyup.enter)="showDropdown = false"
+                placeholder="All Merchants"
+                autocomplete="off"
+              />
+              <button type="button" class="combobox-toggle" (click)="toggleDropdown()" tabindex="-1">&#9660;</button>
+            </div>
+            <ul class="combobox-dropdown" *ngIf="showDropdown">
+              <li (click)="selectMerchant('')" [class.active]="merchantSelectedId === ''">All Merchants</li>
+              <li *ngFor="let mid of filteredMerchantIds"
+                  (click)="selectMerchant(mid)"
+                  [class.active]="merchantSelectedId === mid"
+              >{{ mid }}</li>
+              <li *ngIf="filteredMerchantIds.length === 0" class="no-match">Merchant not exist</li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- Reference ID / keyword search -->
+        <div class="filter-field">
+          <label>Reference ID</label>
+          <input
+            type="text"
+            [(ngModel)]="searchTerm"
+            (keyup.enter)="applyFilters()"
             placeholder="Search by recurring reference..."
             class="search-input"
           />
         </div>
 
-        <div class="merchant-filter">
-          <label>Merchant:</label>
-          <div class="merchant-filter-group">
-            <div class="merchant-combobox">
-              <div class="combobox-input-wrapper">
-                <input
-                  type="text"
-                  [(ngModel)]="merchantIdInput"
-                  (input)="onMerchantInputChange()"
-                  (focus)="showDropdown = true"
-                  (keyup.enter)="showDropdown = false"
-                  placeholder="All Merchants"
-                  autocomplete="off"
-                />
-                <button type="button" class="combobox-toggle" (click)="toggleDropdown()" tabindex="-1">&#9660;</button>
-              </div>
-              <ul class="combobox-dropdown" *ngIf="showDropdown">
-                <li (click)="selectMerchant('')" [class.active]="merchantSelectedId === ''">All Merchants</li>
-                <li *ngFor="let mid of filteredMerchantIds"
-                    (click)="selectMerchant(mid)"
-                    [class.active]="merchantSelectedId === mid"
-                >{{ mid }}</li>
-                <li *ngIf="filteredMerchantIds.length === 0" class="no-match">Merchant not exist</li>
-              </ul>
-            </div>
-            <button type="button" class="btn-search" (click)="applyFilters()">Search</button>
-          </div>
+        <!-- Search button -->
+        <div class="filter-actions">
+          <button type="button" class="btn-search" (click)="applyFilters()">Search</button>
         </div>
 
+        <!-- Rows per page -->
         <div class="page-size-selector">
           <label for="pageSize">Rows:</label>
-          <select 
-            id="pageSize" 
-            [(ngModel)]="pageSize" 
+          <select
+            id="pageSize"
+            [(ngModel)]="pageSize"
             (change)="onPageSizeChange()"
             class="filter-select"
           >
             <option *ngFor="let size of pageSizeOptions" [ngValue]="size">{{ size }}</option>
           </select>
         </div>
+
       </div>
     </div>
 
@@ -99,13 +115,11 @@
                 {{ getStatusSummary(item) }}
               </span>
             </td>
-            <td>
-              <button class="btn-view" (click)="viewDetail(item.recurringReference)">
-                View
-              </button>
+            <td class="action-cell">
+              <button class="btn-action btn-view" (click)="viewDetail(item.recurringReference)" title="View"></button>
             </td>
           </tr>
-          <tr *ngIf="filteredItems.length === 0">
+          <tr *ngIf="totalElements === 0">
             <td colspan="7" class="no-data-cell">
               <div class="no-data">
                 <p>No recurring transactions found.</p>
@@ -116,9 +130,9 @@
       </table>
 
       <!-- Pagination -->
-      <div class="pagination-section" *ngIf="filteredItems.length > 0">
+      <div class="pagination-section" *ngIf="totalElements > 0">
         <div class="pagination-info">
-          Showing {{ startRecord }} – {{ endRecord }} of {{ filteredItems.length }} records
+          Showing {{ startRecord }} – {{ endRecord }} of {{ totalElements }} records
         </div>
         <div class="pagination-controls">
           <button class="page-btn" (click)="goToPage(1)" [disabled]="currentPage === 1">«</button>
