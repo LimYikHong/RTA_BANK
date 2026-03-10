@@ -29,56 +29,64 @@
 
     <div class="filter-section">
       <div class="filter-row">
-        <div class="search-box">
-          <input 
-            type="text" 
-            [(ngModel)]="searchTerm" 
-            (input)="onSearch()" 
+
+        <!-- Merchant ID combobox -->
+        <div class="filter-field">
+          <label>Merchant ID</label>
+          <div class="merchant-combobox">
+            <div class="combobox-input-wrapper">
+              <input
+                type="text"
+                [(ngModel)]="merchantIdInput"
+                (input)="onMerchantInputChange()"
+                (focus)="onInputFocus()"
+                (keyup.enter)="showDropdown = false"
+                placeholder="All Merchants"
+                autocomplete="off"
+              />
+              <button type="button" class="combobox-toggle" (click)="toggleDropdown()" tabindex="-1">&#9660;</button>
+            </div>
+            <ul class="combobox-dropdown" *ngIf="showDropdown">
+              <li (click)="selectMerchant('')" [class.active]="merchantSelectedId === ''">All Merchants</li>
+              <li *ngFor="let mid of filteredMerchantIds"
+                  (click)="selectMerchant(mid)"
+                  [class.active]="merchantSelectedId === mid"
+              >{{ mid }}</li>
+              <li *ngIf="filteredMerchantIds.length === 0" class="no-match">Merchant not exist</li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- Reference ID / keyword search -->
+        <div class="filter-field">
+          <label>Reference ID</label>
+          <input
+            type="text"
+            [(ngModel)]="searchTerm"
+            (keyup.enter)="applyFilters()"
             placeholder="Search by recurring reference..."
             class="search-input"
           />
         </div>
 
-        <div class="merchant-filter">
-          <label>Merchant:</label>
-          <div class="merchant-filter-group">
-            <div class="merchant-combobox">
-              <div class="combobox-input-wrapper">
-                <input
-                  type="text"
-                  [(ngModel)]="merchantIdInput"
-                  (input)="onMerchantInputChange()"
-                  (focus)="showDropdown = true"
-                  (keyup.enter)="showDropdown = false"
-                  placeholder="All Merchants"
-                  autocomplete="off"
-                />
-                <button type="button" class="combobox-toggle" (click)="toggleDropdown()" tabindex="-1">&#9660;</button>
-              </div>
-              <ul class="combobox-dropdown" *ngIf="showDropdown">
-                <li (click)="selectMerchant('')" [class.active]="merchantSelectedId === ''">All Merchants</li>
-                <li *ngFor="let mid of filteredMerchantIds"
-                    (click)="selectMerchant(mid)"
-                    [class.active]="merchantSelectedId === mid"
-                >{{ mid }}</li>
-                <li *ngIf="filteredMerchantIds.length === 0" class="no-match">Merchant not exist</li>
-              </ul>
-            </div>
-            <button type="button" class="btn-search" (click)="applyFilters()">Search</button>
-          </div>
+        <!-- Search button -->
+        <div class="filter-actions">
+          <button type="button" class="btn-search" (click)="applyFilters()">Search</button>
         </div>
 
+        <!-- Rows per page -->
         <div class="page-size-selector">
           <label for="pageSize">Rows:</label>
-          <select 
-            id="pageSize" 
-            [(ngModel)]="pageSize" 
+          <select
+            id="pageSize"
+            [(ngModel)]="pageSize"
             (change)="onPageSizeChange()"
             class="filter-select"
           >
             <option *ngFor="let size of pageSizeOptions" [ngValue]="size">{{ size }}</option>
           </select>
         </div>
+
       </div>
     </div>
 

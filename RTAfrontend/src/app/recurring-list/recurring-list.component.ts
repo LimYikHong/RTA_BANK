@@ -47,9 +47,6 @@ export class RecurringListComponent implements OnInit {
   totalPages = 1;
   totalElements = 0;
 
-  // Debounce timer for search
-  private searchTimer: any;
-
   // Merchant ID lists (loaded once from dedicated endpoint)
   merchantIds: string[] = [];          // full list from API
   filteredMerchantIds: string[] = [];  // subset shown in dropdown based on text input
@@ -117,18 +114,18 @@ export class RecurringListComponent implements OnInit {
     });
   }
 
-  onSearch(): void {
-    // Debounce: wait 400ms after user stops typing before calling API
-    clearTimeout(this.searchTimer);
-    this.searchTimer = setTimeout(() => {
-      this.currentPage = 1;
-      this.loadPage();
-    }, 400);
-  }
-
+  /** Only triggered by the Search button or Enter key */
   applyFilters(): void {
     this.currentPage = 1;
     this.loadPage();
+  }
+
+  onInputFocus(): void {
+    // Always show the full list when the user clicks into the input
+    this.filteredMerchantIds = this.merchantIdInput.trim()
+      ? this.merchantIds.filter(id => id.toLowerCase().includes(this.merchantIdInput.trim().toLowerCase()))
+      : [...this.merchantIds];
+    this.showDropdown = true;
   }
 
   onMerchantInputChange(): void {
@@ -137,21 +134,14 @@ export class RecurringListComponent implements OnInit {
     if (!typed) {
       this.filteredMerchantIds = [...this.merchantIds];
       this.merchantSelectedId = '';
-      this.applyFilters();
       return;
     }
     this.filteredMerchantIds = this.merchantIds.filter(id =>
       id.toLowerCase().includes(typed)
     );
-    // Auto-select if exact match typed
+    // Auto-select if exact match typed but do NOT fire search yet
     const exact = this.merchantIds.find(id => id.toLowerCase() === typed);
-    if (exact) {
-      this.merchantSelectedId = exact;
-      this.applyFilters();
-    } else {
-      this.merchantSelectedId = '';
-      this.applyFilters();
-    }
+    this.merchantSelectedId = exact ?? '';
   }
 
   selectMerchant(id: string): void {
@@ -159,7 +149,7 @@ export class RecurringListComponent implements OnInit {
     this.merchantIdInput = id;
     this.showDropdown = false;
     this.filteredMerchantIds = [...this.merchantIds];
-    this.applyFilters();
+    // Do NOT auto-search; user must press the Search button
   }
 
   toggleDropdown(): void {
