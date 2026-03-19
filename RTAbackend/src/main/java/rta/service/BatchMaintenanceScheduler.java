@@ -1,10 +1,15 @@
 package rta.service;
 
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.List;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
 import rta.entity.RtaAuthorizationBatch;
 import rta.entity.RtaBatch;
 import rta.entity.RtaIncomingBatchFile;
@@ -14,10 +19,6 @@ import rta.repository.RtaBatchRepository;
 import rta.repository.RtaIncomingBatchFileRepository;
 import rta.repository.RtaTransactionRepository;
 
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
-import java.util.List;
-
 /**
  * Scheduled service that runs every 5 minutes.
  *
@@ -25,8 +26,8 @@ import java.util.List;
  * Phase 1 — Batch assignment: finds incoming files with successCount > 0 that
  * have NOT yet been assigned a batch_id. For each eligible file, creates an
  * {@link RtaBatch} record, assigns the generated batch_id to the incoming file
- * (FK to rta_batch), and links the file's transactions to that batch.
- * Files with 0 successful records are skipped (no batch ID wasted).
+ * (FK to rta_batch), and links the file's transactions to that batch. Files
+ * with 0 successful records are skipped (no batch ID wasted).
  *
  * <p>
  * Phase 2 — Authorization grouping: groups all validated (SUCCESS) transactions
