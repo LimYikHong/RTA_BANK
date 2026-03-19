@@ -19,7 +19,7 @@ public class RtaIncomingBatchFile {
     @Column(name = "merchant_id", nullable = false)
     private String merchantId;
 
-    @Column(name = "batch_id", nullable = false)
+    @Column(name = "batch_id")
     private Long batchId;
 
     @Column(name = "original_filename")
@@ -57,6 +57,9 @@ public class RtaIncomingBatchFile {
 
     @Column(name = "file_status")
     private String fileStatus;
+
+    @Column(name = "batch_status")
+    private String batchStatus;
 
     @Column(name = "transaction_record_remark")
     private String transactionRecordRemark;

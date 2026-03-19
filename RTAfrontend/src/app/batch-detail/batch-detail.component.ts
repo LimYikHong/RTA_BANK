@@ -3,9 +3,11 @@ import { CommonModule } from '@angular/common';
 import { RouterModule, Router, ActivatedRoute } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
 import { AuthService } from '../services/auth.service';
+import { TopBarComponent } from '../top-bar/top-bar.component';
 
 interface BatchSummary {
-  batchId: number;
+  batchFileId: number;
+  batchId: number | null;
   fileName: string;
   merchantId: string;
   status: string;
@@ -38,7 +40,7 @@ interface TransactionRecord {
 @Component({
   selector: 'app-batch-detail',
   standalone: true,
-  imports: [CommonModule, RouterModule],
+  imports: [CommonModule, RouterModule, TopBarComponent],
   templateUrl: './batch-detail.component.html',
   styleUrl: './batch-detail.component.scss'
 })
@@ -48,11 +50,38 @@ export class BatchDetailComponent implements OnInit {
 
   private apiUrl = 'https://localhost:8086/api/incoming';
 
-  batchId!: number;
+  batchFileId!: number;
   summary: BatchSummary | null = null;
   failedTransactions: TransactionRecord[] = [];
   isLoading = true;
   activeTab: 'summary' | 'failed' = 'summary';
+
+  sortKey: string = '';
+  sortDir: 'asc' | 'desc' = 'asc';
+
+  sortBy(key: string): void {
+    if (this.sortKey === key) {
+      if (this.sortDir === 'asc') {
+        this.sortDir = 'desc';
+      } else {
+        this.sortKey = '';
+        this.sortDir = 'asc';
+      }
+    } else {
+      this.sortKey = key;
+      this.sortDir = 'asc';
+    }
+  }
+
+  get sortedTransactions(): TransactionRecord[] {
+    if (!this.sortKey) return this.failedTransactions;
+    return [...this.failedTransactions].sort((a, b) => {
+      const av = (a as any)[this.sortKey] ?? '';
+      const bv = (b as any)[this.sortKey] ?? '';
+      const cmp = String(av).localeCompare(String(bv), undefined, { numeric: true });
+      return this.sortDir === 'asc' ? cmp : -cmp;
+    });
+  }
 
   constructor(
     private http: HttpClient,
@@ -62,27 +91,27 @@ export class BatchDetailComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    this.batchId = Number(this.route.snapshot.paramMap.get('batchId'));
+    this.batchFileId = Number(this.route.snapshot.paramMap.get('batchFileId'));
     this.loadBatchSummary();
     this.loadFailedTransactions();
   }
 
   loadBatchSummary(): void {
     this.isLoading = true;
-    this.http.get<BatchSummary>(`${this.apiUrl}/batch-summary/${this.batchId}`).subscribe({
+    this.http.get<BatchSummary>(`${this.apiUrl}/file-summary/${this.batchFileId}`).subscribe({
       next: (data) => {
         this.summary = data;
         this.isLoading = false;
       },
       error: (err) => {
-        console.error('Failed to load batch summary:', err);
+        console.error('Failed to load file summary:', err);
         this.isLoading = false;
       }
     });
   }
 
   loadFailedTransactions(): void {
-    this.http.get<TransactionRecord[]>(`${this.apiUrl}/transactions/${this.batchId}?status=FAILED`).subscribe({
+    this.http.get<TransactionRecord[]>(`${this.apiUrl}/file-transactions/${this.batchFileId}?status=FAILED`).subscribe({
       next: (data) => {
         this.failedTransactions = data;
       },

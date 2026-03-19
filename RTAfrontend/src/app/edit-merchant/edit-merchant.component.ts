@@ -4,12 +4,13 @@ import { RouterModule, Router, ActivatedRoute } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { ProfileService, MerchantInfoPayload, FieldMappingPayload } from '../services/profile.service';
 import { AuthService } from '../services/auth.service';
+import { TopBarComponent } from '../top-bar/top-bar.component';
 import { HttpClient } from '@angular/common/http';
 
 @Component({
   selector: 'app-edit-merchant',
   standalone: true,
-  imports: [CommonModule, RouterModule, FormsModule],
+  imports: [CommonModule, RouterModule, FormsModule, TopBarComponent],
   templateUrl: './edit-merchant.component.html',
   styleUrl: './edit-merchant.component.scss'
 })
@@ -42,6 +43,15 @@ export class EditMerchantComponent implements OnInit {
   requiredFields: FieldMappingPayload[] = [];
   recurringFields: FieldMappingPayload[] = [];
   customFields: FieldMappingPayload[] = [];
+
+  // Snapshot of file format as loaded — used to detect changes
+  private originalFileFormat: {
+    fileType?: string;
+    fieldDelimiter?: string;
+    hasHeader?: boolean;
+    dateFormat?: string;
+    fieldMappings: FieldMappingPayload[];
+  } = { fieldMappings: [] };
 
   isLoading = true;
   isSubmitting = false;
@@ -141,10 +151,13 @@ export class EditMerchantComponent implements OnInit {
           // No file profile yet — use defaults
           this.setDefaultFieldMappings();
         }
+        // Snapshot the loaded file format for change detection
+        this.snapshotFileFormat();
         this.isLoading = false;
       },
       error: () => {
         this.setDefaultFieldMappings();
+        this.snapshotFileFormat();
         this.isLoading = false;
       }
     });
@@ -187,9 +200,58 @@ export class EditMerchantComponent implements OnInit {
     this.customFields.splice(index, 1);
   }
 
+  /** Snapshot current file-format state for change detection */
+  private snapshotFileFormat(): void {
+    const allMappings = [
+      ...this.requiredFields.map(f => ({ ...f })),
+      ...this.recurringFields.map(f => ({ ...f })),
+      ...this.customFields.map(f => ({ ...f }))
+    ];
+    this.originalFileFormat = {
+      fileType: this.merchant.fileType,
+      fieldDelimiter: this.merchant.fieldDelimiter,
+      hasHeader: this.merchant.hasHeader,
+      dateFormat: this.merchant.dateFormat,
+      fieldMappings: allMappings
+    };
+  }
+
+  /** Returns true if any file-format field has changed since load */
+  private fileFormatChanged(): boolean {
+    if (
+      this.merchant.fileType !== this.originalFileFormat.fileType ||
+      this.merchant.fieldDelimiter !== this.originalFileFormat.fieldDelimiter ||
+      this.merchant.hasHeader !== this.originalFileFormat.hasHeader ||
+      this.merchant.dateFormat !== this.originalFileFormat.dateFormat
+    ) {
+      return true;
+    }
+    const currentMappings = [
+      ...this.requiredFields,
+      ...this.recurringFields,
+      ...this.customFields
+    ];
+    const orig = this.originalFileFormat.fieldMappings;
+    if (currentMappings.length !== orig.length) return true;
+    for (let i = 0; i < currentMappings.length; i++) {
+      const c = currentMappings[i];
+      const o = orig[i];
+      if (
+        c.canonicalField !== o.canonicalField ||
+        c.sourceColumnName !== o.sourceColumnName ||
+        c.sourceColumnIdx !== o.sourceColumnIdx ||
+        c.dataType !== o.dataType
+      ) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   saveMerchant(): void {
     this.isSubmitting = true;
     const currentUser = this.profileService.getProfile();
+    const modifiedBy = currentUser?.username || 'unknown';
 
     // Update basic info
     const updatePayload: any = {
@@ -199,7 +261,7 @@ export class EditMerchantComponent implements OnInit {
       contact: this.merchant.contact,
       phone: this.merchant.phone,
       address: this.merchant.address,
-      modifiedBy: currentUser?.username || 'unknown'
+      modifiedBy
     };
     if (this.merchant.password && this.merchant.password.trim().length > 0) {
       updatePayload.password = this.merchant.password;
@@ -207,9 +269,40 @@ export class EditMerchantComponent implements OnInit {
 
     this.profileService.updateMerchant(this.merchantId, updatePayload).subscribe({
       next: () => {
-        this.isSubmitting = false;
-        alert('Merchant updated successfully!');
-        this.router.navigate(['/merchant-maintenance']);
+        // Check if file format has changed — if so, create a new version
+        if (this.fileFormatChanged()) {
+          const allMappings = [
+            ...this.requiredFields,
+            ...this.recurringFields,
+            ...this.customFields
+          ];
+          const fileFormatPayload = {
+            modifiedBy,
+            fileType: this.merchant.fileType,
+            fieldDelimiter: this.merchant.fieldDelimiter,
+            hasHeader: this.merchant.hasHeader,
+            dateFormat: this.merchant.dateFormat,
+            fieldMappings: allMappings
+          };
+          this.http.post<any>(
+            `${this.fileProfileApiUrl}/merchant/${this.merchantId}/new-version`,
+            fileFormatPayload
+          ).subscribe({
+            next: (res: any) => {
+              this.isSubmitting = false;
+              alert(`Merchant updated successfully!\nFile format saved as Version ${res.versionNo}. Previous version has been disabled.`);
+              this.router.navigate(['/merchant-maintenance']);
+            },
+            error: (err: any) => {
+              this.isSubmitting = false;
+              alert('Merchant info saved, but failed to update file format: ' + (err?.error?.error || err.message));
+            }
+          });
+        } else {
+          this.isSubmitting = false;
+          alert('Merchant updated successfully!');
+          this.router.navigate(['/merchant-maintenance']);
+        }
       },
       error: (err) => {
         this.isSubmitting = false;

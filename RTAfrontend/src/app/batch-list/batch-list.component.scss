@@ -2,23 +2,6 @@
 // data-table, toolbar, btn, btn-primary, action-cell, btn-action,
 // btn-view, btn-edit, btn-delete are all from _global-components.scss
 
-.user-info {
-  display: flex;
-  gap: 24px;
-  flex-wrap: wrap;
-  margin-bottom: 24px;
-  padding: 14px 20px;
-  background: white;
-  border-radius: 10px;
-  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.06);
-  font-size: 14px;
-  color: #475569;
-
-  span {
-    b { color: #1e293b; }
-  }
-}
-
 .file-input {
   padding: 8px 12px;
   border: 1px solid #d1d5db;

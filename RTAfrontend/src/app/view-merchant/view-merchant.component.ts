@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { RouterModule, Router, ActivatedRoute } from '@angular/router';
 import { ProfileService } from '../services/profile.service';
 import { AuthService } from '../services/auth.service';
+import { TopBarComponent } from '../top-bar/top-bar.component';
 import { HttpClient } from '@angular/common/http';
 
 export interface MerchantViewData {
@@ -33,7 +34,7 @@ export interface ViewFieldMapping {
 @Component({
   selector: 'app-view-merchant',
   standalone: true,
-  imports: [CommonModule, RouterModule],
+  imports: [CommonModule, RouterModule, TopBarComponent],
   templateUrl: './view-merchant.component.html',
   styleUrl: './view-merchant.component.scss'
 })

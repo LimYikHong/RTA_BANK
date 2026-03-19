@@ -1,5 +1,5 @@
--- RTA Batch File Table for duplicate file detection
-CREATE TABLE rta_batch_file (
+-- RTA Uploaded File Hash Table for duplicate file detection
+CREATE TABLE rta_uploaded_file_hash (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     merchant_id VARCHAR(50) NOT NULL,
     original_filename VARCHAR(255),

@@ -22,8 +22,11 @@ public class RtaTransaction {
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "batch_id", nullable = false)
+    @JoinColumn(name = "batch_id")
     private RtaBatch batch;
+
+    @Column(name = "auth_batch_id")
+    private Long authBatchId;
 
     @Column(name = "merchant_id", nullable = false)
     private String merchantId;

@@ -13,6 +13,7 @@
     <ul>
       <li routerLink="/batch-list" routerLinkActive="active"><b>Upload Batch File</b></li>
       <li routerLink="/incoming-batch" routerLinkActive="active"><b>Incoming Batch File</b></li>
+      <li routerLink="/batch-maintenance" routerLinkActive="active"><b>Batch Maintenance</b></li>
       <li routerLink="/recurring-list" routerLinkActive="active"><b>Recurring Transactions</b></li>
       <li routerLink="/profile" routerLinkActive="active">View Profile</li>
       <li routerLink="/users" routerLinkActive="active"><b>User Management</b></li>
@@ -21,6 +22,7 @@
   </aside>
 
   <!-- Main Content -->
+  <app-top-bar></app-top-bar>
   <main class="main-content">
     <div class="page-header">
       <h1>Track Recurring Transactions</h1>
@@ -94,17 +96,17 @@
       <table class="recurring-table">
         <thead>
           <tr>
-            <th>Recurring Reference</th>
-            <th>Merchant ID</th>
-            <th>Total Transactions</th>
-            <th>Success</th>
-            <th>Failed</th>
+            <th class="th-sort" (click)="sortBy('recurringReference')" [attr.data-sort]="sortKey==='recurringReference' ? sortDir : ''">Recurring Reference</th>
+            <th class="th-sort" (click)="sortBy('merchantId')" [attr.data-sort]="sortKey==='merchantId' ? sortDir : ''">Merchant ID</th>
+            <th class="th-sort" (click)="sortBy('totalTransactions')" [attr.data-sort]="sortKey==='totalTransactions' ? sortDir : ''">Total Transactions</th>
+            <th class="th-sort" (click)="sortBy('successCount')" [attr.data-sort]="sortKey==='successCount' ? sortDir : ''">Success</th>
+            <th class="th-sort" (click)="sortBy('failedCount')" [attr.data-sort]="sortKey==='failedCount' ? sortDir : ''">Failed</th>
             <th>Status</th>
             <th>Actions</th>
           </tr>
         </thead>
         <tbody>
-          <tr *ngFor="let item of pagedItems">
+          <tr *ngFor="let item of sortedItems">
             <td class="recurring-ref">{{ item.recurringReference }}</td>
             <td>{{ item.merchantId }}</td>
             <td class="count-cell">{{ item.totalTransactions }}</td>

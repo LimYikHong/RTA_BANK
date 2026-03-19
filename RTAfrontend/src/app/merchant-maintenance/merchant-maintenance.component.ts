@@ -4,6 +4,7 @@ import { RouterModule, Router, NavigationEnd } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { ProfileService } from '../services/profile.service';
 import { AuthService } from '../services/auth.service';
+import { TopBarComponent } from '../top-bar/top-bar.component';
 import { HttpClient } from '@angular/common/http';
 import { Subscription, filter, catchError, of } from 'rxjs';
 
@@ -24,7 +25,7 @@ export interface MerchantListItem {
 @Component({
   selector: 'app-merchant-maintenance',
   standalone: true,
-  imports: [CommonModule, RouterModule, FormsModule],
+  imports: [CommonModule, RouterModule, FormsModule, TopBarComponent],
   templateUrl: './merchant-maintenance.component.html',
   styleUrl: './merchant-maintenance.component.scss'
 })
@@ -44,6 +45,33 @@ export class MerchantMaintenanceComponent implements OnInit, OnDestroy {
 
   private routerSub!: Subscription;
   private merchantApiUrl = 'https://localhost:8086/api/merchants';
+
+  sortKey: string = '';
+  sortDir: 'asc' | 'desc' = 'asc';
+
+  sortBy(key: string): void {
+    if (this.sortKey === key) {
+      if (this.sortDir === 'asc') {
+        this.sortDir = 'desc';
+      } else {
+        this.sortKey = '';
+        this.sortDir = 'asc';
+      }
+    } else {
+      this.sortKey = key;
+      this.sortDir = 'asc';
+    }
+  }
+
+  get sortedMerchants(): MerchantListItem[] {
+    if (!this.sortKey) return this.filteredMerchants;
+    return [...this.filteredMerchants].sort((a, b) => {
+      const av = (a as any)[this.sortKey] ?? '';
+      const bv = (b as any)[this.sortKey] ?? '';
+      const cmp = String(av).localeCompare(String(bv), undefined, { numeric: true });
+      return this.sortDir === 'asc' ? cmp : -cmp;
+    });
+  }
 
   constructor(
     private profileService: ProfileService,

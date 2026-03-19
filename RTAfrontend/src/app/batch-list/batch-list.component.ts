@@ -5,6 +5,7 @@ import { RouterModule, Router } from '@angular/router';
 import { PortalService, RtaBatch } from '../services/portal.service';
 import { ProfileService, UserProfile } from '../services/profile.service';
 import { AuthService } from '../services/auth.service';
+import { TopBarComponent } from '../top-bar/top-bar.component';
 
 /**
  * BatchListComponent
@@ -17,7 +18,7 @@ import { AuthService } from '../services/auth.service';
 @Component({
   selector: 'app-batch-list',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule],
+  imports: [CommonModule, FormsModule, RouterModule, TopBarComponent],
   templateUrl: './batch-list.component.html',
   styleUrl: './batch-list.component.scss'
 })
@@ -29,6 +30,33 @@ export class BatchListComponent implements OnInit {
   // Holds the file chosen from the input
   selectedFile?: File;
   user: UserProfile | null = null;
+
+  sortKey: string = '';
+  sortDir: 'asc' | 'desc' = 'asc';
+
+  sortBy(key: string): void {
+    if (this.sortKey === key) {
+      if (this.sortDir === 'asc') {
+        this.sortDir = 'desc';
+      } else {
+        this.sortKey = '';
+        this.sortDir = 'asc';
+      }
+    } else {
+      this.sortKey = key;
+      this.sortDir = 'asc';
+    }
+  }
+
+  get sortedBatches(): RtaBatch[] {
+    if (!this.sortKey) return this.batches;
+    return [...this.batches].sort((a, b) => {
+      const av = (a as any)[this.sortKey] ?? '';
+      const bv = (b as any)[this.sortKey] ?? '';
+      const cmp = String(av).localeCompare(String(bv), undefined, { numeric: true });
+      return this.sortDir === 'asc' ? cmp : -cmp;
+    });
+  }
 
   // Inject services:
   // - PortalService: HTTP calls for batches (list/upload/delete)

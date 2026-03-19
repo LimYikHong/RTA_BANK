@@ -13,6 +13,7 @@
     <ul>
       <li routerLink="/batch-list" routerLinkActive="active"><b>Upload Batch File</b></li>
       <li routerLink="/incoming-batch" routerLinkActive="active"><b>Incoming Batch File</b></li>
+      <li routerLink="/batch-maintenance" routerLinkActive="active"><b>Batch Maintenance</b></li>
       <li routerLink="/recurring-list" routerLinkActive="active"><b>Recurring Transactions</b></li>
       <li routerLink="/profile" routerLinkActive="active">View Profile</li>
       <li routerLink="/users" routerLinkActive="active"><b>User Management</b></li>
@@ -21,16 +22,10 @@
   </aside>
 
   <!-- Main Content -->
-  <button class="logout-btn" (click)="logout()">Logout</button>
+  <app-top-bar></app-top-bar>
   <main class="main-content">
     <div class="page-header">
       <h1>Upload Batch File</h1>
-    </div>
-
-    <div class="user-info">
-      <span>🧾 User ID: <b>{{ user?.userId }}</b></span>
-      <span>🏢 Company: <b>{{ user?.company }}</b></span>
-      <span>👤 Name: <b>{{ user?.name }}</b></span>
     </div>
 
     <div class="toolbar">
@@ -47,16 +42,16 @@
       <table class="data-table">
         <thead>
           <tr>
-            <th>File Name</th>
-            <th>Status</th>
-            <th>User</th>
-            <th>Created By</th>
-            <th>Created At</th>
+            <th class="th-sort" (click)="sortBy('fileName')" [attr.data-sort]="sortKey==='fileName' ? sortDir : ''">File Name</th>
+            <th class="th-sort" (click)="sortBy('status')" [attr.data-sort]="sortKey==='status' ? sortDir : ''">Status</th>
+            <th class="th-sort" (click)="sortBy('merchantId')" [attr.data-sort]="sortKey==='merchantId' ? sortDir : ''">User</th>
+            <th class="th-sort" (click)="sortBy('createdBy')" [attr.data-sort]="sortKey==='createdBy' ? sortDir : ''">Created By</th>
+            <th class="th-sort" (click)="sortBy('createdAt')" [attr.data-sort]="sortKey==='createdAt' ? sortDir : ''">Created At</th>
             <th>Action</th>
           </tr>
         </thead>
         <tbody>
-          <tr *ngFor="let batch of batches">
+          <tr *ngFor="let batch of sortedBatches">
             <td>{{ getDisplayFileName(batch.fileName) }}</td>
             <td>{{ batch.status }}</td>
             <td>{{ batch.merchantId }}</td>

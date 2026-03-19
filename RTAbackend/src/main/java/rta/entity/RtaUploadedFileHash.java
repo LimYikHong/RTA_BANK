@@ -5,13 +5,13 @@ import lombok.*;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "rta_batch_file", uniqueConstraints = {
+@Table(name = "rta_uploaded_file_hash", uniqueConstraints = {
     @UniqueConstraint(columnNames = {"merchant_id", "file_hash"})
 })
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class RtaBatchFile {
+public class RtaUploadedFileHash {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -35,4 +35,10 @@ public class RtaBatchFile {
 
     @Column(name = "status", length = 50)
     private String status;
+
+    /**
+     * Number of times this same file content has been uploaded (max 5)
+     */
+    @Column(name = "upload_count")
+    private Integer uploadCount;
 }

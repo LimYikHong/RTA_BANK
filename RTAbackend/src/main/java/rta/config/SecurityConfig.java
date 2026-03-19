@@ -39,6 +39,7 @@ public class SecurityConfig {
                         "/api/merchants/**",
                         "/api/file-profiles/**",
                         "/api/recurring/**",
+                        "/api/batch-maintenance/**",
                         "/api/files/**",
                         "/uploads/**"
                 ).permitAll()

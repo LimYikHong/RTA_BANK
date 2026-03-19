@@ -9,6 +9,7 @@ import { ViewMerchantComponent } from './view-merchant/view-merchant.component';
 import { EditProfileComponent } from './edit-profile/edit-profile.component';
 import { IncomingBatchComponent } from './incoming-batch/incoming-batch.component';
 import { BatchDetailComponent } from './batch-detail/batch-detail.component';
+import { BatchMaintenanceComponent } from './batch-maintenance/batch-maintenance.component';
 import { UserManagementComponent } from './user-management/user-management.component';
 import { MerchantMaintenanceComponent } from './merchant-maintenance/merchant-maintenance.component';
 import { RecurringListComponent } from './recurring-list/recurring-list.component';
@@ -19,7 +20,8 @@ export const routes: Routes = [
   { path: 'login', component: LoginComponent },
   { path: 'batch-list', component: BatchListComponent, canActivate: [authGuard] },
   { path: 'incoming-batch', component: IncomingBatchComponent, canActivate: [authGuard] },
-  { path: 'batch-detail/:batchId', component: BatchDetailComponent, canActivate: [authGuard] },
+  { path: 'batch-detail/:batchFileId', component: BatchDetailComponent, canActivate: [authGuard] },
+  { path: 'batch-maintenance', component: BatchMaintenanceComponent, canActivate: [authGuard] },
   { path: 'profile', component: ViewProfileComponent, canActivate: [authGuard] },
   { path: 'edit-profile', component: EditProfileComponent, canActivate: [authGuard] },
   { path: 'users', component: UserManagementComponent, canActivate: [authGuard] },

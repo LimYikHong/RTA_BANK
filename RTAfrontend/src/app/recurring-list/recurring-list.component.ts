@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { RouterModule, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { HttpClient, HttpParams } from '@angular/common/http';
+import { TopBarComponent } from '../top-bar/top-bar.component';
 
 interface RecurringItem {
   recurringReference: string;
@@ -23,7 +24,7 @@ interface PagedResponse {
 @Component({
   selector: 'app-recurring-list',
   standalone: true,
-  imports: [CommonModule, RouterModule, FormsModule],
+  imports: [CommonModule, RouterModule, FormsModule, TopBarComponent],
   templateUrl: './recurring-list.component.html',
   styleUrl: './recurring-list.component.scss'
 })
@@ -50,6 +51,33 @@ export class RecurringListComponent implements OnInit {
   // Merchant ID lists (loaded once from dedicated endpoint)
   merchantIds: string[] = [];          // full list from API
   filteredMerchantIds: string[] = [];  // subset shown in dropdown based on text input
+
+  sortKey: string = '';
+  sortDir: 'asc' | 'desc' = 'asc';
+
+  sortBy(key: string): void {
+    if (this.sortKey === key) {
+      if (this.sortDir === 'asc') {
+        this.sortDir = 'desc';
+      } else {
+        this.sortKey = '';
+        this.sortDir = 'asc';
+      }
+    } else {
+      this.sortKey = key;
+      this.sortDir = 'asc';
+    }
+  }
+
+  get sortedItems(): RecurringItem[] {
+    if (!this.sortKey) return this.pagedItems;
+    return [...this.pagedItems].sort((a, b) => {
+      const av = (a as any)[this.sortKey] ?? '';
+      const bv = (b as any)[this.sortKey] ?? '';
+      const cmp = String(av).localeCompare(String(bv), undefined, { numeric: true });
+      return this.sortDir === 'asc' ? cmp : -cmp;
+    });
+  }
 
   constructor(
     private http: HttpClient,

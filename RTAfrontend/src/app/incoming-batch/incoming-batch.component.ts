@@ -4,11 +4,13 @@ import { RouterModule, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 import { AuthService } from '../services/auth.service';
+import { TopBarComponent } from '../top-bar/top-bar.component';
+import { BatchTimerService } from '../services/batch-timer.service';
 
 interface IncomingBatchFile {
   batchFileId: number;
   merchantId: string;
-  batchId: number;
+  batchId: number | null;
   originalFilename: string;
   storedFilename: string;
   storageUri: string;
@@ -17,6 +19,7 @@ interface IncomingBatchFile {
   successCount: number;
   failCount: number;
   fileStatus: string;
+  batchStatus: string;
   createBy: string;
   createdAt: string;
   lastModifiedAt: string;
@@ -26,7 +29,7 @@ interface IncomingBatchFile {
 @Component({
   selector: 'app-incoming-batch',
   standalone: true,
-  imports: [CommonModule, RouterModule, FormsModule],
+  imports: [CommonModule, RouterModule, FormsModule, TopBarComponent],
   templateUrl: './incoming-batch.component.html',
   styleUrl: './incoming-batch.component.scss'
 })
@@ -49,13 +52,42 @@ export class IncomingBatchComponent implements OnInit {
   errorTitle = '';
   errorMessage = '';
 
+  sortKey: string = '';
+  sortDir: 'asc' | 'desc' = 'asc';
+
+  sortBy(key: string): void {
+    if (this.sortKey === key) {
+      if (this.sortDir === 'asc') {
+        this.sortDir = 'desc';
+      } else {
+        this.sortKey = '';
+        this.sortDir = 'asc';
+      }
+    } else {
+      this.sortKey = key;
+      this.sortDir = 'asc';
+    }
+  }
+
+  get sortedFiles(): IncomingBatchFile[] {
+    if (!this.sortKey) return this.filteredFiles;
+    return [...this.filteredFiles].sort((a, b) => {
+      const av = (a as any)[this.sortKey] ?? '';
+      const bv = (b as any)[this.sortKey] ?? '';
+      const cmp = String(av).localeCompare(String(bv), undefined, { numeric: true });
+      return this.sortDir === 'asc' ? cmp : -cmp;
+    });
+  }
+
   constructor(
     private http: HttpClient,
     private authService: AuthService,
-    private router: Router
+    private router: Router,
+    public timer: BatchTimerService
   ) {}
 
   ngOnInit(): void {
+    this.timer.init();
     this.loadIncomingFiles();
   }
 
@@ -132,8 +164,8 @@ export class IncomingBatchComponent implements OnInit {
     return filename;
   }
 
-  viewBatchDetail(batchId: number): void {
-    this.router.navigate(['/batch-detail', batchId]);
+  viewBatchDetail(batchFileId: number): void {
+    this.router.navigate(['/batch-detail', batchFileId]);
   }
 
   retryValidation(file: IncomingBatchFile): void {

@@ -13,6 +13,7 @@
         <ul>
             <li routerLink="/batch-list" routerLinkActive="active"><b>Upload Batch File</b></li>
             <li routerLink="/incoming-batch" routerLinkActive="active"><b>Incoming Batch File</b></li>
+            <li routerLink="/batch-maintenance" routerLinkActive="active"><b>Batch Maintenance</b></li>
             <li routerLink="/recurring-list" routerLinkActive="active"><b>Recurring Transactions</b></li>
             <li routerLink="/profile" routerLinkActive="active">View Profile</li>
             <li routerLink="/users" routerLinkActive="active"><b>User Management</b></li>
@@ -21,7 +22,7 @@
     </aside>
 
     <!-- Main Content -->
-    <button class="logout-btn" (click)="logout()">Logout</button>
+    <app-top-bar></app-top-bar>
     <main class="main-content">
         <!-- Page Header -->
         <div class="page-header">
@@ -53,18 +54,18 @@
             <table *ngIf="filteredUsers.length > 0; else noUsers">
                 <thead>
                     <tr>
-                        <th>Username</th>
-                        <th>Full Name</th>
-                        <th>Email</th>
-                        <th>User ID</th>
-                        <th>Company</th>
-                        <th>Role</th>
-                        <th>Status</th>
-                        <th>Joined On</th>
+                        <th class="th-sort" (click)="sortBy('username')" [attr.data-sort]="sortKey==='username' ? sortDir : ''">Username</th>
+                        <th class="th-sort" (click)="sortBy('name')" [attr.data-sort]="sortKey==='name' ? sortDir : ''">Full Name</th>
+                        <th class="th-sort" (click)="sortBy('email')" [attr.data-sort]="sortKey==='email' ? sortDir : ''">Email</th>
+                        <th class="th-sort" (click)="sortBy('userId')" [attr.data-sort]="sortKey==='userId' ? sortDir : ''">User ID</th>
+                        <th class="th-sort" (click)="sortBy('company')" [attr.data-sort]="sortKey==='company' ? sortDir : ''">Company</th>
+                        <th class="th-sort" (click)="sortBy('role')" [attr.data-sort]="sortKey==='role' ? sortDir : ''">Role</th>
+                        <th class="th-sort" (click)="sortBy('status')" [attr.data-sort]="sortKey==='status' ? sortDir : ''">Status</th>
+                        <th class="th-sort" (click)="sortBy('joinedOn')" [attr.data-sort]="sortKey==='joinedOn' ? sortDir : ''">Joined On</th>
                     </tr>
                 </thead>
                 <tbody>
-                    <tr *ngFor="let user of filteredUsers">
+                    <tr *ngFor="let user of sortedUsers">
                         <td>{{ user.username }}</td>
                         <td>{{ user.name || '-' }}</td>
                         <td>{{ user.email || '-' }}</td>

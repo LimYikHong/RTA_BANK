@@ -13,6 +13,7 @@
         <ul>
             <li routerLink="/batch-list" routerLinkActive="active"><b>Upload Batch File</b></li>
             <li routerLink="/incoming-batch" routerLinkActive="active"><b>Incoming Batch File</b></li>
+            <li routerLink="/batch-maintenance" routerLinkActive="active"><b>Batch Maintenance</b></li>
             <li routerLink="/recurring-list" routerLinkActive="active"><b>Recurring Transactions</b></li>
             <li routerLink="/profile" routerLinkActive="active">View Profile</li>
             <li routerLink="/users" routerLinkActive="active"><b>User Management</b></li>
@@ -21,7 +22,7 @@
     </aside>
 
     <!-- Main Content -->
-    <button class="logout-btn" (click)="logout()">Logout</button>
+    <app-top-bar></app-top-bar>
     <main class="main-content">
         <!-- Page Header -->
         <div class="page-header">
@@ -53,21 +54,21 @@
             <table *ngIf="filteredMerchants.length > 0; else noMerchants">
                 <thead>
                     <tr>
-                        <th>Merchant ID</th>
-                        <th>Name</th>
-                        <th>Username</th>
-                        <th>Email</th>
-                        <th>Company</th>
-                        <th>Contact</th>
-                        <th>Phone</th>
-                        <th>Address</th>
-                        <th>Joined On</th>
-                        <th>Created By</th>
+                        <th class="th-sort" (click)="sortBy('merchantId')" [attr.data-sort]="sortKey==='merchantId' ? sortDir : ''">Merchant ID</th>
+                        <th class="th-sort" (click)="sortBy('name')" [attr.data-sort]="sortKey==='name' ? sortDir : ''">Name</th>
+                        <th class="th-sort" (click)="sortBy('username')" [attr.data-sort]="sortKey==='username' ? sortDir : ''">Username</th>
+                        <th class="th-sort" (click)="sortBy('email')" [attr.data-sort]="sortKey==='email' ? sortDir : ''">Email</th>
+                        <th class="th-sort" (click)="sortBy('company')" [attr.data-sort]="sortKey==='company' ? sortDir : ''">Company</th>
+                        <th class="th-sort" (click)="sortBy('contact')" [attr.data-sort]="sortKey==='contact' ? sortDir : ''">Contact</th>
+                        <th class="th-sort" (click)="sortBy('phone')" [attr.data-sort]="sortKey==='phone' ? sortDir : ''">Phone</th>
+                        <th class="th-sort" (click)="sortBy('address')" [attr.data-sort]="sortKey==='address' ? sortDir : ''">Address</th>
+                        <th class="th-sort" (click)="sortBy('joinedOn')" [attr.data-sort]="sortKey==='joinedOn' ? sortDir : ''">Joined On</th>
+                        <th class="th-sort" (click)="sortBy('createBy')" [attr.data-sort]="sortKey==='createBy' ? sortDir : ''">Created By</th>
                         <th>Actions</th>
                     </tr>
                 </thead>
                 <tbody>
-                    <tr *ngFor="let m of filteredMerchants">
+                    <tr *ngFor="let m of sortedMerchants">
                         <td class="merchant-id">{{ m.merchantId }}</td>
                         <td>{{ m.name || '-' }}</td>
                         <td>{{ m.username || '-' }}</td>

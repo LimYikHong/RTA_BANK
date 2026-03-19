@@ -13,6 +13,7 @@
     <ul>
       <li routerLink="/batch-list" routerLinkActive="active"><b>Upload Batch File</b></li>
       <li routerLink="/incoming-batch" routerLinkActive="active"><b>Incoming Batch File</b></li>
+      <li routerLink="/batch-maintenance" routerLinkActive="active"><b>Batch Maintenance</b></li>
       <li routerLink="/recurring-list" routerLinkActive="active"><b>Recurring Transactions</b></li>
       <li routerLink="/profile" routerLinkActive="active">View Profile</li>
       <li routerLink="/users" routerLinkActive="active"><b>User Management</b></li>
@@ -21,13 +22,13 @@
   </aside>
 
   <!-- Main Content -->
-  <button class="logout-btn" (click)="logout()">Logout</button>
+  <app-top-bar></app-top-bar>
   <main class="main-content">
     <!-- Header -->
     <div class="page-header">
       <button class="btn btn-back" (click)="goBack()"> < Back </button>
       <h1>Batch File Details</h1>
-      <p class="subtitle" *ngIf="summary">{{ summary.fileName }} — Batch #{{ summary.batchId }}</p>
+      <p class="subtitle" *ngIf="summary">{{ summary.fileName }} — File #{{ summary.batchFileId }}<span *ngIf="summary.batchId"> (Batch #{{ summary.batchId }})</span></p>
     </div>
 
     <!-- Loading -->
@@ -109,23 +110,23 @@
       </div>
 
       <div class="table-wrapper" *ngIf="failedTransactions.length > 0">
-        <table class="data-table">
+          <table class="data-table">
           <thead>
             <tr>
-              <th>Row #</th>
-              <th>Customer Ref</th>
-              <th>Account</th>
-              <th>Bank Code</th>
-              <th>Amount</th>
-              <th>Currency</th>
-              <th>Txn Date</th>
-              <th>Recurring</th>
-              <th>Status</th>
-              <th>Error Details</th>
+              <th class="th-sort" (click)="sortBy('batchSeq')" [attr.data-sort]="sortKey==='batchSeq' ? sortDir : ''">Row #</th>
+              <th class="th-sort" (click)="sortBy('customerReference')" [attr.data-sort]="sortKey==='customerReference' ? sortDir : ''">Customer Ref</th>
+              <th class="th-sort" (click)="sortBy('accountNum')" [attr.data-sort]="sortKey==='accountNum' ? sortDir : ''">Account</th>
+              <th class="th-sort" (click)="sortBy('bankCode')" [attr.data-sort]="sortKey==='bankCode' ? sortDir : ''">Bank Code</th>
+              <th class="th-sort" (click)="sortBy('amount')" [attr.data-sort]="sortKey==='amount' ? sortDir : ''">Amount</th>
+              <th class="th-sort" (click)="sortBy('currency')" [attr.data-sort]="sortKey==='currency' ? sortDir : ''">Currency</th>
+              <th class="th-sort" (click)="sortBy('transactionDate')" [attr.data-sort]="sortKey==='transactionDate' ? sortDir : ''">Txn Date</th>
+              <th class="th-sort" (click)="sortBy('recurringType')" [attr.data-sort]="sortKey==='recurringType' ? sortDir : ''">Recurring</th>
+              <th class="th-sort" (click)="sortBy('status')" [attr.data-sort]="sortKey==='status' ? sortDir : ''">Status</th>
+              <th class="th-sort" (click)="sortBy('remark')" [attr.data-sort]="sortKey==='remark' ? sortDir : ''">Error Details</th>
             </tr>
           </thead>
           <tbody>
-            <tr *ngFor="let txn of failedTransactions" class="failed-row">
+            <tr *ngFor="let txn of sortedTransactions" class="failed-row">
               <td>{{ txn.batchSeq }}</td>
               <td>{{ txn.customerReference || '-' }}</td>
               <td>{{ txn.accountNum || '-' }}</td>

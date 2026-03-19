@@ -148,6 +148,98 @@ public class FileProfileService {
     }
 
     /**
+     * Create a new version of the file profile for a merchant. The current
+     * ACTIVE profile is set to DISABLED, then a new profile with an incremented
+     * version number is created as ACTIVE.
+     */
+    @Transactional
+    public RtaFileProfile createNewVersion(String merchantId, String modifiedBy,
+            String fileType, String fieldDelimiter, Boolean hasHeader,
+            String dateFormat, List<Map<String, Object>> fieldMappings) {
+
+        // Disable the current active profile (if any)
+        Optional<RtaFileProfile> currentActiveOpt = getActiveProfile(merchantId);
+        int nextVersion = 1;
+        if (currentActiveOpt.isPresent()) {
+            RtaFileProfile current = currentActiveOpt.get();
+            current.setStatus("DISABLED");
+            current.setEffectiveTo(LocalDateTime.now());
+            current.setLastModifiedAt(LocalDateTime.now());
+            current.setLastModifiedBy(modifiedBy);
+            fileProfileRepository.save(current);
+            nextVersion = (current.getVersionNo() != null ? current.getVersionNo() : Integer.valueOf(1)) + 1;
+        } else {
+            // Check highest version even among disabled ones
+            List<RtaFileProfile> all = fileProfileRepository.findByMerchantIdOrderByVersionNoDesc(merchantId);
+            if (!all.isEmpty() && all.get(0).getVersionNo() != null) {
+                nextVersion = all.get(0).getVersionNo() + 1;
+            }
+        }
+
+        // Create the new profile version
+        RtaFileProfile newProfile = new RtaFileProfile();
+        newProfile.setMerchantId(merchantId);
+        newProfile.setVersionNo(nextVersion);
+        newProfile.setFileType(fileType != null ? fileType : "CSV");
+        newProfile.setEncoding("UTF-8");
+        newProfile.setFieldDelimiter(fieldDelimiter != null ? fieldDelimiter : ",");
+        newProfile.setHasHeader(hasHeader != null ? hasHeader : true);
+        newProfile.setHasFooter(false);
+        newProfile.setLineEnding("CRLF");
+        newProfile.setDateFormat(dateFormat != null ? dateFormat : "yyyy-MM-dd");
+        newProfile.setDatetimeFormat("yyyy-MM-dd HH:mm:ss");
+        newProfile.setStatus("ACTIVE");
+        newProfile.setEffectiveFrom(LocalDateTime.now());
+        newProfile.setCreatedAt(LocalDateTime.now());
+        newProfile.setCreatedBy(modifiedBy);
+        RtaFileProfile savedProfile = fileProfileRepository.save(newProfile);
+
+        // Create field mappings for the new version
+        if (fieldMappings != null && !fieldMappings.isEmpty()) {
+            for (int i = 0; i < fieldMappings.size(); i++) {
+                Map<String, Object> fm = fieldMappings.get(i);
+                RtaFieldMapping mapping = new RtaFieldMapping();
+                mapping.setProfileId(savedProfile.getProfileId());
+                mapping.setCanonicalField((String) fm.get("canonicalField"));
+                mapping.setDataType((String) fm.getOrDefault("dataType",
+                        DEFAULT_DATA_TYPES.getOrDefault((String) fm.get("canonicalField"), "STRING")));
+                mapping.setRequired((Boolean) fm.getOrDefault("required", true));
+                mapping.setSourceColumnName((String) fm.getOrDefault("sourceColumnName",
+                        (String) fm.get("canonicalField")));
+                mapping.setSourceColumnIdx(fm.get("sourceColumnIdx") != null
+                        ? ((Number) fm.get("sourceColumnIdx")).intValue() : i);
+                mapping.setValidationRegex((String) fm.get("validationRegex"));
+                mapping.setDefaultValue((String) fm.get("defaultValue"));
+                mapping.setCreatedAt(LocalDateTime.now());
+                fieldMappingRepository.save(mapping);
+            }
+        } else {
+            // Copy mappings from the disabled profile (if any)
+            if (currentActiveOpt.isPresent()) {
+                List<RtaFieldMapping> oldMappings = fieldMappingRepository
+                        .findByProfileIdOrderBySourceColumnIdxAsc(currentActiveOpt.get().getProfileId());
+                for (RtaFieldMapping old : oldMappings) {
+                    RtaFieldMapping copy = new RtaFieldMapping();
+                    copy.setProfileId(savedProfile.getProfileId());
+                    copy.setCanonicalField(old.getCanonicalField());
+                    copy.setDataType(old.getDataType());
+                    copy.setRequired(old.getRequired());
+                    copy.setSourceColumnName(old.getSourceColumnName());
+                    copy.setSourceColumnIdx(old.getSourceColumnIdx());
+                    copy.setValidationRegex(old.getValidationRegex());
+                    copy.setDefaultValue(old.getDefaultValue());
+                    copy.setCreatedAt(LocalDateTime.now());
+                    fieldMappingRepository.save(copy);
+                }
+            }
+        }
+
+        log.info("Created new file profile version {} for merchant {}: profileId={}",
+                nextVersion, merchantId, savedProfile.getProfileId());
+        return savedProfile;
+    }
+
+    /**
      * Update field mappings for an existing profile.
      */
     @Transactional
