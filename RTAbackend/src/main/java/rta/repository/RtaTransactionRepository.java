@@ -1,14 +1,15 @@
 package rta.repository;
 
+import java.util.List;
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
-import rta.entity.RtaTransaction;
 
-import java.util.List;
+import rta.entity.RtaTransaction;
 
 @Repository
 public interface RtaTransactionRepository extends JpaRepository<RtaTransaction, Long> {
@@ -119,9 +120,17 @@ public interface RtaTransactionRepository extends JpaRepository<RtaTransaction, 
     Page<Object[]> findRecurringListPagedByMerchantAndSearch(
             @Param("merchantId") String merchantId, @Param("search") String search, Pageable pageable);
 
-    // Get distinct merchant IDs that have recurring references (for filter dropdown)
-    @Query("SELECT DISTINCT t.merchantId FROM RtaTransaction t WHERE t.recurringReference IS NOT NULL AND t.recurringReference <> '' ORDER BY t.merchantId")
+    // Get distinct merchant IDs that have recurring transactions (is_recurring = true)
+    @Query("SELECT DISTINCT t.merchantId FROM RtaTransaction t WHERE t.isRecurring = true ORDER BY t.merchantId")
     List<String> findDistinctMerchantIdsWithRecurring();
+
+    // Get distinct merchant IDs that have non-recurring transactions (is_recurring = false or null)
+    @Query("SELECT DISTINCT t.merchantId FROM RtaTransaction t WHERE t.isRecurring = false OR t.isRecurring IS NULL ORDER BY t.merchantId")
+    List<String> findDistinctMerchantIdsNonRecurring();
+
+    // Get ALL distinct merchant IDs
+    @Query("SELECT DISTINCT t.merchantId FROM RtaTransaction t ORDER BY t.merchantId")
+    List<String> findDistinctMerchantIdsAll();
 
     // =============================================
     // Authorization batch queries

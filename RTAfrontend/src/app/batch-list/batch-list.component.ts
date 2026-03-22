@@ -31,6 +31,11 @@ export class BatchListComponent implements OnInit {
   selectedFile?: File;
   user: UserProfile | null = null;
 
+  // Pagination
+  currentPage = 1;
+  pageSize = 10;
+  pageSizeOptions = [10, 25, 50, 100];
+
   sortKey: string = '';
   sortDir: 'asc' | 'desc' = 'asc';
 
@@ -49,14 +54,34 @@ export class BatchListComponent implements OnInit {
   }
 
   get sortedBatches(): RtaBatch[] {
-    if (!this.sortKey) return this.batches;
-    return [...this.batches].sort((a, b) => {
-      const av = (a as any)[this.sortKey] ?? '';
-      const bv = (b as any)[this.sortKey] ?? '';
-      const cmp = String(av).localeCompare(String(bv), undefined, { numeric: true });
-      return this.sortDir === 'asc' ? cmp : -cmp;
-    });
+    let list = [...this.batches];
+    if (this.sortKey) {
+      list.sort((a, b) => {
+        const av = (a as any)[this.sortKey] ?? '';
+        const bv = (b as any)[this.sortKey] ?? '';
+        const cmp = String(av).localeCompare(String(bv), undefined, { numeric: true });
+        return this.sortDir === 'asc' ? cmp : -cmp;
+      });
+    }
+    const start = (this.currentPage - 1) * this.pageSize;
+    return list.slice(start, start + this.pageSize);
   }
+
+  get totalElements(): number { return this.batches.length; }
+  get totalPages(): number { return Math.max(1, Math.ceil(this.batches.length / this.pageSize)); }
+  get startRecord(): number { return this.totalElements === 0 ? 0 : (this.currentPage - 1) * this.pageSize + 1; }
+  get endRecord(): number { return Math.min(this.currentPage * this.pageSize, this.totalElements); }
+  get visiblePages(): number[] {
+    const pages: number[] = [];
+    const maxVisible = 5;
+    let start = Math.max(1, this.currentPage - Math.floor(maxVisible / 2));
+    let end = start + maxVisible - 1;
+    if (end > this.totalPages) { end = this.totalPages; start = Math.max(1, end - maxVisible + 1); }
+    for (let i = start; i <= end; i++) pages.push(i);
+    return pages;
+  }
+  goToPage(page: number): void { if (page >= 1 && page <= this.totalPages) this.currentPage = page; }
+  onPageSizeChange(): void { this.currentPage = 1; }
 
   // Inject services:
   // - PortalService: HTTP calls for batches (list/upload/delete)

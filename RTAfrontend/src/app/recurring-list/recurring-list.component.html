@@ -14,7 +14,7 @@
       <li routerLink="/batch-list" routerLinkActive="active"><b>Upload Batch File</b></li>
       <li routerLink="/incoming-batch" routerLinkActive="active"><b>Incoming Batch File</b></li>
       <li routerLink="/batch-maintenance" routerLinkActive="active"><b>Batch Maintenance</b></li>
-      <li routerLink="/recurring-list" routerLinkActive="active"><b>Recurring Transactions</b></li>
+      <li routerLink="/recurring-list" routerLinkActive="active"><b>Track Transaction</b></li>
       <li routerLink="/profile" routerLinkActive="active">View Profile</li>
       <li routerLink="/users" routerLinkActive="active"><b>User Management</b></li>
       <li routerLink="/merchant-maintenance" routerLinkActive="active"><b>Merchant Maintenance</b></li>
@@ -25,8 +25,8 @@
   <app-top-bar></app-top-bar>
   <main class="main-content">
     <div class="page-header">
-      <h1>Track Recurring Transactions</h1>
-      <p class="subtitle">View and monitor recurring payment references</p>
+      <h1>Track Transaction</h1>
+      <p class="subtitle">View and monitor transaction references</p>
     </div>
 
     <div class="filter-section">
@@ -66,27 +66,24 @@
             type="text"
             [(ngModel)]="searchTerm"
             (keyup.enter)="applyFilters()"
-            placeholder="Search by recurring reference..."
+            placeholder="Search by reference..."
             class="search-input"
           />
+        </div>
+
+        <!-- Transaction Type filter -->
+        <div class="filter-field">
+          <label>Transaction Type</label>
+          <select [(ngModel)]="recurringType" class="filter-select">
+            <option value="ALL">All</option>
+            <option value="RECURRING">Recurring</option>
+            <option value="NON_RECURRING">Non-Recurring</option>
+          </select>
         </div>
 
         <!-- Search button -->
         <div class="filter-actions">
           <button type="button" class="btn-search" (click)="applyFilters()">Search</button>
-        </div>
-
-        <!-- Rows per page -->
-        <div class="page-size-selector">
-          <label for="pageSize">Rows:</label>
-          <select
-            id="pageSize"
-            [(ngModel)]="pageSize"
-            (change)="onPageSizeChange()"
-            class="filter-select"
-          >
-            <option *ngFor="let size of pageSizeOptions" [ngValue]="size">{{ size }}</option>
-          </select>
         </div>
 
       </div>
@@ -124,7 +121,7 @@
           <tr *ngIf="totalElements === 0">
             <td colspan="7" class="no-data-cell">
               <div class="no-data">
-                <p>No recurring transactions found.</p>
+                <p>No transactions found.</p>
               </div>
             </td>
           </tr>
@@ -134,7 +131,13 @@
       <!-- Pagination -->
       <div class="pagination-section" *ngIf="totalElements > 0">
         <div class="pagination-info">
-          Showing {{ startRecord }} – {{ endRecord }} of {{ totalElements }} records
+          <div class="page-size-selector">
+            <label>Rows:</label>
+            <select [(ngModel)]="pageSize" (change)="onPageSizeChange()" class="filter-select">
+              <option *ngFor="let size of pageSizeOptions" [ngValue]="size">{{ size }}</option>
+            </select>
+          </div>
+          <span>Showing {{ startRecord }}–{{ endRecord }} of {{ totalElements }}</span>
         </div>
         <div class="pagination-controls">
           <button class="page-btn" (click)="goToPage(1)" [disabled]="currentPage === 1">«</button>
@@ -152,7 +155,7 @@
     </div>
 
     <div class="loading" *ngIf="isLoading">
-      <p>Loading recurring transactions...</p>
+      <p>Loading transactions...</p>
     </div>
   </main>
 </div>

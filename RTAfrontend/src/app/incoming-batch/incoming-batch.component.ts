@@ -52,6 +52,11 @@ export class IncomingBatchComponent implements OnInit {
   errorTitle = '';
   errorMessage = '';
 
+  // Pagination
+  currentPage = 1;
+  pageSize = 10;
+  pageSizeOptions = [10, 25, 50, 100];
+
   sortKey: string = '';
   sortDir: 'asc' | 'desc' = 'asc';
 
@@ -70,14 +75,34 @@ export class IncomingBatchComponent implements OnInit {
   }
 
   get sortedFiles(): IncomingBatchFile[] {
-    if (!this.sortKey) return this.filteredFiles;
-    return [...this.filteredFiles].sort((a, b) => {
-      const av = (a as any)[this.sortKey] ?? '';
-      const bv = (b as any)[this.sortKey] ?? '';
-      const cmp = String(av).localeCompare(String(bv), undefined, { numeric: true });
-      return this.sortDir === 'asc' ? cmp : -cmp;
-    });
+    let list = this.filteredFiles;
+    if (this.sortKey) {
+      list = [...list].sort((a, b) => {
+        const av = (a as any)[this.sortKey] ?? '';
+        const bv = (b as any)[this.sortKey] ?? '';
+        const cmp = String(av).localeCompare(String(bv), undefined, { numeric: true });
+        return this.sortDir === 'asc' ? cmp : -cmp;
+      });
+    }
+    const start = (this.currentPage - 1) * this.pageSize;
+    return list.slice(start, start + this.pageSize);
   }
+
+  get totalElements(): number { return this.filteredFiles.length; }
+  get totalPages(): number { return Math.max(1, Math.ceil(this.filteredFiles.length / this.pageSize)); }
+  get startRecord(): number { return this.totalElements === 0 ? 0 : (this.currentPage - 1) * this.pageSize + 1; }
+  get endRecord(): number { return Math.min(this.currentPage * this.pageSize, this.totalElements); }
+  get visiblePages(): number[] {
+    const pages: number[] = [];
+    const maxVisible = 5;
+    let start = Math.max(1, this.currentPage - Math.floor(maxVisible / 2));
+    let end = start + maxVisible - 1;
+    if (end > this.totalPages) { end = this.totalPages; start = Math.max(1, end - maxVisible + 1); }
+    for (let i = start; i <= end; i++) pages.push(i);
+    return pages;
+  }
+  goToPage(page: number): void { if (page >= 1 && page <= this.totalPages) this.currentPage = page; }
+  onPageSizeChange(): void { this.currentPage = 1; }
 
   constructor(
     private http: HttpClient,
@@ -110,15 +135,16 @@ export class IncomingBatchComponent implements OnInit {
     const term = this.searchTerm.toLowerCase().trim();
     if (!term) {
       this.filteredFiles = this.incomingFiles;
-      return;
+    } else {
+      this.filteredFiles = this.incomingFiles.filter(f =>
+        f.storedFilename?.toLowerCase().includes(term) ||
+        f.originalFilename?.toLowerCase().includes(term) ||
+        f.merchantId?.toLowerCase().includes(term) ||
+        f.fileStatus?.toLowerCase().includes(term) ||
+        f.createBy?.toLowerCase().includes(term)
+      );
     }
-    this.filteredFiles = this.incomingFiles.filter(f =>
-      f.storedFilename?.toLowerCase().includes(term) ||
-      f.originalFilename?.toLowerCase().includes(term) ||
-      f.merchantId?.toLowerCase().includes(term) ||
-      f.fileStatus?.toLowerCase().includes(term) ||
-      f.createBy?.toLowerCase().includes(term)
-    );
+    this.currentPage = 1;
   }
 
   getStatusClass(status: string): string {

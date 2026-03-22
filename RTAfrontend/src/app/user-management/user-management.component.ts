@@ -24,6 +24,11 @@ export class UserManagementComponent implements OnInit, OnDestroy {
   isLoading: boolean = false;
   private routerSub!: Subscription;
 
+  // Pagination
+  currentPage = 1;
+  pageSize = 10;
+  pageSizeOptions = [10, 25, 50, 100];
+
   sortKey: string = '';
   sortDir: 'asc' | 'desc' = 'asc';
 
@@ -42,14 +47,34 @@ export class UserManagementComponent implements OnInit, OnDestroy {
   }
 
   get sortedUsers(): UserListItem[] {
-    if (!this.sortKey) return this.filteredUsers;
-    return [...this.filteredUsers].sort((a, b) => {
-      const av = (a as any)[this.sortKey] ?? '';
-      const bv = (b as any)[this.sortKey] ?? '';
-      const cmp = String(av).localeCompare(String(bv), undefined, { numeric: true });
-      return this.sortDir === 'asc' ? cmp : -cmp;
-    });
+    let list = this.filteredUsers;
+    if (this.sortKey) {
+      list = [...list].sort((a, b) => {
+        const av = (a as any)[this.sortKey] ?? '';
+        const bv = (b as any)[this.sortKey] ?? '';
+        const cmp = String(av).localeCompare(String(bv), undefined, { numeric: true });
+        return this.sortDir === 'asc' ? cmp : -cmp;
+      });
+    }
+    const start = (this.currentPage - 1) * this.pageSize;
+    return list.slice(start, start + this.pageSize);
   }
+
+  get totalElements(): number { return this.filteredUsers.length; }
+  get totalPages(): number { return Math.max(1, Math.ceil(this.filteredUsers.length / this.pageSize)); }
+  get startRecord(): number { return this.totalElements === 0 ? 0 : (this.currentPage - 1) * this.pageSize + 1; }
+  get endRecord(): number { return Math.min(this.currentPage * this.pageSize, this.totalElements); }
+  get visiblePages(): number[] {
+    const pages: number[] = [];
+    const maxVisible = 5;
+    let start = Math.max(1, this.currentPage - Math.floor(maxVisible / 2));
+    let end = start + maxVisible - 1;
+    if (end > this.totalPages) { end = this.totalPages; start = Math.max(1, end - maxVisible + 1); }
+    for (let i = start; i <= end; i++) pages.push(i);
+    return pages;
+  }
+  goToPage(page: number): void { if (page >= 1 && page <= this.totalPages) this.currentPage = page; }
+  onPageSizeChange(): void { this.currentPage = 1; }
 
   constructor(
     private profileService: ProfileService,
@@ -99,6 +124,7 @@ export class UserManagementComponent implements OnInit, OnDestroy {
     this.profileService.searchUsers(keyword).subscribe({
       next: (data) => {
         this.filteredUsers = data;
+        this.currentPage = 1;
       },
       error: (err) => {
         console.error('Search failed:', err);
@@ -109,6 +135,7 @@ export class UserManagementComponent implements OnInit, OnDestroy {
   clearSearch(): void {
     this.searchKeyword = '';
     this.filteredUsers = this.users;
+    this.currentPage = 1;
   }
 
   getStatusClass(status: string): string {

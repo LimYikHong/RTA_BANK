@@ -688,6 +688,360 @@
 }
 
 // =============================================
+// FILTER SECTION (search, combobox, dropdowns)
+// =============================================
+.filter-section {
+  margin-bottom: 20px;
+
+  .filter-row {
+    display: flex;
+    align-items: flex-end;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+
+  .filter-field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+
+    label {
+      font-size: 13px;
+      font-weight: 600;
+      color: #475569;
+      white-space: nowrap;
+    }
+
+    .search-input {
+      width: 260px;
+    }
+  }
+
+  .filter-actions {
+    display: flex;
+    align-items: flex-end;
+
+    .btn-search {
+      padding: 8px 24px;
+      background: #3b82f6;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: background 0.2s;
+      height: 38px;
+
+      &:hover { background: #2563eb; }
+      &:active { background: #1d4ed8; }
+    }
+  }
+
+  .merchant-combobox {
+    position: relative;
+    width: 220px;
+
+    .combobox-input-wrapper {
+      display: flex;
+      align-items: center;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      background: #fff;
+      transition: border-color 0.2s;
+
+      &:focus-within {
+        border-color: #3b82f6;
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+      }
+
+      input {
+        flex: 1;
+        padding: 8px 10px;
+        border: none;
+        outline: none;
+        font-size: 14px;
+        color: #1e293b;
+        background: transparent;
+        border-radius: 8px 0 0 8px;
+        min-width: 0;
+
+        &::placeholder { color: #94a3b8; }
+      }
+
+      .combobox-toggle {
+        padding: 8px 8px;
+        border: none;
+        background: transparent;
+        color: #94a3b8;
+        cursor: pointer;
+        font-size: 10px;
+        line-height: 1;
+        border-radius: 0 8px 8px 0;
+
+        &:hover { color: #475569; }
+      }
+    }
+
+    .combobox-dropdown {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      right: 0;
+      margin: 4px 0 0;
+      padding: 4px 0;
+      background: #fff;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      max-height: 200px;
+      overflow-y: auto;
+      z-index: 100;
+      list-style: none;
+
+      li {
+        padding: 8px 12px;
+        font-size: 14px;
+        color: #1e293b;
+        cursor: pointer;
+        transition: background 0.15s;
+
+        &:hover { background: #f1f5f9; }
+
+        &.active {
+          background: #eff6ff;
+          color: #3b82f6;
+          font-weight: 600;
+        }
+
+        &.no-match {
+          color: #ef4444;
+          font-style: italic;
+          cursor: default;
+          &:hover { background: transparent; }
+        }
+      }
+    }
+  }
+}
+
+// =============================================
+// PAGE SIZE SELECTOR
+// =============================================
+.page-size-selector {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  label {
+    font-size: 13px;
+    font-weight: 600;
+    color: #475569;
+    white-space: nowrap;
+  }
+}
+
+.filter-select {
+  padding: 8px 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 14px;
+  color: #1e293b;
+  background: #fff;
+  cursor: pointer;
+  outline: none;
+  transition: border-color 0.2s;
+
+  &:focus {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  }
+}
+
+// =============================================
+// PAGINATION
+// =============================================
+.pagination-section {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 0;
+  border-top: 1px solid #f1f5f9;
+  margin-top: 8px;
+}
+
+.pagination-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 13px;
+  color: #64748b;
+}
+
+.pagination-controls {
+  display: flex;
+  gap: 4px;
+}
+
+.page-btn {
+  min-width: 36px;
+  height: 36px;
+  padding: 0 8px;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  background: #fff;
+  color: #475569;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  &:hover:not(:disabled) {
+    background: #f1f5f9;
+    border-color: #cbd5e1;
+  }
+
+  &.active {
+    background: #3b82f6;
+    color: #fff;
+    border-color: #3b82f6;
+    font-weight: 600;
+  }
+
+  &:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+}
+
+// =============================================
+// SEARCH SECTION (user-management, merchant-maintenance pattern)
+// =============================================
+.search-section {
+  margin-bottom: 24px;
+}
+
+.search-box {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.result-count {
+  margin-top: 10px;
+  font-size: 13px;
+  color: #94a3b8;
+}
+
+.btn-add {
+  background-color: #3b82f6;
+  color: white;
+
+  &:hover { background-color: #2563eb; }
+}
+
+.btn-search {
+  background-color: #1e293b;
+  color: white;
+
+  &:hover { background-color: #334155; }
+}
+
+.btn-clear {
+  background-color: #f1f5f9;
+  color: #475569;
+
+  &:hover { background-color: #e2e8f0; }
+}
+
+// =============================================
+// TABLE CARD (used in user-management, merchant-maintenance)
+// =============================================
+.table-card {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+  overflow: hidden;
+}
+
+// =============================================
+// MODAL STYLES (shared)
+// =============================================
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+}
+
+.modal-content {
+  background: white;
+  border-radius: 12px;
+  width: 90%;
+  max-width: 500px;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
+  overflow: hidden;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 24px;
+
+  h2, h3 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 600;
+  }
+
+  .modal-close {
+    background: none;
+    border: none;
+    font-size: 24px;
+    color: #94a3b8;
+    cursor: pointer;
+    padding: 0;
+    line-height: 1;
+
+    &:hover { color: #475569; }
+  }
+}
+
+.modal-body {
+  padding: 24px;
+
+  p {
+    margin: 0;
+    color: #374151;
+    font-size: 15px;
+    line-height: 1.6;
+  }
+}
+
+.modal-footer {
+  padding: 16px 24px;
+  border-top: 1px solid #e5e7eb;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+// =============================================
 // RESPONSIVE DESIGN
 // =============================================
 @media (max-width: 768px) {

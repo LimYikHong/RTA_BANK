@@ -14,7 +14,7 @@
       <li routerLink="/batch-list" routerLinkActive="active"><b>Upload Batch File</b></li>
       <li routerLink="/incoming-batch" routerLinkActive="active"><b>Incoming Batch File</b></li>
       <li routerLink="/batch-maintenance" routerLinkActive="active"><b>Batch Maintenance</b></li>
-      <li routerLink="/recurring-list" routerLinkActive="active"><b>Recurring Transactions</b></li>
+      <li routerLink="/recurring-list" routerLinkActive="active"><b>Track Transaction</b></li>
       <li routerLink="/profile" routerLinkActive="active">View Profile</li>
       <li routerLink="/users" routerLinkActive="active"><b>User Management</b></li>
       <li routerLink="/merchant-maintenance" routerLinkActive="active"><b>Merchant Maintenance</b></li>
@@ -36,21 +36,6 @@
         {{ timer.minutes }}m {{ timer.secondsPadded }}s
       </span>
       <button class="btn btn-refresh" (click)="loadPage()">Refresh</button>
-    </div>
-
-    <!-- Toolbar -->
-    <div class="toolbar">
-      <div class="page-size-selector">
-        <label for="pageSize">Rows:</label>
-        <select
-          id="pageSize"
-          [(ngModel)]="pageSize"
-          (change)="onPageSizeChange()"
-          class="filter-select"
-        >
-          <option *ngFor="let size of pageSizeOptions" [ngValue]="size">{{ size }}</option>
-        </select>
-      </div>
     </div>
 
     <!-- Loading -->
@@ -103,7 +88,13 @@
       <!-- Pagination -->
       <div class="pagination-section" *ngIf="totalElements > 0">
         <div class="pagination-info">
-          Showing {{ startRecord }} – {{ endRecord }} of {{ totalElements }} records
+          <div class="page-size-selector">
+            <label>Rows:</label>
+            <select [(ngModel)]="pageSize" (change)="onPageSizeChange()" class="filter-select">
+              <option *ngFor="let size of pageSizeOptions" [ngValue]="size">{{ size }}</option>
+            </select>
+          </div>
+          <span>Showing {{ startRecord }}–{{ endRecord }} of {{ totalElements }}</span>
         </div>
         <div class="pagination-controls">
           <button class="page-btn" (click)="goToPage(1)" [disabled]="currentPage === 1">«</button>

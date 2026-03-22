@@ -39,6 +39,7 @@ export class RecurringListComponent implements OnInit {
   merchantIdInput = '';        // text shown in the combobox input
   merchantSelectedId = '';     // the actual selected merchant ID for filtering
   showDropdown = false;        // controls combobox dropdown visibility
+  recurringType = 'ALL';       // ALL | RECURRING | NON_RECURRING
   isLoading = true;
 
   // Pagination (server-side)
@@ -98,9 +99,13 @@ export class RecurringListComponent implements OnInit {
     this.loadPage();
   }
 
-  /** Load merchant IDs for filter dropdown (one-time call) */
+  /** Load merchant IDs for filter dropdown */
   loadMerchantIds(): void {
-    this.http.get<string[]>(`${this.apiUrl}/merchant-ids`).subscribe({
+    let url = `${this.apiUrl}/merchant-ids`;
+    if (this.recurringType && this.recurringType !== 'ALL') {
+      url += `?recurringType=${this.recurringType}`;
+    }
+    this.http.get<string[]>(url).subscribe({
       next: (ids) => {
         this.merchantIds = ids;
         this.filteredMerchantIds = [...this.merchantIds];
@@ -122,6 +127,9 @@ export class RecurringListComponent implements OnInit {
     }
     if (this.merchantSelectedId) {
       params = params.set('merchantId', this.merchantSelectedId);
+    }
+    if (this.recurringType && this.recurringType !== 'ALL') {
+      params = params.set('recurringType', this.recurringType);
     }
 
     this.http.get<PagedResponse>(`${this.apiUrl}/list`, { params }).subscribe({
@@ -145,6 +153,7 @@ export class RecurringListComponent implements OnInit {
   /** Only triggered by the Search button or Enter key */
   applyFilters(): void {
     this.currentPage = 1;
+    this.loadMerchantIds();
     this.loadPage();
   }
 
