@@ -1,0 +1,21 @@
+// All shared form styles (back-btn, form-card, form-section, form-row,
+// form-group, form-label, form-input, form-actions, btn, btn-cancel,
+// btn-submit, required, page-header) are in _global-components.scss
+
+// Readonly field — module-specific
+.readonly-input {
+  background-color: #f1f5f9;
+  color: #64748b;
+  cursor: not-allowed;
+
+  &:focus {
+    border-color: #d1d5db;
+    box-shadow: none;
+  }
+}
+
+.readonly-hint {
+  font-size: 12px;
+  color: #94a3b8;
+  margin-top: 4px;
+}

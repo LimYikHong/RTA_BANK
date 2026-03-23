@@ -1,0 +1,234 @@
+// All shared styles (page-header, btn, btn-back, loading-text, data-table,
+// table-wrapper, empty-state, status-badge, status-*, summary-section,
+// summary-header) are in _global-components.scss
+
+.page-header h1 {
+  margin: 12px 0 8px 0;
+}
+
+/* Summary Cards */
+.summary-cards {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 20px;
+  margin-bottom: 24px;
+}
+
+.summary-card {
+  background: #f8fafc;
+  border-radius: 12px;
+  padding: 24px 20px;
+  text-align: center;
+  border: 1px solid #e2e8f0;
+  transition: transform 0.2s;
+
+  &:hover {
+    transform: translateY(-2px);
+  }
+}
+
+.summary-card .card-icon {
+  font-size: 28px;
+  margin-bottom: 8px;
+}
+
+.summary-card .card-value {
+  font-size: 32px;
+  font-weight: 800;
+  color: #1e293b;
+  margin-bottom: 4px;
+}
+
+.summary-card .card-label {
+  font-size: 13px;
+  color: #64748b;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.summary-card.total {
+  border-left: 4px solid #3b82f6;
+}
+
+.summary-card.success {
+  border-left: 4px solid #16a34a;
+
+  .card-value { color: #16a34a; }
+}
+
+.summary-card.failed {
+  border-left: 4px solid #dc2626;
+
+  .card-value { color: #dc2626; }
+}
+
+.summary-card.amount {
+  border-left: 4px solid #d97706;
+
+  .card-value {
+    color: #d97706;
+    font-size: 26px;
+  }
+}
+
+/* Progress Bar */
+.progress-section {
+  margin-bottom: 24px;
+}
+
+.progress-bar {
+  width: 100%;
+  height: 12px;
+  background-color: #fee2e2;
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.progress-fill.success-fill {
+  height: 100%;
+  background-color: #16a34a;
+  border-radius: 6px;
+  transition: width 0.5s ease;
+}
+
+.progress-text {
+  margin-top: 8px;
+  font-size: 13px;
+  color: #64748b;
+  font-weight: 500;
+}
+
+/* Batch Info */
+.batch-info {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  padding-top: 20px;
+  border-top: 1px solid #e2e8f0;
+}
+
+.info-row {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.info-label {
+  font-size: 12px;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-weight: 600;
+}
+
+.info-value {
+  font-size: 15px;
+  color: #1e293b;
+  font-weight: 500;
+}
+
+/* Validation Errors */
+.validation-errors {
+  margin-top: 24px;
+  padding: 20px;
+  background-color: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+
+  h3 {
+    margin: 0 0 12px 0;
+    color: #991b1b;
+    font-size: 16px;
+  }
+}
+
+.error-details {
+  margin: 0;
+  padding: 16px;
+  background-color: #fff;
+  border: 1px solid #fecaca;
+  border-radius: 6px;
+  font-family: 'Consolas', 'Monaco', monospace;
+  font-size: 13px;
+  color: #dc2626;
+  white-space: pre-wrap;
+  word-break: break-word;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+/* Failed Section */
+.failed-section {
+  background: white;
+  border-radius: 12px;
+  padding: 30px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+
+  h2 {
+    margin: 0 0 20px 0;
+    font-size: 20px;
+    color: #1e293b;
+  }
+}
+
+/* Failed table — red theme override */
+.failed-section .data-table {
+  th {
+    background-color: #fef2f2;
+    color: #991b1b;
+    border-bottom: 2px solid #fecaca;
+  }
+
+  tbody tr:hover {
+    background-color: #fef2f2;
+  }
+}
+
+.failed-row {
+  background-color: #fffbfb;
+}
+
+.error-cell {
+  max-width: 250px;
+  font-size: 12px;
+  color: #dc2626;
+  word-wrap: break-word;
+}
+
+.error-state {
+  text-align: center;
+  padding: 40px 0;
+  color: #dc2626;
+  font-size: 16px;
+
+  p { margin: 0 0 8px 0; }
+
+  .hint {
+    font-size: 14px;
+    color: #64748b;
+  }
+}
+
+.status-badge.large {
+  padding: 6px 18px;
+  font-size: 13px;
+  border-radius: 16px;
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+  .summary-cards {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .batch-info {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .summary-cards {
+    grid-template-columns: 1fr;
+  }
+}

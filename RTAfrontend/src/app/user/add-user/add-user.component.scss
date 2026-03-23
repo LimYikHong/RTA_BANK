@@ -1,0 +1,54 @@
+// All shared form styles (back-btn, form-card, form-section, form-row,
+// form-group, form-label, form-input, input-error, id-readonly, field-info,
+// field-error, field-ok, field-checking, field-warn, form-actions, btn,
+// btn-cancel, btn-submit, required, page-header) are in _global-components.scss
+
+// Password field — module-specific
+.password-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.password-input {
+  flex: 1;
+  padding-right: 44px;
+}
+
+.toggle-password-btn {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 18px;
+  padding: 2px 4px;
+  line-height: 1;
+  color: #64748b;
+
+  &:hover { color: #1e293b; }
+}
+
+.password-rules {
+  margin-top: 8px;
+  padding: 10px 14px;
+  background-color: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+
+  p {
+    margin: 4px 0;
+    font-size: 12px;
+    font-weight: 500;
+  }
+}
+
+.rule-pass {
+  color: #16a34a;
+}
+
+.rule-fail {
+  color: #dc2626;
+}
