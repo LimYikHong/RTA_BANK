@@ -8,6 +8,7 @@ import { TopBarComponent } from '../../top-bar/top-bar.component';
 interface BatchSummary {
   batchFileId: number;
   batchId: number | null;
+  authBatchId?: number;
   fileName: string;
   merchantId: string;
   status: string;

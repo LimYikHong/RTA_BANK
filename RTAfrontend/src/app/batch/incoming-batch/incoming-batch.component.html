@@ -13,6 +13,7 @@
     <ul>
       <li routerLink="/batch-list" routerLinkActive="active"><b>Upload Batch File</b></li>
       <li routerLink="/incoming-batch" routerLinkActive="active"><b>Incoming Batch File</b></li>
+      <li routerLink="/batch-file-maintenance" routerLinkActive="active"><b>Batch File Maintenance</b></li>
       <li routerLink="/batch-maintenance" routerLinkActive="active"><b>Batch Maintenance</b></li>
       <li routerLink="/recurring-list" routerLinkActive="active"><b>Track Transaction</b></li>
       <li routerLink="/profile" routerLinkActive="active">View Profile</li>
@@ -60,7 +61,7 @@
             <th class="th-sort" (click)="sortBy('batchFileId')" [attr.data-sort]="sortKey==='batchFileId' ? sortDir : ''">ID</th>
             <th class="th-sort" (click)="sortBy('storedFilename')" [attr.data-sort]="sortKey==='storedFilename' ? sortDir : ''">File Name</th>
             <th class="th-sort" (click)="sortBy('merchantId')" [attr.data-sort]="sortKey==='merchantId' ? sortDir : ''">Merchant ID</th>
-            <th class="th-sort" (click)="sortBy('batchId')" [attr.data-sort]="sortKey==='batchId' ? sortDir : ''">Batch ID</th>
+            <th class="th-sort" (click)="sortBy('authBatchId')" [attr.data-sort]="sortKey==='authBatchId' ? sortDir : ''">Batch ID</th>
             <th class="th-sort" (click)="sortBy('sizeBytes')" [attr.data-sort]="sortKey==='sizeBytes' ? sortDir : ''">Size</th>
             <th class="th-sort" (click)="sortBy('fileStatus')" [attr.data-sort]="sortKey==='fileStatus' ? sortDir : ''">Status</th>
             <th class="th-sort" (click)="sortBy('totalRecordCount')" [attr.data-sort]="sortKey==='totalRecordCount' ? sortDir : ''">Records</th>
@@ -74,7 +75,7 @@
             <td>{{ file.batchFileId }}</td>
             <td class="filename-cell">{{ getDisplayFilename(file) }}</td>
             <td>{{ file.merchantId }}</td>
-            <td>{{ file.batchId || '-' }}</td>
+            <td>{{ file.authBatchId || '-' }}</td>
             <td>{{ formatBytes(file.sizeBytes) }}</td>
             <td>
               <span class="status-badge" [ngClass]="getStatusClass(file.fileStatus)">

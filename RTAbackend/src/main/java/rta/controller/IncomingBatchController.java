@@ -42,6 +42,7 @@ import rta.entity.RtaIncomingBatchFile;
 import rta.entity.RtaTransaction;
 import rta.entity.RtaUploadedFileHash;
 import rta.repository.MerchantInfoRepository;
+import rta.repository.RtaAuthorizationBatchRepository;
 import rta.repository.RtaBatchRepository;
 import rta.repository.RtaIncomingBatchFileRepository;
 import rta.repository.RtaTransactionRepository;
@@ -64,6 +65,7 @@ public class IncomingBatchController {
     private final RtaIncomingBatchFileRepository incomingFileRepository;
     private final RtaTransactionRepository transactionRepository;
     private final MerchantInfoRepository merchantInfoRepository;
+    private final RtaAuthorizationBatchRepository authBatchRepository;
     private final FileProfileService fileProfileService;
     private final MinioStorageService minioStorageService;
 
@@ -74,6 +76,7 @@ public class IncomingBatchController {
             RtaIncomingBatchFileRepository incomingFileRepository,
             RtaTransactionRepository transactionRepository,
             MerchantInfoRepository merchantInfoRepository,
+            RtaAuthorizationBatchRepository authBatchRepository,
             FileProfileService fileProfileService,
             MinioStorageService minioStorageService) {
         this.batchRepository = batchRepository;
@@ -81,6 +84,7 @@ public class IncomingBatchController {
         this.incomingFileRepository = incomingFileRepository;
         this.transactionRepository = transactionRepository;
         this.merchantInfoRepository = merchantInfoRepository;
+        this.authBatchRepository = authBatchRepository;
         this.fileProfileService = fileProfileService;
         this.minioStorageService = minioStorageService;
     }
@@ -1229,6 +1233,17 @@ public class IncomingBatchController {
             dto.put("createdAt", f.getCreatedAt());
             dto.put("lastModifiedAt", f.getLastModifiedAt());
             dto.put("lastModifiedBy", f.getLastModifiedBy());
+
+            // Find authorization batch ID via transactions (the Batch Maintenance ID)
+            List<Long> authBatchIds = transactionRepository.findDistinctAuthBatchIdsByBatchFileId(f.getBatchFileId());
+            if (!authBatchIds.isEmpty()) {
+                dto.put("authBatchId", authBatchIds.get(0));
+                authBatchRepository.findById(authBatchIds.get(0)).ifPresent(ab -> {
+                    dto.put("authBatchStatus", ab.getBatchStatus());
+                    dto.put("authBatchReference", ab.getBatchReference());
+                });
+            }
+
             result.add(dto);
         }
         return ResponseEntity.ok(result);
@@ -1372,6 +1387,16 @@ public class IncomingBatchController {
         summary.put("createdAt", incomingFile.getCreatedAt());
         summary.put("createdBy", incomingFile.getCreateBy());
         summary.put("validationRemark", incomingFile.getTransactionRecordRemark());
+
+        // Find authorization batch ID via transactions (the Batch Maintenance ID)
+        List<Long> authBatchIds = transactionRepository.findDistinctAuthBatchIdsByBatchFileId(batchFileId);
+        if (!authBatchIds.isEmpty()) {
+            summary.put("authBatchId", authBatchIds.get(0));
+            authBatchRepository.findById(authBatchIds.get(0)).ifPresent(ab -> {
+                summary.put("authBatchStatus", ab.getBatchStatus());
+                summary.put("authBatchReference", ab.getBatchReference());
+            });
+        }
 
         return ResponseEntity.ok(summary);
     }

@@ -24,6 +24,9 @@ interface IncomingBatchFile {
   createdAt: string;
   lastModifiedAt: string;
   lastModifiedBy: string;
+  authBatchId?: number;
+  authBatchStatus?: string;
+  authBatchReference?: string;
 }
 
 @Component({

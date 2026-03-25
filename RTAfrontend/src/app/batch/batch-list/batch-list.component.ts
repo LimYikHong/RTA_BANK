@@ -115,9 +115,10 @@ export class BatchListComponent implements OnInit {
     this.router.navigate(['/login']);
   }
 
-  // Fetch batches from backend and update table
+  // Fetch batches from backend and update table (filtered by current user)
   loadBatches(): void {
-    this.portalService.getBatches().subscribe({
+    const merchantId = this.user?.userId;
+    this.portalService.getBatches(merchantId).subscribe({
       next: (data) => (this.batches = data),
       error: (err) => console.error('Failed to fetch batches: ' + err.message),
     });

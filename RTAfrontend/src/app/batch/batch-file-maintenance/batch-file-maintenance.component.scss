@@ -1,0 +1,62 @@
+// All shared styles (page-header, toolbar, search-section, search-input,
+// btn, btn-refresh, data-table, table-container, loading-text, pagination,
+// status-badge, btn-action, btn-view, no-data, modal styles)
+// are in _global-components.scss
+
+.batch-id-cell {
+  font-weight: 600;
+  color: #000000;
+}
+
+.filename-cell {
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13px;
+}
+
+.count-cell {
+  text-align: center;
+  font-weight: 600;
+}
+
+.success-count {
+  color: #16a34a;
+}
+
+.fail-count {
+  color: #dc2626;
+}
+
+.text-muted {
+  color: #94a3b8;
+  font-style: italic;
+}
+
+.no-data-cell {
+  text-align: center;
+  padding: 40px !important;
+  color: #94a3b8;
+}
+
+// Status badge variants
+.status-ready {
+  background: #dbeafe !important;
+  color: #1d4ed8 !important;
+}
+
+.status-processing {
+  background: #fef3c7 !important;
+  color: #92400e !important;
+}
+
+.status-success {
+  background: #d1fae5 !important;
+  color: #065f46 !important;
+}
+
+.status-failed {
+  background: #fee2e2 !important;
+  color: #991b1b !important;
+}

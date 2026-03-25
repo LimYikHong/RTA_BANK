@@ -13,6 +13,7 @@
     <ul>
       <li routerLink="/batch-list" routerLinkActive="active"><b>Upload Batch File</b></li>
       <li routerLink="/incoming-batch" routerLinkActive="active"><b>Incoming Batch File</b></li>
+      <li routerLink="/batch-file-maintenance" routerLinkActive="active"><b>Batch File Maintenance</b></li>
       <li routerLink="/batch-maintenance" routerLinkActive="active"><b>Batch Maintenance</b></li>
       <li routerLink="/recurring-list" routerLinkActive="active"><b>Track Transaction</b></li>
       <li routerLink="/profile" routerLinkActive="active">View Profile</li>
@@ -28,7 +29,7 @@
     <div class="page-header">
       <button class="btn btn-back" (click)="goBack()"> < Back </button>
       <h1>Batch File Details</h1>
-      <p class="subtitle" *ngIf="summary">{{ summary.fileName }} — File #{{ summary.batchFileId }}<span *ngIf="summary.batchId"> (Batch #{{ summary.batchId }})</span></p>
+      <p class="subtitle" *ngIf="summary">{{ summary.fileName }} — File #{{ summary.batchFileId }}<span *ngIf="summary.authBatchId"> (Batch #{{ summary.authBatchId }})</span></p>
     </div>
 
     <!-- Loading -->

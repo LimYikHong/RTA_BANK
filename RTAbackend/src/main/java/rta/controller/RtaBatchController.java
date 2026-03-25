@@ -1,7 +1,30 @@
 package rta.controller;
 
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileReader;
+import java.io.InputStream;
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Map;
+
+import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
 import rta.entity.RtaBatch;
@@ -9,15 +32,6 @@ import rta.entity.RtaTransaction;
 import rta.repository.RtaBatchRepository;
 import rta.repository.RtaTransactionRepository;
 import rta.service.MinioStorageService;
-
-import java.io.*;
-import java.nio.file.*;
-import java.time.LocalDateTime;
-import java.util.*;
-import java.util.stream.Collectors;
-
-import org.apache.poi.ss.usermodel.*;
-import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
 @CrossOrigin(origins = "http://localhost:4200")
 @RestController
@@ -39,10 +53,16 @@ public class RtaBatchController {
     }
 
     /**
-     * GET /api/batches - Returns all batches.
+     * GET /api/batches - Returns batches filtered by merchantId. If merchantId
+     * is provided, only batches for that merchant are returned. Otherwise, all
+     * batches are returned.
      */
     @GetMapping
-    public List<RtaBatch> getAllBatches() {
+    public List<RtaBatch> getAllBatches(
+            @RequestParam(value = "merchantId", required = false) String merchantId) {
+        if (merchantId != null && !merchantId.isBlank()) {
+            return batchRepository.findByMerchantIdOrderByCreatedAtDesc(merchantId);
+        }
         return batchRepository.findAll();
     }
 
@@ -91,7 +111,7 @@ public class RtaBatchController {
             batch.setFileName(fileName);
             batch.setMerchantId(merchantId);
             batch.setCreatedAt(LocalDateTime.now());
-            batch.setCreatedBy("system");
+            batch.setCreatedBy(merchantId);
             batch.setStatus("UPLOADED");
             RtaBatch savedBatch = batchRepository.save(batch);
 
