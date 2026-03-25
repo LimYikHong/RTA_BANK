@@ -1,0 +1,135 @@
+// All shared styles (page-header, toolbar, btn, btn-refresh, data-table,
+// table-container, loading-text, pagination-section, pagination-info,
+// pagination-controls, page-btn, page-size-selector, filter-select,
+// status-badge, countdown-banner, modal-overlay, modal-content,
+// modal-header, modal-body) are in _global-components.scss
+
+.countdown-banner {
+  margin-bottom: 0px;
+}
+
+.toolbar {
+  margin-bottom: 0px;
+}
+
+.batch-ref {
+  font-family: 'Courier New', monospace;
+  font-weight: 600;
+  color: #3b82f6;
+}
+
+.count-cell {
+  text-align: center;
+  font-weight: 600;
+}
+
+.amount-cell {
+  text-align: right;
+  font-family: 'Courier New', monospace;
+  font-weight: 600;
+}
+
+.date-cell {
+  white-space: nowrap;
+  font-size: 13px;
+  color: #64748b;
+}
+
+.remark-cell {
+  max-width: 250px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: #64748b;
+  font-size: 13px;
+}
+
+.no-data-cell {
+  text-align: center;
+  padding: 40px !important;
+  color: #94a3b8;
+}
+
+// Status badges — module-specific variants
+.status-ready {
+  background: #dbeafe !important;
+  color: #1d4ed8 !important;
+}
+
+.status-processing {
+  background: #fef3c7 !important;
+  color: #92400e !important;
+}
+
+.status-success {
+  background: #d1fae5 !important;
+  color: #065f46 !important;
+}
+
+.status-failed {
+  background: #fee2e2 !important;
+  color: #991b1b !important;
+}
+
+// Detail Modal — module-specific overrides
+.modal-content {
+  max-width: 900px;
+  max-height: 85vh;
+  overflow-y: auto;
+}
+
+.modal-header h2 {
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.detail-summary {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px 32px;
+  margin-bottom: 24px;
+  padding: 16px 20px;
+  background: #f8fafc;
+  border-radius: 10px;
+}
+
+.detail-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.detail-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #475569;
+  white-space: nowrap;
+}
+
+.detail-value {
+  font-size: 14px;
+  color: #1e293b;
+  font-weight: 500;
+}
+
+.modal-body h3 {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1e293b;
+  margin: 0 0 12px 0;
+}
+
+.detail-table-wrapper {
+  max-height: 350px;
+  overflow-y: auto;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+}
+
+.detail-table {
+  font-size: 13px !important;
+
+  th, td {
+    padding: 8px 12px !important;
+  }
+}

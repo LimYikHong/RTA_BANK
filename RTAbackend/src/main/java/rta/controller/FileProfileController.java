@@ -104,4 +104,36 @@ public class FileProfileController {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         }
     }
+
+    /**
+     * POST /api/file-profiles/merchant/{merchantId}/new-version Disables the
+     * current ACTIVE profile and creates a new version with the updated file
+     * format settings.
+     */
+    @SuppressWarnings("unchecked")
+    @PostMapping("/merchant/{merchantId}/new-version")
+    public ResponseEntity<?> createNewVersion(
+            @PathVariable String merchantId,
+            @RequestBody Map<String, Object> payload) {
+        try {
+            String modifiedBy = (String) payload.getOrDefault("modifiedBy", "system");
+            String fileType = (String) payload.get("fileType");
+            String fieldDelimiter = (String) payload.get("fieldDelimiter");
+            Object hasHeaderObj = payload.get("hasHeader");
+            boolean hasHeader = (hasHeaderObj instanceof Boolean) && (Boolean) hasHeaderObj;
+            String dateFormat = (String) payload.get("dateFormat");
+            List<Map<String, Object>> fieldMappings = (List<Map<String, Object>>) payload.get("fieldMappings");
+
+            RtaFileProfile newProfile = fileProfileService.createNewVersion(
+                    merchantId, modifiedBy, fileType, fieldDelimiter, hasHeader, dateFormat, fieldMappings);
+
+            Map<String, Object> result = new HashMap<>();
+            result.put("message", "New file profile version created successfully");
+            result.put("profileId", newProfile.getProfileId());
+            result.put("versionNo", newProfile.getVersionNo());
+            return ResponseEntity.ok(result);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
 }

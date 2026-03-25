@@ -1,0 +1,93 @@
+// All shared styles (page-header, header-top, search-section, search-box,
+// search-input, result-count, btn, btn-search, btn-clear, table-card,
+// table, th, td, status-badge, empty-state, loading-text, modal-overlay,
+// modal-header, modal-body, modal-actions, pagination-*, page-btn)
+// are in _global-components.scss
+
+.merchant-id {
+  font-weight: 600;
+  color: #065f46;
+}
+
+/* Status Badges — module-specific */
+.status-active {
+  background-color: #dcfce7;
+  color: #166534;
+}
+
+.status-inactive {
+  background-color: #fef3c7;
+  color: #92400e;
+}
+
+.status-suspended {
+  background-color: #fee2e2;
+  color: #991b1b;
+}
+
+/* Add Merchant — green variant */
+.btn-add {
+  background-color: #10b981;
+  color: white;
+
+  &:hover {
+    background-color: #059669;
+  }
+}
+
+/* Delete Confirmation Modal */
+.modal-box {
+  background: white;
+  border-radius: 12px;
+  padding: 32px;
+  width: 420px;
+  max-width: 90%;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.2);
+}
+
+.modal-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: #1e293b;
+  margin: 0 0 16px 0;
+}
+
+.btn-cancel-modal {
+  padding: 9px 20px;
+  background-color: #f1f5f9;
+  color: #475569;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+
+  &:hover:not(:disabled) {
+    background-color: #e2e8f0;
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+}
+
+.btn-confirm-delete {
+  padding: 9px 20px;
+  background-color: #dc2626;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+
+  &:hover:not(:disabled) {
+    background-color: #b91c1c;
+  }
+
+  &:disabled {
+    background-color: #fca5a5;
+    cursor: not-allowed;
+  }
+}

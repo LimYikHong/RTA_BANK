@@ -1,39 +1,54 @@
 package rta.controller;
 
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
-
-import rta.entity.RtaBatch;
-import rta.entity.RtaBatchFile;
-import rta.entity.RtaIncomingBatchFile;
-import rta.entity.RtaTransaction;
-import rta.entity.RtaFieldMapping;
-import rta.entity.RtaFileProfile;
-import rta.entity.MerchantInfo;
-import rta.repository.RtaBatchRepository;
-import rta.repository.RtaBatchFileRepository;
-import rta.repository.RtaIncomingBatchFileRepository;
-import rta.repository.RtaTransactionRepository;
-import rta.repository.MerchantInfoRepository;
-import rta.service.FileProfileService;
-import rta.service.MinioStorageService;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
-
-import org.apache.poi.ss.usermodel.*;
-import org.apache.poi.xssf.usermodel.XSSFWorkbook;
-import org.apache.poi.hssf.usermodel.HSSFWorkbook;
-
-import java.io.*;
-import java.math.BigDecimal;
-import java.nio.file.*;
+import java.io.BufferedReader;
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+
+import org.apache.poi.hssf.usermodel.HSSFWorkbook;
+import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.DataFormatter;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import rta.entity.RtaBatch;
+import rta.entity.RtaFieldMapping;
+import rta.entity.RtaFileProfile;
+import rta.entity.RtaIncomingBatchFile;
+import rta.entity.RtaTransaction;
+import rta.entity.RtaUploadedFileHash;
+import rta.repository.MerchantInfoRepository;
+import rta.repository.RtaAuthorizationBatchRepository;
+import rta.repository.RtaBatchRepository;
+import rta.repository.RtaIncomingBatchFileRepository;
+import rta.repository.RtaTransactionRepository;
+import rta.repository.RtaUploadedFileHashRepository;
+import rta.service.FileProfileService;
+import rta.service.MinioStorageService;
 
 /**
  * IncomingBatchController - HTTPS endpoint for merchant-side applications to
@@ -46,27 +61,30 @@ import java.util.*;
 public class IncomingBatchController {
 
     private final RtaBatchRepository batchRepository;
-    private final RtaBatchFileRepository batchFileRepository;
+    private final RtaUploadedFileHashRepository uploadedFileHashRepository;
     private final RtaIncomingBatchFileRepository incomingFileRepository;
     private final RtaTransactionRepository transactionRepository;
     private final MerchantInfoRepository merchantInfoRepository;
+    private final RtaAuthorizationBatchRepository authBatchRepository;
     private final FileProfileService fileProfileService;
     private final MinioStorageService minioStorageService;
 
     private static final String UPLOAD_DIR = "incoming-uploads";
 
     public IncomingBatchController(RtaBatchRepository batchRepository,
-            RtaBatchFileRepository batchFileRepository,
+            RtaUploadedFileHashRepository uploadedFileHashRepository,
             RtaIncomingBatchFileRepository incomingFileRepository,
             RtaTransactionRepository transactionRepository,
             MerchantInfoRepository merchantInfoRepository,
+            RtaAuthorizationBatchRepository authBatchRepository,
             FileProfileService fileProfileService,
             MinioStorageService minioStorageService) {
         this.batchRepository = batchRepository;
-        this.batchFileRepository = batchFileRepository;
+        this.uploadedFileHashRepository = uploadedFileHashRepository;
         this.incomingFileRepository = incomingFileRepository;
         this.transactionRepository = transactionRepository;
         this.merchantInfoRepository = merchantInfoRepository;
+        this.authBatchRepository = authBatchRepository;
         this.fileProfileService = fileProfileService;
         this.minioStorageService = minioStorageService;
     }
@@ -120,19 +138,44 @@ public class IncomingBatchController {
             String fileHash = generateSHA256Hash(file.getBytes());
 
             // Check for duplicate file
-            Optional<RtaBatchFile> existingFile = batchFileRepository.findByMerchantIdAndFileHash(merchantId, fileHash);
-            if (existingFile.isPresent()) {
-                RtaBatchFile duplicate = existingFile.get();
-                return ResponseEntity.badRequest().body(Map.of(
-                        "error", "Duplicate file detected",
-                        "detail", "This file has already been uploaded.",
-                        "duplicateFileInfo", Map.of(
-                                "id", duplicate.getId(),
-                                "originalFilename", duplicate.getOriginalFilename(),
-                                "uploadedAt", duplicate.getUploadedAt() != null ? duplicate.getUploadedAt().toString() : "N/A",
-                                "status", duplicate.getStatus() != null ? duplicate.getStatus() : "N/A"
-                        )
-                ));
+            Optional<RtaUploadedFileHash> existingHash = uploadedFileHashRepository
+                    .findByMerchantIdAndFileHash(merchantId, fileHash);
+            if (existingHash.isPresent()) {
+                RtaUploadedFileHash existing = existingHash.get();
+                int currentCount = existing.getUploadCount() != null ? existing.getUploadCount() : 1;
+                String existingStatus = existing.getStatus() != null ? existing.getStatus() : "";
+
+                // Only WRONG_FILE_FORMAT is allowed to re-upload
+                if (!"WRONG_FILE_FORMAT".equals(existingStatus)) {
+                    return ResponseEntity.badRequest().body(Map.of(
+                            "error", "Duplicate file detected",
+                            "detail", "This file has already been uploaded.",
+                            "duplicateFileInfo", Map.of(
+                                    "id", existing.getId(),
+                                    "originalFilename", existing.getOriginalFilename(),
+                                    "uploadedAt", existing.getUploadedAt() != null ? existing.getUploadedAt().toString() : "N/A",
+                                    "status", existingStatus,
+                                    "uploadCount", currentCount
+                            )
+                    ));
+                }
+
+                // Block if upload count has reached the maximum (5 attempts)
+                if (currentCount >= 5) {
+                    return ResponseEntity.badRequest().body(Map.of(
+                            "error", "Upload limit reached",
+                            "detail", "This file has been uploaded " + currentCount + " times and all attempts failed. Maximum 5 attempts allowed. Please contact support or upload a different file.",
+                            "duplicateFileInfo", Map.of(
+                                    "id", existing.getId(),
+                                    "originalFilename", existing.getOriginalFilename(),
+                                    "uploadedAt", existing.getUploadedAt() != null ? existing.getUploadedAt().toString() : "N/A",
+                                    "status", existingStatus,
+                                    "uploadCount", currentCount
+                            )
+                    ));
+                }
+
+                // WRONG_FILE_FORMAT with count < 5 — allow re-upload (will update the existing row later)
             }
 
             // Generate stored filename: timestamp + renamed filename (merchantId_datetime format)
@@ -1037,39 +1080,36 @@ public class IncomingBatchController {
                 }
             }
 
-            // 1. Create RtaBatch record
-            RtaBatch batch = new RtaBatch();
-            batch.setFileName(storedFileName);
-            batch.setOriginalFileName(originalFilename);
-            batch.setMerchantId(merchantId);
-            batch.setStatus(validationStatus);
-            batch.setCreatedBy(createdBy);
-            batch.setCreatedAt(LocalDateTime.now());
-            batch.setTotalCount(totalRecordCount);
-            batch.setTotalSuccessCount(successCount);
-            batch.setTotalFailCount(failCount);
-            RtaBatch savedBatch = batchRepository.save(batch);
-
-            // 2. Save batch file record with hash for duplicate detection
-            RtaBatchFile batchFile = new RtaBatchFile();
-            batchFile.setMerchantId(merchantId);
-            batchFile.setOriginalFilename(originalFilename);
-            batchFile.setStoredFilename(storedFileName);
-            batchFile.setFileHash(fileHash);
-            batchFile.setUploadedAt(LocalDateTime.now());
-            batchFile.setStatus(validationStatus);
-            batchFileRepository.save(batchFile);
-
-            // 3. Save transaction records linked to the batch
-            for (RtaTransaction txn : transactionsToSave) {
-                txn.setBatch(savedBatch);
-                txn.setBatchFileId(0L); // will update after incoming file is created
+            // 1. Save or update uploaded file hash record for duplicate detection
+            Optional<RtaUploadedFileHash> existingHashRecord = uploadedFileHashRepository
+                    .findByMerchantIdAndFileHash(merchantId, fileHash);
+            RtaUploadedFileHash uploadedFileHash;
+            if (existingHashRecord.isPresent()) {
+                // Update existing WRONG_FILE_FORMAT record (re-upload attempt)
+                uploadedFileHash = existingHashRecord.get();
+                uploadedFileHash.setOriginalFilename(originalFilename);
+                uploadedFileHash.setStoredFilename(storedFileName);
+                uploadedFileHash.setUploadedAt(LocalDateTime.now());
+                uploadedFileHash.setStatus(validationStatus);
+                uploadedFileHash.setUploadCount(
+                        (uploadedFileHash.getUploadCount() != null ? uploadedFileHash.getUploadCount() : 1) + 1);
+            } else {
+                // First upload — insert new record
+                uploadedFileHash = new RtaUploadedFileHash();
+                uploadedFileHash.setMerchantId(merchantId);
+                uploadedFileHash.setOriginalFilename(originalFilename);
+                uploadedFileHash.setStoredFilename(storedFileName);
+                uploadedFileHash.setFileHash(fileHash);
+                uploadedFileHash.setUploadedAt(LocalDateTime.now());
+                uploadedFileHash.setStatus(validationStatus);
+                uploadedFileHash.setUploadCount(1);
             }
+            uploadedFileHashRepository.save(uploadedFileHash);
 
-            // 4. Create RtaIncomingBatchFile record
+            // 2. Create RtaIncomingBatchFile record (NO batch_id assigned at upload time)
             RtaIncomingBatchFile incomingFile = new RtaIncomingBatchFile();
             incomingFile.setMerchantId(merchantId);
-            incomingFile.setBatchId(savedBatch.getBatchId());
+            // batchId is left NULL — will be assigned when "run batch" executes
             incomingFile.setOriginalFilename(originalFilename);
             incomingFile.setStoredFilename(storedFileName);
             incomingFile.setStorageUri(storageUri);
@@ -1078,17 +1118,19 @@ public class IncomingBatchController {
             incomingFile.setSuccessCount(successCount);
             incomingFile.setFailCount(failCount);
             incomingFile.setFileStatus(validationStatus);
+            incomingFile.setBatchStatus("PENDING");
             incomingFile.setCreateBy(createdBy);
             incomingFile.setCreatedAt(LocalDateTime.now());
             incomingFile.setTransactionRecordRemark(validationRemark);
             RtaIncomingBatchFile savedFile = incomingFileRepository.save(incomingFile);
 
-            // 5. Now update and save all transactions with the correct batchFileId
+            // 3. Save transaction records (NO batch assigned, linked to batchFileId only)
             // Handle duplicate transaction constraint violations
             int duplicateCount = 0;
             List<String> duplicateTransactions = new ArrayList<>();
             for (RtaTransaction txn : transactionsToSave) {
                 txn.setBatchFileId(savedFile.getBatchFileId());
+                // batch is left NULL — will be assigned when "run batch" executes
                 try {
                     transactionRepository.save(txn);
                 } catch (org.springframework.dao.DataIntegrityViolationException e) {
@@ -1104,21 +1146,15 @@ public class IncomingBatchController {
                 }
             }
 
-            // Update batch and incoming file if there were duplicates
+            // Update incoming file if there were duplicates
             if (duplicateCount > 0) {
-                savedBatch.setTotalSuccessCount(successCount);
-                savedBatch.setTotalFailCount(failCount);
-                if (successCount == 0 && totalRecordCount > 0) {
-                    savedBatch.setStatus("VALIDATION_FAILED");
-                    validationStatus = "VALIDATION_FAILED";
-                } else if (failCount > 0) {
-                    savedBatch.setStatus("PARTIAL");
-                    validationStatus = "PARTIAL";
-                }
-                batchRepository.save(savedBatch);
-
                 savedFile.setSuccessCount(successCount);
                 savedFile.setFailCount(failCount);
+                if (successCount == 0 && totalRecordCount > 0) {
+                    validationStatus = "VALIDATION_FAILED";
+                } else if (failCount > 0) {
+                    validationStatus = "PARTIAL";
+                }
                 savedFile.setFileStatus(validationStatus);
                 String dupRemark = duplicateCount + " duplicate transaction(s) detected and skipped";
                 savedFile.setTransactionRecordRemark(
@@ -1133,7 +1169,6 @@ public class IncomingBatchController {
                     : failCount == totalRecordCount
                             ? "File received but all records failed validation"
                             : "File received with " + failCount + " failed records out of " + totalRecordCount);
-            response.put("batchId", savedBatch.getBatchId());
             response.put("batchFileId", savedFile.getBatchFileId());
             response.put("fileName", renamedFilename);
             response.put("originalFileName", originalFilename);
@@ -1165,10 +1200,11 @@ public class IncomingBatchController {
 
     /**
      * GET /api/incoming/files - List all incoming batch files (optionally
-     * filtered by merchantId).
+     * filtered by merchantId). The "batchId" in the response refers to the
+     * rta_batch ID, assigned when the batch scheduler runs.
      */
     @GetMapping("/files")
-    public ResponseEntity<List<RtaIncomingBatchFile>> getIncomingFiles(
+    public ResponseEntity<List<Map<String, Object>>> getIncomingFiles(
             @RequestParam(value = "merchantId", required = false) String merchantId) {
         List<RtaIncomingBatchFile> files;
         if (merchantId != null && !merchantId.isBlank()) {
@@ -1176,7 +1212,41 @@ public class IncomingBatchController {
         } else {
             files = incomingFileRepository.findAll();
         }
-        return ResponseEntity.ok(files);
+
+        List<Map<String, Object>> result = new ArrayList<>();
+        for (RtaIncomingBatchFile f : files) {
+            Map<String, Object> dto = new LinkedHashMap<>();
+            dto.put("batchFileId", f.getBatchFileId());
+            dto.put("merchantId", f.getMerchantId());
+            // batch_id references rta_batch (assigned when batch job executes)
+            dto.put("batchId", f.getBatchId());
+            dto.put("originalFilename", f.getOriginalFilename());
+            dto.put("storedFilename", f.getStoredFilename());
+            dto.put("storageUri", f.getStorageUri());
+            dto.put("sizeBytes", f.getSizeBytes());
+            dto.put("totalRecordCount", f.getTotalRecordCount());
+            dto.put("successCount", f.getSuccessCount());
+            dto.put("failCount", f.getFailCount());
+            dto.put("fileStatus", f.getFileStatus());
+            dto.put("batchStatus", f.getBatchStatus());
+            dto.put("createBy", f.getCreateBy());
+            dto.put("createdAt", f.getCreatedAt());
+            dto.put("lastModifiedAt", f.getLastModifiedAt());
+            dto.put("lastModifiedBy", f.getLastModifiedBy());
+
+            // Find authorization batch ID via transactions (the Batch Maintenance ID)
+            List<Long> authBatchIds = transactionRepository.findDistinctAuthBatchIdsByBatchFileId(f.getBatchFileId());
+            if (!authBatchIds.isEmpty()) {
+                dto.put("authBatchId", authBatchIds.get(0));
+                authBatchRepository.findById(authBatchIds.get(0)).ifPresent(ab -> {
+                    dto.put("authBatchStatus", ab.getBatchStatus());
+                    dto.put("authBatchReference", ab.getBatchReference());
+                });
+            }
+
+            result.add(dto);
+        }
+        return ResponseEntity.ok(result);
     }
 
     /**
@@ -1278,6 +1348,101 @@ public class IncomingBatchController {
     }
 
     /**
+     * GET /api/incoming/file-summary/{batchFileId} - Get file summary with
+     * counts and total amount (works whether or not a batch has been assigned).
+     */
+    @GetMapping("/file-summary/{batchFileId}")
+    public ResponseEntity<?> getFileSummary(@PathVariable Long batchFileId) {
+        Optional<RtaIncomingBatchFile> fileOpt = incomingFileRepository.findById(batchFileId);
+        if (fileOpt.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+
+        RtaIncomingBatchFile incomingFile = fileOpt.get();
+        int total = transactionRepository.countByBatchFileId(batchFileId);
+        int success = transactionRepository.countByBatchFileIdAndStatus(batchFileId, "SUCCESS");
+        int fail = transactionRepository.countByBatchFileIdAndStatus(batchFileId, "FAILED");
+        long totalAmountCents = 0;
+        try {
+            totalAmountCents = transactionRepository.sumAmountByBatchFileIdAndStatusSuccess(batchFileId);
+        } catch (Exception ignored) {
+        }
+
+        // Use totalRecordCount from incoming file if no transactions created
+        if (total == 0 && incomingFile.getTotalRecordCount() != null) {
+            total = incomingFile.getTotalRecordCount();
+        }
+
+        // batch_id references rta_batch (assigned when batch job executes)
+        Map<String, Object> summary = new LinkedHashMap<>();
+        summary.put("batchFileId", batchFileId);
+        summary.put("batchId", incomingFile.getBatchId());
+        summary.put("fileName", incomingFile.getOriginalFilename());
+        summary.put("merchantId", incomingFile.getMerchantId());
+        summary.put("status", incomingFile.getFileStatus());
+        summary.put("totalRecords", total);
+        summary.put("successCount", success);
+        summary.put("failCount", fail);
+        summary.put("totalAmount", totalAmountCents / 100.0);
+        summary.put("createdAt", incomingFile.getCreatedAt());
+        summary.put("createdBy", incomingFile.getCreateBy());
+        summary.put("validationRemark", incomingFile.getTransactionRecordRemark());
+
+        // Find authorization batch ID via transactions (the Batch Maintenance ID)
+        List<Long> authBatchIds = transactionRepository.findDistinctAuthBatchIdsByBatchFileId(batchFileId);
+        if (!authBatchIds.isEmpty()) {
+            summary.put("authBatchId", authBatchIds.get(0));
+            authBatchRepository.findById(authBatchIds.get(0)).ifPresent(ab -> {
+                summary.put("authBatchStatus", ab.getBatchStatus());
+                summary.put("authBatchReference", ab.getBatchReference());
+            });
+        }
+
+        return ResponseEntity.ok(summary);
+    }
+
+    /**
+     * GET /api/incoming/file-transactions/{batchFileId} - Get transactions for
+     * a batch file. Optional query param: status (e.g., FAILED to get only
+     * failed records).
+     */
+    @GetMapping("/file-transactions/{batchFileId}")
+    public ResponseEntity<?> getTransactionsByFile(
+            @PathVariable Long batchFileId,
+            @RequestParam(value = "status", required = false) String status) {
+
+        List<RtaTransaction> transactions;
+        if (status != null && !status.isBlank()) {
+            transactions = transactionRepository.findByBatchFileIdAndStatus(batchFileId, status.toUpperCase());
+        } else {
+            transactions = transactionRepository.findByBatchFileId(batchFileId);
+        }
+
+        // Map to DTOs to avoid lazy loading issues
+        List<Map<String, Object>> result = new ArrayList<>();
+        for (RtaTransaction txn : transactions) {
+            Map<String, Object> map = new LinkedHashMap<>();
+            map.put("transactionId", txn.getId());
+            map.put("batchSeq", txn.getBatchSeq());
+            map.put("merchantId", txn.getMerchantId());
+            map.put("customerReference", txn.getMerchantCustomer());
+            map.put("accountNum", txn.getMaskedPan());
+            map.put("bankCode", txn.getMerchantBillingRef());
+            map.put("amount", txn.getAmount() != null ? txn.getAmount() / 100.0 : null);
+            map.put("currency", txn.getCurrency());
+            map.put("transactionDate", txn.getActualBillingDate());
+            map.put("recurringType", txn.getRecurringIndicator());
+            map.put("description", txn.getTransactionDescription());
+            map.put("status", txn.getStatus());
+            map.put("remark", txn.getRemark());
+            map.put("createdAt", txn.getCreatedAt());
+            result.add(map);
+        }
+
+        return ResponseEntity.ok(result);
+    }
+
+    /**
      * Helper: extract a field value from a row by canonical field name using
      * the header map and mappings.
      */
@@ -1324,15 +1489,7 @@ public class IncomingBatchController {
                         "detail", "File has already been processed. Current status: " + incomingFile.getFileStatus()));
             }
 
-            // Find the associated batch
-            Optional<RtaBatch> batchOpt = batchRepository.findById(incomingFile.getBatchId());
-            if (batchOpt.isEmpty()) {
-                return ResponseEntity.badRequest().body(Map.of(
-                        "error", "Batch not found",
-                        "detail", "Associated batch record not found"));
-            }
-
-            RtaBatch batch = batchOpt.get();
+            // Find the associated batch (if any — may be null for files uploaded after V8)
             String merchantId = incomingFile.getMerchantId();
             String storagePath = incomingFile.getStorageUri();
 
@@ -1849,13 +2006,6 @@ public class IncomingBatchController {
                         "detail", "Retry validation is only supported for CSV/TXT/XLSX/XLS files"));
             }
 
-            // Update batch record
-            batch.setStatus(validationStatus);
-            batch.setTotalCount(totalRecordCount);
-            batch.setTotalSuccessCount(successCount);
-            batch.setTotalFailCount(failCount);
-            batchRepository.save(batch);
-
             // Update incoming file record
             incomingFile.setFileStatus(validationStatus);
             incomingFile.setTotalRecordCount(totalRecordCount);
@@ -1865,9 +2015,8 @@ public class IncomingBatchController {
             incomingFile.setLastModifiedAt(LocalDateTime.now());
             incomingFileRepository.save(incomingFile);
 
-            // Save transactions
+            // Save transactions (no batch assigned — batch will be set during run batch)
             for (RtaTransaction txn : transactionsToSave) {
-                txn.setBatch(batch);
                 txn.setBatchFileId(batchFileId);
             }
             transactionRepository.saveAll(transactionsToSave);
@@ -1875,7 +2024,6 @@ public class IncomingBatchController {
             Map<String, Object> response = new LinkedHashMap<>();
             response.put("message", "Validation retry completed");
             response.put("batchFileId", batchFileId);
-            response.put("batchId", batch.getBatchId());
             response.put("status", validationStatus);
             response.put("totalRecords", totalRecordCount);
             response.put("successCount", successCount);

@@ -1,56 +1,125 @@
 package rta.controller;
 
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.TypedQuery;
 import rta.entity.RtaTransaction;
 import rta.repository.RtaTransactionRepository;
-
-import java.util.*;
 
 @RestController
 @RequestMapping("/api/recurring")
 public class RecurringTransactionController {
 
     private final RtaTransactionRepository transactionRepository;
+    private final EntityManager entityManager;
 
-    public RecurringTransactionController(RtaTransactionRepository transactionRepository) {
+    public RecurringTransactionController(RtaTransactionRepository transactionRepository,
+            EntityManager entityManager) {
         this.transactionRepository = transactionRepository;
+        this.entityManager = entityManager;
     }
 
     /**
-     * GET /api/recurring/list?page=0&size=10&search=&merchantId= Returns
-     * paginated list of unique recurring references with aggregated counts.
-     * Uses a single GROUP BY query instead of N+1 queries for much better
-     * performance.
+     * GET /api/recurring/list?page=0&size=10&search=&merchantId=&recurringType=
+     * recurringType: ALL (default), RECURRING, NON_RECURRING
      */
     @GetMapping("/list")
     public ResponseEntity<Map<String, Object>> getRecurringList(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(defaultValue = "") String search,
-            @RequestParam(defaultValue = "") String merchantId) {
+            @RequestParam(defaultValue = "") String merchantId,
+            @RequestParam(defaultValue = "ALL") String recurringType) {
 
         Pageable pageable = PageRequest.of(page, size);
-        Page<Object[]> resultPage;
 
-        boolean hasSearch = search != null && !search.trim().isEmpty();
-        boolean hasMerchant = merchantId != null && !merchantId.trim().isEmpty();
+        // Build dynamic WHERE clauses
+        List<String> conditions = new ArrayList<>();
+        Map<String, Object> params = new LinkedHashMap<>();
 
-        if (hasSearch && hasMerchant) {
-            resultPage = transactionRepository.findRecurringListPagedByMerchantAndSearch(
-                    merchantId.trim(), search.trim(), pageable);
-        } else if (hasMerchant) {
-            resultPage = transactionRepository.findRecurringListPagedByMerchant(
-                    merchantId.trim(), pageable);
-        } else if (hasSearch) {
-            resultPage = transactionRepository.findRecurringListPagedBySearch(
-                    search.trim(), pageable);
-        } else {
-            resultPage = transactionRepository.findRecurringListPaged(pageable);
+        // recurringType filter — based on is_recurring column (1=recurring, 0=non-recurring)
+        if ("RECURRING".equalsIgnoreCase(recurringType)) {
+            conditions.add("t.isRecurring = true");
+        } else if ("NON_RECURRING".equalsIgnoreCase(recurringType)) {
+            conditions.add("(t.isRecurring = false OR t.isRecurring IS NULL)");
         }
+        // ALL => no filter
+
+        if (merchantId != null && !merchantId.trim().isEmpty()) {
+            conditions.add("t.merchantId = :merchantId");
+            params.put("merchantId", merchantId.trim());
+        }
+
+        if (search != null && !search.trim().isEmpty()) {
+            conditions.add("(LOWER(t.recurringReference) LIKE LOWER(CONCAT('%', :search, '%')) "
+                    + "OR LOWER(t.merchantId) LIKE LOWER(CONCAT('%', :search, '%')))");
+            params.put("search", search.trim());
+        }
+
+        String whereClause = conditions.isEmpty() ? "" : "WHERE " + String.join(" AND ", conditions);
+
+        // Grouping strategy depends on recurring type
+        String groupByFields;
+        String selectFields;
+        String countDistinctField;
+
+        if ("NON_RECURRING".equalsIgnoreCase(recurringType)) {
+            // Non-recurring: group by merchantId (no meaningful recurringReference)
+            selectFields = "COALESCE(t.merchantBillingRef, '') AS recurringRef, t.merchantId AS merchantId";
+            groupByFields = "COALESCE(t.merchantBillingRef, ''), t.merchantId";
+            countDistinctField = "CONCAT(COALESCE(t.merchantBillingRef, ''), '|', t.merchantId)";
+        } else if ("RECURRING".equalsIgnoreCase(recurringType)) {
+            // Recurring only: group by recurringReference + merchantId
+            selectFields = "t.recurringReference AS recurringRef, t.merchantId AS merchantId";
+            groupByFields = "t.recurringReference, t.merchantId";
+            countDistinctField = "CONCAT(t.recurringReference, '|', t.merchantId)";
+        } else {
+            // ALL: use COALESCE so both recurring and non-recurring group properly
+            selectFields = "COALESCE(t.recurringReference, t.merchantBillingRef, '') AS recurringRef, t.merchantId AS merchantId";
+            groupByFields = "COALESCE(t.recurringReference, t.merchantBillingRef, ''), t.merchantId";
+            countDistinctField = "CONCAT(COALESCE(t.recurringReference, t.merchantBillingRef, ''), '|', t.merchantId)";
+        }
+
+        // Data query
+        String dataJpql = "SELECT " + selectFields + ", COUNT(t), "
+                + "SUM(CASE WHEN t.status = 'SUCCESS' THEN 1 ELSE 0 END), "
+                + "SUM(CASE WHEN t.status = 'FAILED' THEN 1 ELSE 0 END) "
+                + "FROM RtaTransaction t " + whereClause + " "
+                + "GROUP BY " + groupByFields + " ORDER BY recurringRef ASC";
+
+        // Count query
+        String countJpql = "SELECT COUNT(DISTINCT " + countDistinctField + ") "
+                + "FROM RtaTransaction t " + whereClause;
+
+        TypedQuery<Object[]> dataQuery = entityManager.createQuery(dataJpql, Object[].class);
+        TypedQuery<Long> countQuery = entityManager.createQuery(countJpql, Long.class);
+
+        for (Map.Entry<String, Object> entry : params.entrySet()) {
+            dataQuery.setParameter(entry.getKey(), entry.getValue());
+            countQuery.setParameter(entry.getKey(), entry.getValue());
+        }
+
+        long total = countQuery.getSingleResult();
+        dataQuery.setFirstResult((int) pageable.getOffset());
+        dataQuery.setMaxResults(pageable.getPageSize());
+        List<Object[]> rows = dataQuery.getResultList();
+
+        Page<Object[]> resultPage = new PageImpl<>(rows, pageable, total);
 
         List<Map<String, Object>> content = new ArrayList<>();
         for (Object[] row : resultPage.getContent()) {
@@ -74,12 +143,20 @@ public class RecurringTransactionController {
     }
 
     /**
-     * GET /api/recurring/merchant-ids Returns distinct merchant IDs that have
-     * recurring transactions (for filter dropdown).
+     * GET /api/recurring/merchant-ids?recurringType=ALL Returns distinct
+     * merchant IDs for the filter dropdown.
      */
     @GetMapping("/merchant-ids")
-    public ResponseEntity<List<String>> getRecurringMerchantIds() {
-        List<String> merchantIds = transactionRepository.findDistinctMerchantIdsWithRecurring();
+    public ResponseEntity<List<String>> getRecurringMerchantIds(
+            @RequestParam(defaultValue = "ALL") String recurringType) {
+        List<String> merchantIds;
+        if ("RECURRING".equalsIgnoreCase(recurringType)) {
+            merchantIds = transactionRepository.findDistinctMerchantIdsWithRecurring();
+        } else if ("NON_RECURRING".equalsIgnoreCase(recurringType)) {
+            merchantIds = transactionRepository.findDistinctMerchantIdsNonRecurring();
+        } else {
+            merchantIds = transactionRepository.findDistinctMerchantIdsAll();
+        }
         return ResponseEntity.ok(merchantIds);
     }
 

@@ -1,0 +1,293 @@
+// All shared styles (page-header, back-btn, toolbar, search-input, filter-select,
+// btn, data-table, table-container, loading-text, pagination, status-badge,
+// no-data, form styles) are in _global-components.scss
+
+// Summary cards
+.summary-cards {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.summary-card {
+  background: white;
+  border-radius: 12px;
+  padding: 20px;
+  text-align: center;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  border-left: 4px solid #e2e8f0;
+
+  .card-icon {
+    font-size: 24px;
+    margin-bottom: 8px;
+  }
+
+  .card-value {
+    font-size: 28px;
+    font-weight: 700;
+    color: #1e293b;
+  }
+
+  .card-label {
+    font-size: 13px;
+    color: #64748b;
+    margin-top: 4px;
+  }
+
+  &.total { border-left-color: #3b82f6; }
+  &.success { border-left-color: #16a34a; .card-value { color: #16a34a; } }
+  &.failed { border-left-color: #dc2626; .card-value { color: #dc2626; } }
+  &.rate { border-left-color: #8b5cf6; .card-value { color: #8b5cf6; } }
+}
+
+// Detail card (reusable info section)
+.detail-card {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  padding: 24px;
+  margin-bottom: 24px;
+
+  h3 {
+    font-size: 16px;
+    font-weight: 600;
+    color: #1e293b;
+    margin: 0 0 16px 0;
+    padding-bottom: 10px;
+    border-bottom: 2px solid #e2e8f0;
+  }
+}
+
+.info-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 14px 32px;
+}
+
+.info-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.info-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.info-value {
+  font-size: 14px;
+  color: #1e293b;
+  font-weight: 500;
+
+  &.filename {
+    font-family: 'Courier New', monospace;
+    font-size: 13px;
+    word-break: break-all;
+  }
+}
+
+.merchant-id {
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 400;
+}
+
+.text-muted {
+  color: #94a3b8;
+  font-style: italic;
+}
+
+// Validation remark
+.remark-section {
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid #e2e8f0;
+
+  h4 {
+    font-size: 14px;
+    font-weight: 600;
+    color: #dc2626;
+    margin: 0 0 8px 0;
+  }
+}
+
+.remark-content {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  padding: 12px 16px;
+  font-size: 13px;
+  color: #991b1b;
+  white-space: pre-wrap;
+  word-break: break-word;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+// Authorization batch list
+.auth-batch-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.auth-batch-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  background: #f8fafc;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+}
+
+.ab-ref {
+  font-family: 'Courier New', monospace;
+  font-weight: 600;
+  color: #3b82f6;
+  font-size: 14px;
+}
+
+.ab-info {
+  font-size: 13px;
+  color: #475569;
+}
+
+.ab-date {
+  font-size: 12px;
+  color: #94a3b8;
+  margin-left: auto;
+}
+
+// Transaction section
+.transactions-card {
+  .txn-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-bottom: 16px;
+
+    h3 {
+      margin-bottom: 0;
+      padding-bottom: 0;
+      border-bottom: none;
+    }
+  }
+
+  .txn-controls {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+
+    .search-input {
+      width: 240px;
+      padding: 8px 12px;
+      font-size: 13px;
+    }
+
+    .filter-select {
+      padding: 8px 12px;
+      font-size: 13px;
+    }
+  }
+}
+
+// Table cell styles
+.mono-cell {
+  font-family: 'Courier New', monospace;
+  font-size: 13px;
+}
+
+.amount-cell {
+  text-align: right;
+  font-family: 'Courier New', monospace;
+  font-weight: 600;
+}
+
+.date-cell {
+  white-space: nowrap;
+  font-size: 13px;
+  color: #64748b;
+}
+
+.remark-cell {
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: #64748b;
+  font-size: 12px;
+}
+
+.no-data-cell {
+  text-align: center;
+  padding: 40px !important;
+  color: #94a3b8;
+}
+
+.failed-row {
+  background-color: #fef2f2 !important;
+}
+
+.recurring-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  background: #ede9fe;
+  color: #6d28d9;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+// Status badge variants
+.status-ready {
+  background: #dbeafe !important;
+  color: #1d4ed8 !important;
+}
+
+.status-processing {
+  background: #fef3c7 !important;
+  color: #92400e !important;
+}
+
+.status-success {
+  background: #d1fae5 !important;
+  color: #065f46 !important;
+}
+
+.status-failed {
+  background: #fee2e2 !important;
+  color: #991b1b !important;
+}
+
+// Responsive
+@media (max-width: 768px) {
+  .summary-cards {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .info-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .transactions-card .txn-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .transactions-card .txn-controls {
+    width: 100%;
+    flex-direction: column;
+
+    .search-input {
+      width: 100%;
+    }
+  }
+}

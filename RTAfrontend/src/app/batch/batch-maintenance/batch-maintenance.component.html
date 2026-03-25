@@ -1,0 +1,227 @@
+<div class="page-container" [class.drawer-open]="drawerOpen">
+  <!-- Open sidebar button (top-left, visible when closed) -->
+  <button class="sidebar-open-btn" (click)="toggleDrawer()">
+    <span></span><span></span><span></span>
+  </button>
+
+  <!-- Sidebar -->
+  <aside class="sidebar" [class.open]="drawerOpen">
+    <button class="sidebar-toggle" (click)="toggleDrawer()">
+      <span></span><span></span><span></span>
+    </button>
+    <h2>RTA Upload</h2>
+    <ul>
+      <li routerLink="/batch-list" routerLinkActive="active"><b>Upload Batch File</b></li>
+      <li routerLink="/incoming-batch" routerLinkActive="active"><b>Incoming Batch File</b></li>
+      <li routerLink="/batch-file-maintenance" routerLinkActive="active"><b>Batch File Maintenance</b></li>
+      <li routerLink="/batch-maintenance" routerLinkActive="active"><b>Batch Maintenance</b></li>
+      <li routerLink="/recurring-list" routerLinkActive="active"><b>Track Transaction</b></li>
+      <li routerLink="/profile" routerLinkActive="active">View Profile</li>
+      <li routerLink="/users" routerLinkActive="active"><b>User Management</b></li>
+      <li routerLink="/merchant-maintenance" routerLinkActive="active"><b>Merchant Maintenance</b></li>
+    </ul>
+  </aside>
+
+  <!-- Main Content -->
+  <app-top-bar></app-top-bar>
+  <main class="main-content">
+    <div class="page-header">
+      <h1>Batch Maintenance</h1>
+      <p class="subtitle">Authorization batches auto-run every 5 minutes. Groups validated transactions for sending.</p>
+    </div>
+
+    <!-- Countdown Timer -->
+    <div class="countdown-banner">
+      <span class="countdown-label">Next batch run in:</span>
+      <span class="countdown-timer" [class.countdown-urgent]="timer.isUrgent">
+        {{ timer.minutes }}m {{ timer.secondsPadded }}s
+      </span>
+      <button class="btn btn-refresh" (click)="loadPage()">Refresh</button>
+    </div>
+
+    <!-- Loading -->
+    <div *ngIf="isLoading" class="loading-text">Loading authorization batches...</div>
+
+    <!-- Table -->
+    <div class="table-container" *ngIf="!isLoading">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th class="th-sort" (click)="sortBy('authBatchId')" [attr.data-sort]="sortKey==='authBatchId' ? sortDir : ''">Batch ID</th>
+            <th class="th-sort" (click)="sortBy('batchReference')" [attr.data-sort]="sortKey==='batchReference' ? sortDir : ''">Batch Reference</th>
+            <th class="th-sort" (click)="sortBy('fileCount')" [attr.data-sort]="sortKey==='fileCount' ? sortDir : ''">Files</th>
+            <th class="th-sort" (click)="sortBy('totalCount')" [attr.data-sort]="sortKey==='totalCount' ? sortDir : ''">Total Transactions</th>
+            <th class="th-sort" (click)="sortBy('totalAmountCents')" [attr.data-sort]="sortKey==='totalAmountCents' ? sortDir : ''">Total Amount</th>
+            <th class="th-sort" (click)="sortBy('batchStatus')" [attr.data-sort]="sortKey==='batchStatus' ? sortDir : ''">Status</th>
+            <th class="th-sort" (click)="sortBy('createdAt')" [attr.data-sort]="sortKey==='createdAt' ? sortDir : ''">Created At</th>
+            <th class="th-sort" (click)="sortBy('remark')" [attr.data-sort]="sortKey==='remark' ? sortDir : ''">Remark</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let item of sortedItems">
+            <td>{{ item.authBatchId }}</td>
+            <td class="batch-ref">{{ item.batchReference }}</td>
+            <td class="count-cell">{{ item.fileCount }}</td>
+            <td class="count-cell">{{ item.totalCount }}</td>
+            <td class="amount-cell">{{ formatAmount(item.totalAmountCents) }}</td>
+            <td>
+              <span class="status-badge" [ngClass]="getStatusClass(item.batchStatus)">
+                {{ item.batchStatus }}
+              </span>
+            </td>
+            <td class="date-cell">{{ item.createdAt | date:'yyyy-MM-dd HH:mm:ss' }}</td>
+            <td class="remark-cell">{{ item.remark }}</td>
+            <td class="action-cell">
+              <button class="btn-action btn-view" (click)="viewDetail(item.authBatchId)" title="View"></button>
+            </td>
+          </tr>
+          <tr *ngIf="totalElements === 0">
+            <td colspan="9" class="no-data-cell">
+              <div class="no-data">
+                <p>No authorization batches found.</p>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      <!-- Pagination -->
+      <div class="pagination-section" *ngIf="totalElements > 0">
+        <div class="pagination-info">
+          <div class="page-size-selector">
+            <label>Rows:</label>
+            <select [(ngModel)]="pageSize" (change)="onPageSizeChange()" class="filter-select">
+              <option *ngFor="let size of pageSizeOptions" [ngValue]="size">{{ size }}</option>
+            </select>
+          </div>
+          <span>Showing {{ startRecord }}–{{ endRecord }} of {{ totalElements }}</span>
+        </div>
+        <div class="pagination-controls">
+          <button class="page-btn" (click)="goToPage(1)" [disabled]="currentPage === 1">«</button>
+          <button class="page-btn" (click)="goToPage(currentPage - 1)" [disabled]="currentPage === 1">‹</button>
+          <button
+            *ngFor="let p of visiblePages"
+            class="page-btn"
+            [class.active]="p === currentPage"
+            (click)="goToPage(p)"
+          >{{ p }}</button>
+          <button class="page-btn" (click)="goToPage(currentPage + 1)" [disabled]="currentPage === totalPages">›</button>
+          <button class="page-btn" (click)="goToPage(totalPages)" [disabled]="currentPage === totalPages">»</button>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- Detail Modal -->
+<div class="modal-overlay" *ngIf="showDetailModal" (click)="closeDetailModal()">
+  <div class="modal-content" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h2>Batch Detail</h2>
+      <button class="modal-close" (click)="closeDetailModal()">✕</button>
+    </div>
+
+    <div *ngIf="isLoadingDetail" class="loading-text">Loading batch detail...</div>
+
+    <div *ngIf="!isLoadingDetail && detailBatch" class="modal-body">
+      <!-- Batch summary -->
+      <div class="detail-summary">
+        <div class="detail-row">
+          <span class="detail-label">Batch Reference:</span>
+          <span class="detail-value">{{ detailBatch.batchReference }}</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">Status:</span>
+          <span class="status-badge" [ngClass]="getStatusClass(detailBatch.batchStatus)">{{ detailBatch.batchStatus }}</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">Total Transactions:</span>
+          <span class="detail-value">{{ detailBatch.totalCount }}</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">Total Amount:</span>
+          <span class="detail-value">{{ formatAmount(detailBatch.totalAmountCents) }}</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">Created At:</span>
+          <span class="detail-value">{{ detailBatch.createdAt | date:'yyyy-MM-dd HH:mm:ss' }}</span>
+        </div>
+        <div class="detail-row" *ngIf="detailBatch.remark">
+          <span class="detail-label">Remark:</span>
+          <span class="detail-value">{{ detailBatch.remark }}</span>
+        </div>
+      </div>
+
+      <!-- Files in this batch -->
+      <h3>Files ({{ detailFiles.length }})</h3>
+      <div class="detail-table-wrapper" *ngIf="detailFiles.length > 0">
+        <table class="data-table detail-table">
+          <thead>
+            <tr>
+              <th>File ID</th>
+              <th>File Name</th>
+              <th>Merchant ID</th>
+              <th>Records</th>
+              <th>Success</th>
+              <th>Failed</th>
+              <th>Status</th>
+              <th>Created At</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let f of detailFiles">
+              <td>{{ f.batchFileId }}</td>
+              <td class="filename-cell">{{ f.originalFilename }}</td>
+              <td>{{ f.merchantId }}</td>
+              <td class="count-cell">{{ f.totalRecordCount }}</td>
+              <td class="count-cell">{{ f.successCount }}</td>
+              <td class="count-cell">{{ f.failCount }}</td>
+              <td>
+                <span class="status-badge" [ngClass]="getStatusClass(f.fileStatus)">{{ f.fileStatus }}</span>
+              </td>
+              <td class="date-cell">{{ f.createdAt | date:'yyyy-MM-dd HH:mm:ss' }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p *ngIf="detailFiles.length === 0" class="no-data">No files found for this batch.</p>
+
+      <!-- Transactions table -->
+      <h3>Transactions ({{ detailTransactions.length }})</h3>
+      <div class="detail-table-wrapper">
+        <table class="data-table detail-table">
+          <thead>
+            <tr>
+              <th>Txn ID</th>
+              <th>Merchant ID</th>
+              <th>Customer</th>
+              <th>Masked PAN</th>
+              <th>Amount</th>
+              <th>Currency</th>
+              <th>Billing Date</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let txn of detailTransactions">
+              <td>{{ txn.transactionId }}</td>
+              <td>{{ txn.merchantId }}</td>
+              <td>{{ txn.merchantCustomer }}</td>
+              <td>{{ txn.maskedPan }}</td>
+              <td class="amount-cell">{{ formatAmount(txn.amount) }}</td>
+              <td>{{ txn.currency }}</td>
+              <td>{{ txn.actualBillingDate }}</td>
+              <td>
+                <span class="status-badge status-success">{{ txn.status }}</span>
+              </td>
+            </tr>
+            <tr *ngIf="detailTransactions.length === 0">
+              <td colspan="8" class="no-data-cell">No transactions in this batch.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>

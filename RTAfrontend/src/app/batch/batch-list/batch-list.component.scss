@@ -1,0 +1,30 @@
+// Page-container, sidebar, main-content, page-header, logout-btn,
+// data-table, toolbar, btn, btn-primary, action-cell, btn-action,
+// btn-view, btn-edit, btn-delete are all from _global-components.scss
+
+.file-input {
+  padding: 8px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 14px;
+  color: #374151;
+  background: white;
+  cursor: pointer;
+
+  &::file-selector-button {
+    background-color: #f1f5f9;
+    border: none;
+    border-right: 1px solid #d1d5db;
+    padding: 6px 14px;
+    margin-right: 12px;
+    border-radius: 6px 0 0 6px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #475569;
+    cursor: pointer;
+
+    &:hover {
+      background-color: #e2e8f0;
+    }
+  }
+}

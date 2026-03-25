@@ -1,0 +1,176 @@
+// All shared styles (page-header, header-top, search-section, search-box,
+// search-input, result-count, btn, btn-add, btn-search, btn-clear,
+// table-card, table, th, td, status-badge, empty-state, loading-text,
+// modal-overlay, modal-header, modal-body, pagination-*, page-btn)
+// are in _global-components.scss
+
+/* Status Badges — module-specific */
+.status-active {
+  background-color: #dcfce7;
+  color: #166534;
+}
+
+.status-inactive {
+  background-color: #fef3c7;
+  color: #92400e;
+}
+
+.status-suspended {
+  background-color: #fee2e2;
+  color: #991b1b;
+}
+
+/* Role Badges */
+.role-badge {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+}
+
+.role-super-admin {
+  background-color: #ede9fe;
+  color: #5b21b6;
+}
+
+.role-admin {
+  background-color: #dbeafe;
+  color: #1e40af;
+}
+
+.role-merchant {
+  background-color: #fef3c7;
+  color: #92400e;
+}
+
+.role-default {
+  background-color: #f1f5f9;
+  color: #475569;
+}
+
+/* Type Badges */
+.type-badge {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+}
+
+.type-admin {
+  background-color: #dbeafe;
+  color: #1e40af;
+}
+
+.type-merchant {
+  background-color: #d1fae5;
+  color: #065f46;
+}
+
+/* Sync Button */
+.btn-sync {
+  background-color: #f0fdf4;
+  color: #166534;
+  border: 1px solid #bbf7d0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+
+  &:hover {
+    background-color: #dcfce7;
+    border-color: #86efac;
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+}
+
+.spinning {
+  display: inline-block;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* ===== Add User Type Modal ===== */
+.modal-card {
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+  width: 540px;
+  max-width: 90vw;
+  overflow: hidden;
+  animation: slideUp 0.25s ease;
+}
+
+.modal-card .modal-header {
+  padding: 24px 32px 16px;
+  border-bottom: 1px solid #e2e8f0;
+
+  h2 {
+    font-size: 20px;
+    font-weight: 700;
+    color: #1e293b;
+  }
+}
+
+.modal-card .modal-body {
+  display: flex;
+  gap: 20px;
+  padding: 28px 32px 32px;
+}
+
+.type-card {
+  flex: 1;
+  padding: 28px 20px;
+  border: 2px solid #e2e8f0;
+  border-radius: 12px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+
+  &:hover {
+    border-color: #3b82f6;
+    background-color: #eff6ff;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 16px rgba(59, 130, 246, 0.15);
+  }
+}
+
+.type-icon {
+  font-size: 40px;
+  margin-bottom: 12px;
+}
+
+.type-card h3 {
+  font-size: 16px;
+  font-weight: 700;
+  color: #1e293b;
+  margin: 0 0 8px 0;
+}
+
+.type-card p {
+  font-size: 13px;
+  color: #64748b;
+  margin: 0;
+  line-height: 1.5;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from { transform: translateY(30px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}

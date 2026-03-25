@@ -32,9 +32,15 @@ export class PortalService {
   constructor(private http: HttpClient) {}
   /**
    * GET /api/batches
-   * - Fetch all batches (optionally filtered by backend auth/user).
+   * - Fetch batches for the given merchantId (current user).
+   * - If no merchantId is provided, returns all batches.
    */
-  getBatches(): Observable<RtaBatch[]> {
+  getBatches(merchantId?: string): Observable<RtaBatch[]> {
+    if (merchantId) {
+      return this.http.get<RtaBatch[]>(this.apiUrl, {
+        params: { merchantId }
+      });
+    }
     return this.http.get<RtaBatch[]>(this.apiUrl);
   }
 
