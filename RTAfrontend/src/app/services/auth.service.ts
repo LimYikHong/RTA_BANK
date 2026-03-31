@@ -30,8 +30,8 @@ export class AuthService {
     });
   }
 
-  verify2fa(username: string, code: number): Observable<UserProfile> {
-    return this.http.post<UserProfile>(`${this.apiUrl}/verify-2fa`, {
+  verify2fa(username: string, code: number): Observable<any> {
+    return this.http.post<any>(`${this.apiUrl}/verify-2fa`, {
       username,
       code
     });
@@ -63,5 +63,21 @@ export class AuthService {
   getCurrentUser(): UserProfile | null {
     const data = localStorage.getItem('user');
     return data ? (JSON.parse(data) as UserProfile) : null;
+  }
+
+  /**
+   * Get the current user's role from localStorage.
+   * - Returns 'SUPER_ADMIN', 'ADMIN', or null.
+   */
+  getUserRole(): string | null {
+    const user = this.getCurrentUser();
+    return user?.role ?? null;
+  }
+
+  /**
+   * Check if the current user is SUPER_ADMIN.
+   */
+  isSuperAdmin(): boolean {
+    return this.getUserRole() === 'SUPER_ADMIN';
   }
 }

@@ -1,5 +1,5 @@
 <div class="page-container" [class.drawer-open]="drawerOpen">
-  <!-- Open sidebar button (top-left, visible when closed) -->
+  <!-- Open sidebar button -->
   <button class="sidebar-open-btn" (click)="toggleDrawer()">
     <span></span><span></span><span></span>
   </button>
@@ -26,15 +26,18 @@
   <app-top-bar></app-top-bar>
   <main class="main-content">
     <div class="page-header">
-      <button class="back-btn" routerLink="/profile">&larr; Back to Profile</button>
-      <h1>Edit Profile</h1>
-      <p class="subtitle">Update your profile information below.</p>
+      <button class="back-btn" (click)="goBack()">{{ backLabel }}</button>
+      <h1>Edit User</h1>
+      <p class="subtitle">Update the user's profile information below.</p>
     </div>
 
-    <div class="form-card">
-      <form #editProfileForm="ngForm" (ngSubmit)="saveProfile()">
+    <!-- Loading -->
+    <div class="loading-text" *ngIf="isLoading">Loading user data...</div>
 
-        <!-- Account Information (read-only fields) -->
+    <div class="form-card" *ngIf="!isLoading">
+      <form #editUserForm="ngForm" (ngSubmit)="saveUser()">
+
+        <!-- Account Information -->
         <div class="form-section">
           <h3>Account Information</h3>
           <div class="form-row">
@@ -54,6 +57,23 @@
               <label class="form-label" for="userId">User ID</label>
               <input type="text" id="userId" class="form-input readonly-input" [value]="editData.userId" readonly />
               <small class="readonly-hint">User ID cannot be changed</small>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="role">Role <span class="required">*</span></label>
+              <select id="role" class="form-input" [(ngModel)]="userRole" name="role">
+                <option value="SUPER_ADMIN">Super Admin</option>
+                <option value="ADMIN">Admin</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label" for="status">Status</label>
+              <select id="status" class="form-input" [(ngModel)]="editData.status" name="status">
+                <option value="ACTIVE">Active</option>
+                <option value="INACTIVE">Inactive</option>
+                <option value="SUSPENDED">Suspended</option>
+              </select>
             </div>
           </div>
         </div>
@@ -119,7 +139,7 @@
         <!-- Form Actions -->
         <div class="form-actions">
           <button type="button" class="btn btn-cancel" (click)="cancel()">Cancel</button>
-          <button type="submit" class="btn btn-submit" [disabled]="isSubmitting || !editProfileForm.valid">
+          <button type="submit" class="btn btn-submit" [disabled]="isSubmitting || !editUserForm.valid">
             {{ isSubmitting ? 'Saving...' : 'Save Changes' }}
           </button>
         </div>

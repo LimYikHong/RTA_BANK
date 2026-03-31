@@ -1,3 +1,7 @@
+-- ============================================================
+-- V1: Complete Schema (consolidated from all previous migrations)
+-- ============================================================
+
 -- Merchant Bank Account Table
 CREATE TABLE merchant_bank_acc (
     account_id BIGINT AUTO_INCREMENT PRIMARY KEY,
@@ -37,7 +41,7 @@ CREATE TABLE merchant_info (
     FOREIGN KEY (account_id) REFERENCES merchant_bank_acc(account_id)
 );
 
--- User Table (Consolidated rta_bank_user and rta_role management)
+-- User Table
 CREATE TABLE rta_bank_user (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     username VARCHAR(255) NOT NULL UNIQUE,
@@ -102,7 +106,7 @@ CREATE TABLE rta_permission (
     deleted_at DATETIME
 );
 
--- User Role Table (Many-to-Many with audit)
+-- User Role Table (Many-to-Many)
 CREATE TABLE rta_user_role (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     user_id BIGINT NOT NULL,
@@ -114,7 +118,7 @@ CREATE TABLE rta_user_role (
     UNIQUE KEY uk_user_role (user_id, role_id)
 );
 
--- Role Permission Table (Many-to-Many with audit)
+-- Role Permission Table (Many-to-Many)
 CREATE TABLE rta_role_permission (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     role_id BIGINT NOT NULL,
@@ -191,7 +195,7 @@ CREATE TABLE rta_field_mapping (
     FOREIGN KEY (profile_id) REFERENCES rta_file_profile(profile_id)
 );
 
--- RTA Batch Table
+-- RTA Batch Table (created during scheduled batch grouping)
 CREATE TABLE rta_batch (
     batch_id BIGINT AUTO_INCREMENT PRIMARY KEY,
     total_count INT DEFAULT 0,
@@ -209,12 +213,28 @@ CREATE TABLE rta_batch (
     deleted_at DATETIME
 );
 
+-- Authorization Batch Table (groups validated transactions for authorization)
+CREATE TABLE rta_authorization_batch (
+    auth_batch_id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    batch_reference VARCHAR(50) NOT NULL UNIQUE,
+    total_count INT DEFAULT 0,
+    success_count INT DEFAULT 0,
+    fail_count INT DEFAULT 0,
+    total_amount_cents BIGINT DEFAULT 0,
+    batch_status VARCHAR(30) NOT NULL DEFAULT 'READY_TO_SEND',
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    last_modified_at DATETIME ON UPDATE CURRENT_TIMESTAMP,
+    remark TEXT
+);
+
 -- RTA Incoming Batch File Table
+-- batch_id is nullable (assigned later by scheduled batch job), FK to rta_batch
 CREATE TABLE rta_incoming_batch_file (
     batch_file_id BIGINT AUTO_INCREMENT PRIMARY KEY,
     merchant_id VARCHAR(50) NOT NULL,
-    batch_id BIGINT NOT NULL,
+    batch_id BIGINT NULL,
     original_filename VARCHAR(255),
+    stored_filename VARCHAR(255),
     storage_uri VARCHAR(255),
     size_bytes BIGINT,
     total_record_count INT,
@@ -225,6 +245,7 @@ CREATE TABLE rta_incoming_batch_file (
     last_modified_at DATETIME ON UPDATE CURRENT_TIMESTAMP,
     last_modified_by VARCHAR(100),
     file_status VARCHAR(20),
+    batch_status VARCHAR(30) NULL,
     transaction_record_remark TEXT,
     deleted_at DATETIME,
     FOREIGN KEY (merchant_id) REFERENCES merchant_info(merchant_id),
@@ -232,11 +253,13 @@ CREATE TABLE rta_incoming_batch_file (
 );
 
 -- RTA Transaction Table
+-- batch_id nullable (assigned by scheduler), auth_batch_id nullable (assigned by batch maintenance)
 CREATE TABLE rta_transaction (
     transaction_id BIGINT AUTO_INCREMENT PRIMARY KEY,
     merchant_id VARCHAR(50) NOT NULL,
     batch_file_id BIGINT NOT NULL,
-    batch_id BIGINT NOT NULL,
+    batch_id BIGINT NULL,
+    auth_batch_id BIGINT NULL,
     batch_seq INT,
     merchant_batch_seq INT,
     bxn_ref VARCHAR(100),
@@ -246,6 +269,10 @@ CREATE TABLE rta_transaction (
     merchant_billing_ref VARCHAR(100),
     transaction_description VARCHAR(255),
     recurring_indicator VARCHAR(10),
+    is_recurring BOOLEAN DEFAULT FALSE,
+    recurring_reference VARCHAR(100),
+    frequency_value INT,
+    additional_data JSON,
     amount_cents BIGINT,
     currency VARCHAR(10),
     authorization_datetime DATETIME,
@@ -255,5 +282,21 @@ CREATE TABLE rta_transaction (
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (merchant_id) REFERENCES merchant_info(merchant_id),
     FOREIGN KEY (batch_file_id) REFERENCES rta_incoming_batch_file(batch_file_id),
-    FOREIGN KEY (batch_id) REFERENCES rta_batch(batch_id)
+    FOREIGN KEY (batch_id) REFERENCES rta_batch(batch_id),
+    CONSTRAINT fk_txn_auth_batch FOREIGN KEY (auth_batch_id) REFERENCES rta_authorization_batch(auth_batch_id),
+    CONSTRAINT uk_transaction_unique UNIQUE (merchant_id, merchant_customer, amount_cents, actual_billing_date)
+);
+
+-- RTA Uploaded File Hash Table (duplicate file detection)
+CREATE TABLE rta_uploaded_file_hash (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    merchant_id VARCHAR(50) NOT NULL,
+    original_filename VARCHAR(255),
+    stored_filename VARCHAR(255),
+    file_hash VARCHAR(64) NOT NULL,
+    uploaded_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    status VARCHAR(50),
+    upload_count INT DEFAULT 1,
+    FOREIGN KEY (merchant_id) REFERENCES merchant_info(merchant_id),
+    UNIQUE KEY uk_merchant_file_hash (merchant_id, file_hash)
 );

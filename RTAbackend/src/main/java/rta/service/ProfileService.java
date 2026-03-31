@@ -1,20 +1,22 @@
 package rta.service;
 
-import org.springframework.stereotype.Service;
-import org.springframework.web.multipart.MultipartFile;
-
-import rta.model.UserProfile;
-import rta.repository.ProfileRepository;
-import rta.entity.RtaRole;
-import rta.entity.RtaUserRole;
-import rta.repository.RtaRoleRepository;
-import rta.repository.RtaUserRoleRepository;
-
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
+
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
+
 import com.warrenstrange.googleauth.GoogleAuthenticator;
 import com.warrenstrange.googleauth.GoogleAuthenticatorKey;
+
+import rta.entity.RtaRole;
+import rta.entity.RtaUserRole;
+import rta.model.UserProfile;
+import rta.repository.ProfileRepository;
+import rta.repository.RtaRoleRepository;
+import rta.repository.RtaUserRoleRepository;
 
 @Service
 
@@ -129,10 +131,38 @@ public class ProfileService {
         existing.setCompany(newProfile.getCompany());
         existing.setContact(newProfile.getContact());
         existing.setAddress(newProfile.getAddress());
-        existing.setJoinedOn(newProfile.getJoinedOn());
+        existing.setPhone(newProfile.getPhone());
+        existing.setFirstName(newProfile.getFirstName());
+        existing.setLastName(newProfile.getLastName());
+        existing.setOfficeNumber(newProfile.getOfficeNumber());
+        if (newProfile.getStatus() != null) {
+            existing.setStatus(newProfile.getStatus());
+        }
+        existing.setUpdatedAt(LocalDateTime.now());
+        existing.setLastModifiedBy(newProfile.getLastModifiedBy());
 
         UserProfile updated = profileRepository.save(existing);
         return updated;
+    }
+
+    /**
+     * Update the role for a given user (by userId string).
+     */
+    @Transactional
+    public void updateUserRole(String userId, String newRoleName) {
+        UserProfile user = profileRepository.findByUserId(userId)
+                .orElseThrow(() -> new RuntimeException("User not found: " + userId));
+        RtaRole newRole = roleRepository.findByRoleName(newRoleName)
+                .orElseThrow(() -> new RuntimeException("Role not found: " + newRoleName));
+
+        // Remove existing roles and assign new one
+        userRoleRepository.deleteByUser_Id(user.getId());
+
+        RtaUserRole userRole = new RtaUserRole();
+        userRole.setUser(user);
+        userRole.setRole(newRole);
+        userRole.setAssignedBy("system");
+        userRoleRepository.save(userRole);
     }
 
     /**
@@ -225,6 +255,17 @@ public class ProfileService {
             return profileRepository.findAll();
         }
         return profileRepository.searchByKeyword(keyword.trim());
+    }
+
+    /**
+     * Delete a user by userId. Removes role assignments first.
+     */
+    @Transactional
+    public void deleteUser(String userId) {
+        UserProfile user = profileRepository.findByUserId(userId)
+                .orElseThrow(() -> new RuntimeException("User not found: " + userId));
+        userRoleRepository.deleteByUser_Id(user.getId());
+        profileRepository.delete(user);
     }
 
     /**

@@ -24,6 +24,11 @@ export class UserManagementComponent implements OnInit, OnDestroy {
   isLoading: boolean = false;
   private routerSub!: Subscription;
 
+  // Delete confirmation modal
+  showDeleteModal: boolean = false;
+  userToDelete: UserListItem | null = null;
+  isDeleting: boolean = false;
+
   // Pagination
   currentPage = 1;
   pageSize = 10;
@@ -81,6 +86,10 @@ export class UserManagementComponent implements OnInit, OnDestroy {
     private authService: AuthService,
     private router: Router
   ) {}
+
+  get isSuperAdmin(): boolean {
+    return this.authService.isSuperAdmin();
+  }
 
   ngOnInit(): void {
     this.loadUsers();
@@ -158,6 +167,41 @@ export class UserManagementComponent implements OnInit, OnDestroy {
 
   addUser(): void {
     this.router.navigate(['/add-user']);
+  }
+
+  viewUser(user: UserListItem): void {
+    this.router.navigate(['/view-user', user.userId]);
+  }
+
+  editUser(user: UserListItem): void {
+    this.router.navigate(['/edit-user', user.userId]);
+  }
+
+  openDeleteModal(user: UserListItem): void {
+    this.userToDelete = user;
+    this.showDeleteModal = true;
+  }
+
+  closeDeleteModal(): void {
+    this.userToDelete = null;
+    this.showDeleteModal = false;
+    this.isDeleting = false;
+  }
+
+  confirmDelete(): void {
+    if (!this.userToDelete) return;
+    this.isDeleting = true;
+    this.profileService.deleteUser(this.userToDelete.userId).subscribe({
+      next: () => {
+        this.closeDeleteModal();
+        this.loadUsers();
+      },
+      error: (err) => {
+        console.error('Failed to delete user:', err);
+        this.isDeleting = false;
+        alert('Failed to delete user. Please try again.');
+      }
+    });
   }
 
   logout(): void {

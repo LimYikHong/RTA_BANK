@@ -42,7 +42,7 @@
                     placeholder="Search by name, ID, username, email, company, or contact..." />
                 <button class="btn btn-search" (click)="onSearch()">Search</button>
                 <button class="btn btn-clear" *ngIf="searchKeyword" (click)="clearSearch()">Clear</button>
-                <button class="btn btn-add" (click)="addMerchant()">Add Merchant</button>
+                <button class="btn btn-add" *ngIf="isSuperAdmin" (click)="addMerchant()">Add Merchant</button>
             </div>
             <p class="result-count">Showing {{ filteredMerchants.length }} merchant(s)</p>
         </div>
@@ -82,8 +82,8 @@
                         <td>{{ m.createBy || '-' }}</td>
                         <td class="action-cell">
                             <button class="btn-action btn-view" (click)="viewMerchant(m.merchantId)" title="View"></button>
-                            <button class="btn-action btn-edit" (click)="editMerchant(m.merchantId)" title="Edit"></button>
-                            <button class="btn-action btn-delete" (click)="openDeleteModal(m)" title="Delete"></button>
+                            <button class="btn-action btn-edit" *ngIf="isSuperAdmin" (click)="editMerchant(m.merchantId)" title="Edit"></button>
+                            <button class="btn-action btn-delete" *ngIf="isSuperAdmin" (click)="openDeleteModal(m)" title="Delete"></button>
                         </td>
                     </tr>
                 </tbody>
