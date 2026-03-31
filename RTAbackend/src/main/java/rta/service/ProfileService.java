@@ -53,6 +53,10 @@ public class ProfileService {
         UserProfile profile = profileRepository.findByUsername(username)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
+        if (profile.getDeletedAt() != null) {
+            throw new RuntimeException("User account has been deleted");
+        }
+
         if (!profile.getPassword().equals(password)) {
             throw new RuntimeException("Invalid password");
         }
@@ -107,7 +111,7 @@ public class ProfileService {
      * Register a new user profile. - Rejects duplicate usernames.
      */
     public UserProfile register(UserProfile profile) {
-        if (profileRepository.findByUsername(profile.getUsername()).isPresent()) {
+        if (profileRepository.findByUsernameAndDeletedAtIsNull(profile.getUsername()).isPresent()) {
             throw new RuntimeException("Username already exists");
         }
         UserProfile saved = profileRepository.save(profile);
@@ -118,7 +122,7 @@ public class ProfileService {
      * Fetch profile by userId. - Throws if not found.
      */
     public UserProfile getProfile(String userId) {
-        return profileRepository.findByUserId(userId)
+        return profileRepository.findByUserIdAndDeletedAtIsNull(userId)
                 .orElseThrow(() -> new RuntimeException("User profile not found: " + userId));
     }
 
@@ -127,7 +131,7 @@ public class ProfileService {
      * to existing record.
      */
     public UserProfile updateProfile(String userId, UserProfile newProfile) {
-        UserProfile existing = profileRepository.findByUserId(userId)
+        UserProfile existing = profileRepository.findByUserIdAndDeletedAtIsNull(userId)
                 .orElseThrow(() -> new RuntimeException("User profile not found: " + userId));
 
         existing.setName(newProfile.getName());
@@ -154,7 +158,7 @@ public class ProfileService {
      */
     @Transactional
     public void updateUserRole(String userId, String newRoleName) {
-        UserProfile user = profileRepository.findByUserId(userId)
+        UserProfile user = profileRepository.findByUserIdAndDeletedAtIsNull(userId)
                 .orElseThrow(() -> new RuntimeException("User not found: " + userId));
         RtaRole newRole = roleRepository.findByRoleName(newRoleName)
                 .orElseThrow(() -> new RuntimeException("Role not found: " + newRoleName));
@@ -207,10 +211,10 @@ public class ProfileService {
      * Create a new user with a specific role.
      */
     public UserProfile createUser(UserProfile user, String roleName) {
-        if (profileRepository.findByUsername(user.getUsername()).isPresent()) {
+        if (profileRepository.findByUsernameAndDeletedAtIsNull(user.getUsername()).isPresent()) {
             throw new RuntimeException("Username already exists");
         }
-        if (profileRepository.findByUserId(user.getUserId()).isPresent()) {
+        if (profileRepository.findByUserIdAndDeletedAtIsNull(user.getUserId()).isPresent()) {
             throw new RuntimeException("User ID already exists");
         }
 
@@ -245,10 +249,10 @@ public class ProfileService {
     }
 
     /**
-     * Get all users.
+     * Get all active (non-deleted) users.
      */
     public List<UserProfile> getAllUsers() {
-        return profileRepository.findAll();
+        return profileRepository.findAllActive();
     }
 
     /**
@@ -256,20 +260,20 @@ public class ProfileService {
      */
     public List<UserProfile> searchUsers(String keyword) {
         if (keyword == null || keyword.trim().isEmpty()) {
-            return profileRepository.findAll();
+            return profileRepository.findAllActive();
         }
-        return profileRepository.searchByKeyword(keyword.trim());
+        return profileRepository.searchByKeywordActive(keyword.trim());
     }
 
     /**
-     * Delete a user by userId. Removes role assignments first.
+     * Soft-delete a user by userId. Sets deleted_at timestamp.
      */
     @Transactional
     public void deleteUser(String userId) {
-        UserProfile user = profileRepository.findByUserId(userId)
+        UserProfile user = profileRepository.findByUserIdAndDeletedAtIsNull(userId)
                 .orElseThrow(() -> new RuntimeException("User not found: " + userId));
-        userRoleRepository.deleteByUser_Id(user.getId());
-        profileRepository.delete(user);
+        user.setDeletedAt(LocalDateTime.now());
+        profileRepository.save(user);
     }
 
     /**

@@ -11,9 +11,16 @@ public interface MerchantInfoRepository extends JpaRepository<MerchantInfo, Stri
 
     Optional<MerchantInfo> findByMerchantId(String merchantId);
 
+    Optional<MerchantInfo> findByMerchantIdAndDeletedAtIsNull(String merchantId);
+
     Optional<MerchantInfo> findByUsername(String username);
 
+    Optional<MerchantInfo> findByUsernameAndDeletedAtIsNull(String username);
+
     Optional<MerchantInfo> findByEmail(String email);
+
+    @Query("SELECT m FROM MerchantInfo m WHERE m.deletedAt IS NULL")
+    List<MerchantInfo> findAllActive();
 
     @Query("SELECT m.merchantId FROM MerchantInfo m WHERE m.merchantId LIKE 'M%' ORDER BY m.merchantId DESC")
     List<String> findAllMerchantIdsWithPrefix();

@@ -139,7 +139,7 @@ public class ProfileController {
     @GetMapping("/check-username")
     public ResponseEntity<Map<String, Boolean>> checkUsername(@RequestParam String username) {
         try {
-            boolean exists = profileRepository.findByUsername(username).isPresent();
+            boolean exists = profileRepository.findByUsernameAndDeletedAtIsNull(username).isPresent();
             Map<String, Boolean> result = new HashMap<>();
             result.put("exists", exists);
             return ResponseEntity.ok(result);
@@ -156,7 +156,7 @@ public class ProfileController {
     @GetMapping("/check-userid")
     public ResponseEntity<Map<String, Boolean>> checkUserId(@RequestParam String userId) {
         try {
-            boolean exists = profileRepository.findByUserId(userId).isPresent();
+            boolean exists = profileRepository.findByUserIdAndDeletedAtIsNull(userId).isPresent();
             Map<String, Boolean> result = new HashMap<>();
             result.put("exists", exists);
             return ResponseEntity.ok(result);
