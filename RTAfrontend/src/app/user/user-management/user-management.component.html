@@ -42,7 +42,7 @@
                     placeholder="Search by name, username, email, ID, or company..." />
                 <button class="btn btn-search" (click)="onSearch()">Search</button>
                 <button class="btn btn-clear" *ngIf="searchKeyword" (click)="clearSearch()">Clear</button>
-                <button class="btn btn-add" *ngIf="isSuperAdmin" (click)="addUser()">Add User</button>
+                <button class="btn btn-add" *ngIf="hasPermission('USER_CREATE')" (click)="addUser()">Add User</button>
             </div>
             <p class="result-count">Showing {{ filteredUsers.length }} user(s)</p>
         </div>
@@ -86,8 +86,8 @@
                         <td>{{ user.joinedOn | date: 'mediumDate' }}</td>
                         <td class="action-cell">
                             <button class="btn-action btn-view" (click)="viewUser(user)" title="View"></button>
-                            <button class="btn-action btn-edit" *ngIf="isSuperAdmin" (click)="editUser(user)" title="Edit"></button>
-                            <button class="btn-action btn-delete" *ngIf="isSuperAdmin" (click)="openDeleteModal(user)" title="Delete"></button>
+                            <button class="btn-action btn-edit" *ngIf="hasPermission('USER_EDIT')" (click)="editUser(user)" title="Edit"></button>
+                            <button class="btn-action btn-delete" *ngIf="hasPermission('USER_DELETE')" (click)="openDeleteModal(user)" title="Delete"></button>
                         </td>
                     </tr>
                 </tbody>

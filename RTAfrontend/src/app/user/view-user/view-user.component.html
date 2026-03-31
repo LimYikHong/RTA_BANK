@@ -46,7 +46,7 @@
         <h1>{{ profile.name }}</h1>
         <p class="email">{{ profile.email }}</p>
         <p class="username-display">{{'@'}}{{ profile.username }}</p>
-        <button class="edit-btn" *ngIf="isSuperAdmin" (click)="editUser()">Edit Profile</button>
+        <button class="edit-btn" *ngIf="hasPermission('USER_EDIT')" (click)="editUser()">Edit Profile</button>
       </div>
     </div>
 
@@ -57,7 +57,7 @@
           <h1>{{ profile.name || 'User Details' }}</h1>
           <p class="subtitle">{{'@'}}{{ profile.username }} · {{ profile.userId }}</p>
         </div>
-        <button class="btn btn-primary" *ngIf="isSuperAdmin" (click)="editUser()">Edit User</button>
+        <button class="btn btn-primary" *ngIf="hasPermission('USER_EDIT')" (click)="editUser()">Edit User</button>
       </div>
     </div>
 

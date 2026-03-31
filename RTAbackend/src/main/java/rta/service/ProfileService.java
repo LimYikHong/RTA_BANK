@@ -12,9 +12,11 @@ import com.warrenstrange.googleauth.GoogleAuthenticator;
 import com.warrenstrange.googleauth.GoogleAuthenticatorKey;
 
 import rta.entity.RtaRole;
+import rta.entity.RtaRolePermission;
 import rta.entity.RtaUserRole;
 import rta.model.UserProfile;
 import rta.repository.ProfileRepository;
+import rta.repository.RtaRolePermissionRepository;
 import rta.repository.RtaRoleRepository;
 import rta.repository.RtaUserRoleRepository;
 
@@ -29,15 +31,17 @@ public class ProfileService {
     private final ProfileRepository profileRepository;
     private final RtaRoleRepository roleRepository;
     private final RtaUserRoleRepository userRoleRepository;
+    private final RtaRolePermissionRepository rolePermissionRepository;
     private final MinioStorageService minioStorageService;
     private final GoogleAuthenticator gAuth = new GoogleAuthenticator();
 
     private static final String PROFILE_PHOTOS_DIR = "uploads/profile-photos";
 
-    public ProfileService(ProfileRepository profileRepository, RtaRoleRepository roleRepository, RtaUserRoleRepository userRoleRepository, MinioStorageService minioStorageService) {
+    public ProfileService(ProfileRepository profileRepository, RtaRoleRepository roleRepository, RtaUserRoleRepository userRoleRepository, RtaRolePermissionRepository rolePermissionRepository, MinioStorageService minioStorageService) {
         this.profileRepository = profileRepository;
         this.roleRepository = roleRepository;
         this.userRoleRepository = userRoleRepository;
+        this.rolePermissionRepository = rolePermissionRepository;
         this.minioStorageService = minioStorageService;
     }
 
@@ -277,6 +281,25 @@ public class ProfileService {
             return "N/A";
         }
         return userRoles.get(0).getRole().getRoleName();
+    }
+
+    /**
+     * Get all permission names for a given user. Traverses: user -> user_role
+     * -> role -> role_permission -> permission
+     */
+    public List<String> getUserPermissions(Long userId) {
+        List<RtaUserRole> userRoles = userRoleRepository.findByUser_Id(userId);
+        List<String> permissions = new java.util.ArrayList<>();
+        for (RtaUserRole ur : userRoles) {
+            List<RtaRolePermission> rolePerms = rolePermissionRepository.findByRole_Id(ur.getRole().getId());
+            for (RtaRolePermission rp : rolePerms) {
+                String permName = rp.getPermission().getPermissionName();
+                if (!permissions.contains(permName)) {
+                    permissions.add(permName);
+                }
+            }
+        }
+        return permissions;
     }
 
     /**

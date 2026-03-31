@@ -32,6 +32,7 @@ export interface UserProfile {
   isTwoFactorEnabled?: boolean;
   token?: string;
   role?: string;
+  permissions?: string[];
 }
 
 export interface UserListItem {

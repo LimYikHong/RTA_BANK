@@ -37,6 +37,10 @@ export class ViewUserComponent implements OnInit {
     return this.authService.isSuperAdmin();
   }
 
+  hasPermission(perm: string): boolean {
+    return this.authService.hasPermission(perm);
+  }
+
   ngOnInit(): void {
     const userIdParam = this.route.snapshot.paramMap.get('userId');
 

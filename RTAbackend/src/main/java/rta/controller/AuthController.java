@@ -1,15 +1,21 @@
 package rta.controller;
 
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
 import rta.config.JwtUtil;
 import rta.model.UserProfile;
 import rta.service.ProfileService;
-
-import java.util.Map;
-import java.util.HashMap;
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -93,11 +99,12 @@ public class AuthController {
         if (isValid) {
             UserProfile user = profileService.getProfileByUsername(username);
             String role = profileService.getUserRole(user.getId());
+            List<String> permissions = profileService.getUserPermissions(user.getId());
 
-            // Generate JWT token with role
-            String token = jwtUtil.generateToken(username, user.getUserId(), role);
+            // Generate JWT token with role and permissions
+            String token = jwtUtil.generateToken(username, user.getUserId(), role, permissions);
 
-            // Build response with user profile, token, and role
+            // Build response with user profile, token, role, and permissions
             Map<String, Object> response = new HashMap<>();
             response.put("userId", user.getUserId());
             response.put("name", user.getName());
@@ -116,6 +123,7 @@ public class AuthController {
             response.put("isTwoFactorEnabled", user.isTwoFactorEnabled());
             response.put("token", token);
             response.put("role", role);
+            response.put("permissions", permissions);
 
             return ResponseEntity.ok(response);
         } else {

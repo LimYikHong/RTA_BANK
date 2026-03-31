@@ -43,25 +43,22 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                 // Public endpoints (no JWT needed)
                 .requestMatchers("/api/auth/**").permitAll()
-                // --- User Profile restrictions (ADMIN cannot create/edit/delete users) ---
-                // Create user: only SUPER_ADMIN
-                .requestMatchers(HttpMethod.POST, "/api/profile/users").hasRole("SUPER_ADMIN")
-                // Edit user profile: only SUPER_ADMIN
-                .requestMatchers(HttpMethod.PUT, "/api/profile/{userId}").hasRole("SUPER_ADMIN")
-                // Update user role: only SUPER_ADMIN
-                .requestMatchers(HttpMethod.PUT, "/api/profile/{userId}/role").hasRole("SUPER_ADMIN")
-                // Delete user: only SUPER_ADMIN
-                .requestMatchers(HttpMethod.DELETE, "/api/profile/users/**").hasRole("SUPER_ADMIN")
-                // Upload photo for other user: only SUPER_ADMIN
-                // (users can still view their own profile via GET)
-
-                // --- Merchant restrictions (ADMIN can only view) ---
-                // Create merchant: only SUPER_ADMIN
-                .requestMatchers(HttpMethod.POST, "/api/merchants").hasRole("SUPER_ADMIN")
-                // Edit merchant: only SUPER_ADMIN
-                .requestMatchers(HttpMethod.PUT, "/api/merchants/**").hasRole("SUPER_ADMIN")
-                // Delete merchant: only SUPER_ADMIN
-                .requestMatchers(HttpMethod.DELETE, "/api/merchants/**").hasRole("SUPER_ADMIN")
+                // --- User Profile restrictions (permission-based) ---
+                // Create user: requires USER_CREATE permission
+                .requestMatchers(HttpMethod.POST, "/api/profile/users").hasAuthority("USER_CREATE")
+                // Edit user profile: requires USER_EDIT permission
+                .requestMatchers(HttpMethod.PUT, "/api/profile/{userId}").hasAuthority("USER_EDIT")
+                // Update user role: requires ROLE_EDIT permission
+                .requestMatchers(HttpMethod.PUT, "/api/profile/{userId}/role").hasAuthority("ROLE_EDIT")
+                // Delete user: requires USER_DELETE permission
+                .requestMatchers(HttpMethod.DELETE, "/api/profile/users/**").hasAuthority("USER_DELETE")
+                // --- Merchant restrictions (permission-based) ---
+                // Create merchant: requires MERCHANT_CREATE permission
+                .requestMatchers(HttpMethod.POST, "/api/merchants").hasAuthority("MERCHANT_CREATE")
+                // Edit merchant: requires MERCHANT_EDIT permission
+                .requestMatchers(HttpMethod.PUT, "/api/merchants/**").hasAuthority("MERCHANT_EDIT")
+                // Delete merchant: requires MERCHANT_DELETE permission
+                .requestMatchers(HttpMethod.DELETE, "/api/merchants/**").hasAuthority("MERCHANT_DELETE")
                 // View merchants: both roles allowed (GET is authenticated below)
 
                 // All other endpoints: any authenticated user (SUPER_ADMIN or ADMIN)

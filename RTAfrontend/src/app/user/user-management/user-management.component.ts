@@ -91,6 +91,10 @@ export class UserManagementComponent implements OnInit, OnDestroy {
     return this.authService.isSuperAdmin();
   }
 
+  hasPermission(perm: string): boolean {
+    return this.authService.hasPermission(perm);
+  }
+
   ngOnInit(): void {
     this.loadUsers();
 

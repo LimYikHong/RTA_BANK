@@ -17,7 +17,7 @@ import { MerchantMaintenanceComponent } from './merchant/merchant-maintenance/me
 import { RecurringListComponent } from './recurring/recurring-list/recurring-list.component';
 import { RecurringDetailComponent } from './recurring/recurring-detail/recurring-detail.component';
 import { authGuard } from './services/auth.guard';
-import { superAdminGuard } from './services/role.guard';
+import { superAdminGuard, permissionGuard } from './services/role.guard';
 
 export const routes: Routes = [
   { path: 'login', component: LoginComponent },
@@ -30,13 +30,13 @@ export const routes: Routes = [
   { path: 'profile', component: ViewUserComponent, canActivate: [authGuard] },
   { path: 'users', component: UserManagementComponent, canActivate: [authGuard] },
   { path: 'view-user/:userId', component: ViewUserComponent, canActivate: [authGuard] },
-  { path: 'edit-user/:userId', component: EditUserComponent, canActivate: [authGuard, superAdminGuard] },
+  { path: 'edit-user/:userId', component: EditUserComponent, canActivate: [authGuard, permissionGuard('USER_EDIT')] },
   { path: 'merchant-maintenance', component: MerchantMaintenanceComponent, canActivate: [authGuard] },
   { path: 'recurring-list', component: RecurringListComponent, canActivate: [authGuard] },
   { path: 'recurring-detail/:recurringReference', component: RecurringDetailComponent, canActivate: [authGuard] },
-  { path: 'add-user', component: AddUserComponent, canActivate: [authGuard, superAdminGuard] },
-  { path: 'add-merchant', component: AddMerchantComponent, canActivate: [authGuard, superAdminGuard] },
-  { path: 'edit-merchant/:merchantId', component: EditMerchantComponent, canActivate: [authGuard, superAdminGuard] },
+  { path: 'add-user', component: AddUserComponent, canActivate: [authGuard, permissionGuard('USER_CREATE')] },
+  { path: 'add-merchant', component: AddMerchantComponent, canActivate: [authGuard, permissionGuard('MERCHANT_CREATE')] },
+  { path: 'edit-merchant/:merchantId', component: EditMerchantComponent, canActivate: [authGuard, permissionGuard('MERCHANT_EDIT')] },
   { path: 'view-merchant/:merchantId', component: ViewMerchantComponent, canActivate: [authGuard] },
   { path: '', redirectTo: '/login', pathMatch: 'full' },
 ];

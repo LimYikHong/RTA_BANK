@@ -53,3 +53,34 @@ INSERT INTO merchant_info (
     'tanuser', 'password456', 'Tan Supplies Trading', 'John Tan',
     CURRENT_TIMESTAMP, 'system'
 );
+
+-- ============================================================
+-- Permissions
+-- ============================================================
+INSERT INTO rta_permission (permission_name, description, created_by) VALUES ('USER_CREATE',    'Create new users',              'system');
+INSERT INTO rta_permission (permission_name, description, created_by) VALUES ('USER_EDIT',      'Edit existing users',           'system');
+INSERT INTO rta_permission (permission_name, description, created_by) VALUES ('USER_DELETE',    'Delete users',                  'system');
+INSERT INTO rta_permission (permission_name, description, created_by) VALUES ('USER_VIEW',      'View user list and profiles',   'system');
+INSERT INTO rta_permission (permission_name, description, created_by) VALUES ('MERCHANT_CREATE','Create new merchants',          'system');
+INSERT INTO rta_permission (permission_name, description, created_by) VALUES ('MERCHANT_EDIT',  'Edit existing merchants',       'system');
+INSERT INTO rta_permission (permission_name, description, created_by) VALUES ('MERCHANT_DELETE','Delete merchants',              'system');
+INSERT INTO rta_permission (permission_name, description, created_by) VALUES ('MERCHANT_VIEW',  'View merchant list and details','system');
+INSERT INTO rta_permission (permission_name, description, created_by) VALUES ('BATCH_VIEW',     'View batch list and details',   'system');
+INSERT INTO rta_permission (permission_name, description, created_by) VALUES ('BATCH_UPLOAD',   'Upload batch files',            'system');
+INSERT INTO rta_permission (permission_name, description, created_by) VALUES ('ROLE_EDIT',      'Edit user roles',               'system');
+INSERT INTO rta_permission (permission_name, description, created_by) VALUES ('PROFILE_EDIT',   'Edit own profile',              'system');
+
+-- ============================================================
+-- SUPER_ADMIN gets ALL permissions
+-- ============================================================
+INSERT INTO rta_role_permission (role_id, permission_id)
+SELECT r.id, p.id FROM rta_role r, rta_permission p WHERE r.role_name = 'SUPER_ADMIN';
+
+-- ============================================================
+-- ADMIN gets limited permissions (view + own profile + batch)
+-- ============================================================
+INSERT INTO rta_role_permission (role_id, permission_id)
+SELECT r.id, p.id FROM rta_role r, rta_permission p
+WHERE r.role_name = 'ADMIN' AND p.permission_name IN (
+    'USER_VIEW', 'MERCHANT_VIEW', 'BATCH_VIEW', 'BATCH_UPLOAD', 'PROFILE_EDIT'
+);

@@ -1,6 +1,7 @@
 package rta.config;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -42,12 +43,19 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             if (jwtUtil.isTokenValid(token)) {
                 String username = jwtUtil.getUsername(token);
                 String role = jwtUtil.getRole(token);
+                List<String> permissions = jwtUtil.getPermissions(token);
 
-                // Create authority with ROLE_ prefix for Spring Security
-                SimpleGrantedAuthority authority = new SimpleGrantedAuthority("ROLE_" + role);
+                // Build authorities from permissions + role
+                List<SimpleGrantedAuthority> authorities = new ArrayList<>();
+                authorities.add(new SimpleGrantedAuthority("ROLE_" + role));
+                if (permissions != null) {
+                    for (String perm : permissions) {
+                        authorities.add(new SimpleGrantedAuthority(perm));
+                    }
+                }
 
                 UsernamePasswordAuthenticationToken authentication
-                        = new UsernamePasswordAuthenticationToken(username, null, List.of(authority));
+                        = new UsernamePasswordAuthenticationToken(username, null, authorities);
 
                 SecurityContextHolder.getContext().setAuthentication(authentication);
             }

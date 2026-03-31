@@ -80,4 +80,19 @@ export class AuthService {
   isSuperAdmin(): boolean {
     return this.getUserRole() === 'SUPER_ADMIN';
   }
+
+  /**
+   * Get the current user's permissions from localStorage.
+   */
+  getPermissions(): string[] {
+    const user = this.getCurrentUser();
+    return user?.permissions ?? [];
+  }
+
+  /**
+   * Check if the current user has a specific permission.
+   */
+  hasPermission(permission: string): boolean {
+    return this.getPermissions().includes(permission);
+  }
 }

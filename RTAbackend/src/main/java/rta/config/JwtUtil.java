@@ -2,6 +2,7 @@ package rta.config;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Date;
+import java.util.List;
 
 import javax.crypto.SecretKey;
 
@@ -27,13 +28,14 @@ public class JwtUtil {
     private final SecretKey key = Keys.hmacShaKeyFor(SECRET.getBytes(StandardCharsets.UTF_8));
 
     /**
-     * Generate a JWT token with username, userId, and role.
+     * Generate a JWT token with username, userId, role, and permissions.
      */
-    public String generateToken(String username, String userId, String role) {
+    public String generateToken(String username, String userId, String role, List<String> permissions) {
         return Jwts.builder()
                 .setSubject(username)
                 .claim("userId", userId)
                 .claim("role", role)
+                .claim("permissions", permissions)
                 .setIssuedAt(new Date())
                 .setExpiration(new Date(System.currentTimeMillis() + EXPIRATION_MS))
                 .signWith(key, SignatureAlgorithm.HS256)
@@ -59,6 +61,14 @@ public class JwtUtil {
      */
     public String getRole(String token) {
         return parseClaims(token).get("role", String.class);
+    }
+
+    /**
+     * Extract permissions list from token.
+     */
+    @SuppressWarnings("unchecked")
+    public List<String> getPermissions(String token) {
+        return parseClaims(token).get("permissions", List.class);
     }
 
     /**
