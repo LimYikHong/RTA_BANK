@@ -123,29 +123,9 @@ export class BatchMaintenanceComponent implements OnInit {
     });
   }
 
-  /** View batch detail */
+  /** Navigate to batch detail page */
   viewDetail(authBatchId: number): void {
-    this.showDetailModal = true;
-    this.isLoadingDetail = true;
-    this.http.get<any>(`${this.apiUrl}/detail/${authBatchId}`).subscribe({
-      next: (data) => {
-        this.detailBatch = data;
-        this.detailTransactions = data.transactions || [];
-        this.detailFiles = data.files || [];
-        this.isLoadingDetail = false;
-      },
-      error: (err) => {
-        console.error('Failed to load batch detail:', err);
-        this.isLoadingDetail = false;
-      }
-    });
-  }
-
-  closeDetailModal(): void {
-    this.showDetailModal = false;
-    this.detailBatch = null;
-    this.detailTransactions = [];
-    this.detailFiles = [];
+    this.router.navigate(['/batch-maintenance-detail', authBatchId]);
   }
 
   onPageSizeChange(): void {

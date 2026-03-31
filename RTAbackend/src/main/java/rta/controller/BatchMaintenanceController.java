@@ -132,6 +132,7 @@ public class BatchMaintenanceController {
             for (RtaTransaction txn : transactions) {
                 Map<String, Object> txnMap = new LinkedHashMap<>();
                 txnMap.put("transactionId", txn.getId());
+                txnMap.put("batchFileId", txn.getBatchFileId());
                 txnMap.put("merchantId", txn.getMerchantId());
                 txnMap.put("merchantCustomer", txn.getMerchantCustomer());
                 txnMap.put("maskedPan", txn.getMaskedPan());
