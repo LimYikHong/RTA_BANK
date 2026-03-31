@@ -2,7 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule, Router } from '@angular/router';
-import { PortalService, RtaBatch } from '../../services/portal.service';
+import { PortalService, UploadHistoryItem, UploadResponse } from '../../services/portal.service';
 import { ProfileService, UserProfile } from '../../services/profile.service';
 import { AuthService } from '../../services/auth.service';
 import { TopBarComponent } from '../../top-bar/top-bar.component';
@@ -14,9 +14,9 @@ interface MerchantOption {
 
 /**
  * BatchListComponent
- * - Shows uploaded RTA batch files for the current user
- * - Allows uploading a new batch file
- * - Prompts a modal for merchant selection before uploading
+ * - Shows upload history (ALL uploads including failed validations)
+ * - Allows uploading a new batch file with merchant selection
+ * - Shows validation status and remarks for each upload attempt
  */
 
 @Component({
@@ -30,7 +30,7 @@ export class BatchListComponent implements OnInit {
   drawerOpen = true;
   toggleDrawer() { this.drawerOpen = !this.drawerOpen; }
 
-  batches: RtaBatch[] = [];
+  files: UploadHistoryItem[] = [];
   // Holds the file chosen from the input
   selectedFile?: File;
   user: UserProfile | null = null;
@@ -40,6 +40,11 @@ export class BatchListComponent implements OnInit {
   merchants: MerchantOption[] = [];
   selectedMerchantId = '';
   isLoadingMerchants = false;
+
+  // Upload result modal
+  showResultModal = false;
+  uploadResult: UploadResponse | null = null;
+  uploadError: string | null = null;
 
   // Pagination
   currentPage = 1;
@@ -63,8 +68,8 @@ export class BatchListComponent implements OnInit {
     }
   }
 
-  get sortedBatches(): RtaBatch[] {
-    let list = [...this.batches];
+  get sortedFiles(): UploadHistoryItem[] {
+    let list = [...this.files];
     if (this.sortKey) {
       list.sort((a, b) => {
         const av = (a as any)[this.sortKey] ?? '';
@@ -77,8 +82,8 @@ export class BatchListComponent implements OnInit {
     return list.slice(start, start + this.pageSize);
   }
 
-  get totalElements(): number { return this.batches.length; }
-  get totalPages(): number { return Math.max(1, Math.ceil(this.batches.length / this.pageSize)); }
+  get totalElements(): number { return this.files.length; }
+  get totalPages(): number { return Math.max(1, Math.ceil(this.files.length / this.pageSize)); }
   get startRecord(): number { return this.totalElements === 0 ? 0 : (this.currentPage - 1) * this.pageSize + 1; }
   get endRecord(): number { return Math.min(this.currentPage * this.pageSize, this.totalElements); }
   get visiblePages(): number[] {
@@ -93,10 +98,6 @@ export class BatchListComponent implements OnInit {
   goToPage(page: number): void { if (page >= 1 && page <= this.totalPages) this.currentPage = page; }
   onPageSizeChange(): void { this.currentPage = 1; }
 
-  // Inject services:
-  // - PortalService: HTTP calls for batches (list/upload/delete)
-  // - ProfileService: provides current merchant profile
-
   constructor(
     private portalService: PortalService,
     private profileService: ProfileService,
@@ -104,7 +105,6 @@ export class BatchListComponent implements OnInit {
     private router: Router
   ) {}
 
-  // read user profile from cache and load batch list
   ngOnInit(): void {
     this.user = this.profileService.getProfile();
 
@@ -117,7 +117,7 @@ export class BatchListComponent implements OnInit {
       });
     }
 
-    this.loadBatches();
+    this.loadFiles();
   }
 
   logout(): void {
@@ -125,12 +125,11 @@ export class BatchListComponent implements OnInit {
     this.router.navigate(['/login']);
   }
 
-  // Fetch batches from backend and update table (filtered by current user)
-  loadBatches(): void {
-    const merchantId = this.user?.userId;
-    this.portalService.getBatches(merchantId).subscribe({
-      next: (data) => (this.batches = data),
-      error: (err) => console.error('Failed to fetch batches: ' + err.message),
+  // Fetch upload history from backend (all upload attempts including failed)
+  loadFiles(): void {
+    this.portalService.getUploadHistory().subscribe({
+      next: (data) => (this.files = data),
+      error: (err) => console.error('Failed to fetch upload history: ' + err.message),
     });
   }
 
@@ -170,7 +169,7 @@ export class BatchListComponent implements OnInit {
     this.selectedMerchantId = '';
   }
 
-  // Confirm upload after merchant selection
+  // Confirm upload after merchant selection — uses incoming validation pipeline
   confirmUpload(): void {
     if (!this.selectedMerchantId) {
       alert('Please select a merchant.');
@@ -181,63 +180,57 @@ export class BatchListComponent implements OnInit {
       return;
     }
 
-    // Build timestamp for unique file naming
     const originalFileName = this.selectedFile.name;
-    const timestamp = new Date();
-    const formattedTime = `${timestamp.getFullYear()}-${(
-      timestamp.getMonth() + 1
-    )
-      .toString()
-      .padStart(2, '0')}-${timestamp
-      .getDate()
-      .toString()
-      .padStart(2, '0')}_${timestamp
-      .getHours()
-      .toString()
-      .padStart(2, '0')}-${timestamp
-      .getMinutes()
-      .toString()
-      .padStart(2, '0')}-${timestamp.getSeconds().toString().padStart(2, '0')}`;
+    const createdBy = this.user.userId || 'unknown';
 
-    // Create a new File object with the new name using selected merchantId
-    const newFileName = `${this.selectedMerchantId}_${formattedTime}.xlsx`;
-    const renamedFile = new File([this.selectedFile], newFileName, {
-      type: this.selectedFile.type,
-    });
-
-    // Call upload API with renamed file, selected merchantId and original name for audit trail
+    // Call incoming upload API (full validation pipeline)
     this.portalService
-      .uploadBatch(renamedFile, this.selectedMerchantId, originalFileName)
+      .uploadIncoming(this.selectedFile, this.selectedMerchantId, originalFileName, createdBy)
       .subscribe({
         next: (res) => {
-          console.log(`File ${res.fileName} uploaded successfully for merchant ${this.selectedMerchantId}`);
+          console.log(`File uploaded for merchant ${this.selectedMerchantId}`, res);
           this.closeMerchantModal();
           this.selectedFile = undefined;
-          this.loadBatches();
+          // Clear file input
+          const fileInput = document.querySelector('.file-input') as HTMLInputElement;
+          if (fileInput) fileInput.value = '';
+          // Show upload result
+          this.uploadResult = res;
+          this.uploadError = null;
+          this.showResultModal = true;
+          this.loadFiles();
         },
         error: (err) => {
-          console.error(`Upload failed: ${err.message}`);
+          console.error('Upload failed:', err);
           this.closeMerchantModal();
-          this.loadBatches();
+          // Show error details from backend
+          const errorBody = err.error;
+          if (errorBody && typeof errorBody === 'object') {
+            this.uploadError = errorBody.detail || errorBody.error || 'Upload failed. Please try again.';
+          } else {
+            this.uploadError = 'Upload failed. Please try again.';
+          }
+          this.uploadResult = null;
+          this.showResultModal = true;
+          this.loadFiles();
         },
       });
   }
 
-  // Show a simple alert with batch details (for quick view)
-  viewBatch(id: number): void {
-    const batch = this.batches.find((b) => b.batchId === id);
-    if (!batch) {
-      console.error(`Batch with ID ${id} not found`);
-      return;
-    }
-    alert(
-      `📄 Batch Details:\nFile: ${batch.fileName}\nUser: ${batch.merchantId}\nStatus: ${batch.status}`
-    );
+  closeResultModal(): void {
+    this.showResultModal = false;
+    this.uploadResult = null;
+    this.uploadError = null;
+  }
+
+  // Navigate to batch file detail page (only for files that passed validation)
+  viewFileDetail(batchFileId: number): void {
+    this.router.navigate(['/batch-file-detail', batchFileId]);
   }
 
   /**
-   * Strip the leading timestamp prefix from storedFileName.
-   * storedFileName format: "1771837642067_M007_2026-02-23_17-07-16.txt"
+   * Strip the leading timestamp prefix from storedFilename.
+   * storedFilename format: "1771837642067_M007_2026-02-23_17-07-16.txt"
    * Display format:                      "M007_2026-02-23_17-07-16.txt"
    */
   getDisplayFileName(fileName: string): string {
@@ -252,14 +245,28 @@ export class BatchListComponent implements OnInit {
     return fileName;
   }
 
-  // Delete a batch by id and refresh table
-  deleteBatch(id: number): void {
-    this.portalService.deleteBatch(id).subscribe({
-      next: () => {
-        console.log(`Batch ID ${id} deleted.`);
-        this.loadBatches();
-      },
-      error: (err) => console.error(`Failed to delete batch: ${err.message}`),
-    });
+  // Check if file passed validation (saved to incoming batch file table)
+  isValidated(status: string): boolean {
+    return status === 'VALIDATED' || status === 'PARTIAL';
+  }
+
+  // Status badge CSS class helper
+  getFileStatusClass(status: string): string {
+    switch (status?.toUpperCase()) {
+      case 'VALIDATED': return 'status-success';
+      case 'PARTIAL': return 'status-warning';
+      case 'RECEIVED': return 'status-ready';
+      case 'PENDING': return 'status-ready';
+      case 'FAILED':
+      case 'VALIDATION_FAILED':
+      case 'WRONG_FILE_FORMAT':
+      case 'NO_FILE_PROFILE':
+      case 'NO_FIELD_MAPPING':
+      case 'MISSING_HEADER':
+      case 'VALIDATION_ERROR':
+        return 'status-failed';
+      case 'PROCESSING': return 'status-processing';
+      default: return '';
+    }
   }
 }

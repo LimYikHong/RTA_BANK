@@ -41,4 +41,13 @@ public class RtaUploadedFileHash {
      */
     @Column(name = "upload_count")
     private Integer uploadCount;
+
+    @Column(name = "validation_remark", columnDefinition = "TEXT")
+    private String validationRemark;
+
+    @Column(name = "created_by", length = 100)
+    private String createdBy;
+
+    @Column(name = "size_bytes")
+    private Long sizeBytes;
 }

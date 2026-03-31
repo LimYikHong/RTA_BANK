@@ -297,6 +297,9 @@ CREATE TABLE rta_uploaded_file_hash (
     uploaded_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     status VARCHAR(50),
     upload_count INT DEFAULT 1,
+    validation_remark TEXT,
+    created_by VARCHAR(100),
+    size_bytes BIGINT,
     FOREIGN KEY (merchant_id) REFERENCES merchant_info(merchant_id),
     UNIQUE KEY uk_merchant_file_hash (merchant_id, file_hash)
 );

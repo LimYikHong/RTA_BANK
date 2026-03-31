@@ -29,6 +29,13 @@
   }
 }
 
+// Subtitle under page header
+.subtitle {
+  color: #64748b;
+  font-size: 14px;
+  margin-top: 4px;
+}
+
 // Merchant selection modal overrides
 .modal-description {
   color: #475569;
@@ -97,4 +104,167 @@
   &:hover {
     background: #f3f4f6;
   }
+}
+
+// Status badges
+.status-badge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.status-success {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.status-warning {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.status-ready {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.status-failed {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.status-processing {
+  background: #e0e7ff;
+  color: #3730a3;
+}
+
+.text-muted {
+  color: #9ca3af;
+}
+
+// Table cell helpers
+.filename-cell {
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.count-cell {
+  text-align: center;
+  font-weight: 600;
+}
+
+.success-count {
+  color: #166534;
+}
+
+.fail-count {
+  color: #991b1b;
+}
+
+.no-data-cell {
+  text-align: center;
+  padding: 40px 20px !important;
+}
+
+.no-data p {
+  color: #9ca3af;
+  font-size: 14px;
+}
+
+// Upload result modal
+.result-modal {
+  max-width: 500px;
+}
+
+.modal-header-error {
+  border-bottom-color: #fee2e2;
+  h3 {
+    color: #dc2626;
+  }
+}
+
+.result-error {
+  padding: 16px;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  color: #991b1b;
+  font-size: 14px;
+}
+
+.result-details {
+  .result-message {
+    font-size: 14px;
+    color: #374151;
+    margin-bottom: 16px;
+    padding: 10px 14px;
+    background: #f0fdf4;
+    border: 1px solid #bbf7d0;
+    border-radius: 8px;
+  }
+}
+
+.result-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.result-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.result-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.result-value {
+  font-size: 15px;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.result-warning {
+  margin-top: 16px;
+  padding: 10px 14px;
+  background: #fffbeb;
+  border: 1px solid #fde68a;
+  border-radius: 8px;
+  color: #92400e;
+  font-size: 13px;
+}
+
+// Failed upload row highlight
+.row-failed {
+  background: #fef2f2 !important;
+
+  &:hover {
+    background: #fee2e2 !important;
+  }
+
+  td {
+    color: #6b7280;
+  }
+}
+
+// Remark / validation message cell
+.remark-cell {
+  max-width: 240px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13px;
+  color: #64748b;
 }
