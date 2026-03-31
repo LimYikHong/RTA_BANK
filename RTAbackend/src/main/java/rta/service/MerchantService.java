@@ -6,6 +6,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import rta.entity.MerchantBankAcc;
 import rta.entity.MerchantInfo;
+import rta.entity.MerchantKey;
 import rta.event.MerchantCreatedEvent;
 import rta.repository.MerchantBankAccRepository;
 import rta.repository.MerchantInfoRepository;
@@ -28,6 +29,7 @@ public class MerchantService {
     private final MerchantBankAccRepository merchantBankAccRepository;
     private final MerchantKafkaProducer kafkaProducer;
     private final FileProfileService fileProfileService;
+    private final RsaKeyService rsaKeyService;
 
     /**
      * Create a new merchant (merchant_bank_acc + merchant_info) and publish a
@@ -75,7 +77,12 @@ public class MerchantService {
         merchantInfo.setIsTwoFactorEnabled(false);
         MerchantInfo savedMerchant = merchantInfoRepository.save(merchantInfo);
 
-        // 3. Publish Kafka event for sub-systems
+        // 3. Generate RSA key pair for file encryption
+        MerchantKey merchantKey = rsaKeyService.generateKeyPair(savedMerchant.getMerchantId(), createdBy);
+        log.info("RSA key pair generated for merchantId={}, keyVersion={}",
+                savedMerchant.getMerchantId(), merchantKey.getVersionNo());
+
+        // 4. Publish Kafka event for sub-systems (includes RSA public key)
         MerchantCreatedEvent event = MerchantCreatedEvent.builder()
                 .merchantId(savedMerchant.getMerchantId())
                 .name(savedMerchant.getName())
@@ -91,11 +98,12 @@ public class MerchantService {
                 .merchantAccName(merchantAccName)
                 .transactionCurrency(transactionCurrency)
                 .settlementCurrency(settlementCurrency)
+                .rsaPublicKeyPem(merchantKey.getPublicKeyPem())
                 .build();
 
         kafkaProducer.sendMerchantCreatedEvent(event);
 
-        // 4. Create file profile with field mappings
+        // 5. Create file profile with field mappings
         fileProfileService.createDefaultFileProfile(
                 savedMerchant.getMerchantId(), createdBy,
                 fileType, fieldDelimiter, hasHeader, dateFormat, fieldMappings);

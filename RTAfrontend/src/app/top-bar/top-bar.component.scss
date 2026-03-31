@@ -1,2 +1,9 @@
+// Make the host element stretch to full sidebar width
+:host {
+  display: block;
+  width: 100%;
+  margin-top: auto;
+}
+
 // Styles are provided globally via _global-components.scss
 // (.top-right-bar, .current-user-id, .logout-btn)

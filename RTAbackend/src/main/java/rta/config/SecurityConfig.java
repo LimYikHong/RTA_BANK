@@ -43,6 +43,10 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                 // Public endpoints (no JWT needed)
                 .requestMatchers("/api/auth/**").permitAll()
+                // Incoming batch upload from merchant backend (machine-to-machine, no JWT)
+                .requestMatchers("/api/incoming/**").permitAll()
+                // Merchant key endpoints (merchant backend fetches public key)
+                .requestMatchers("/api/merchant-keys/**").permitAll()
                 // --- User Profile restrictions (permission-based) ---
                 // Create user: requires USER_CREATE permission
                 .requestMatchers(HttpMethod.POST, "/api/profile/users").hasAuthority("USER_CREATE")

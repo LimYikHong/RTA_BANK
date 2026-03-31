@@ -48,6 +48,7 @@ import rta.repository.RtaIncomingBatchFileRepository;
 import rta.repository.RtaTransactionRepository;
 import rta.repository.RtaUploadedFileHashRepository;
 import rta.service.FileProfileService;
+import rta.service.FileDecryptionService;
 import rta.service.MinioStorageService;
 
 /**
@@ -68,6 +69,7 @@ public class IncomingBatchController {
     private final RtaAuthorizationBatchRepository authBatchRepository;
     private final FileProfileService fileProfileService;
     private final MinioStorageService minioStorageService;
+    private final FileDecryptionService fileDecryptionService;
 
     private static final String UPLOAD_DIR = "incoming-uploads";
 
@@ -78,7 +80,8 @@ public class IncomingBatchController {
             MerchantInfoRepository merchantInfoRepository,
             RtaAuthorizationBatchRepository authBatchRepository,
             FileProfileService fileProfileService,
-            MinioStorageService minioStorageService) {
+            MinioStorageService minioStorageService,
+            FileDecryptionService fileDecryptionService) {
         this.batchRepository = batchRepository;
         this.uploadedFileHashRepository = uploadedFileHashRepository;
         this.incomingFileRepository = incomingFileRepository;
@@ -87,6 +90,7 @@ public class IncomingBatchController {
         this.authBatchRepository = authBatchRepository;
         this.fileProfileService = fileProfileService;
         this.minioStorageService = minioStorageService;
+        this.fileDecryptionService = fileDecryptionService;
     }
 
     /**
@@ -101,7 +105,8 @@ public class IncomingBatchController {
             @RequestParam("merchantId") String merchantId,
             @RequestParam(value = "createdBy", required = false, defaultValue = "merchant") String createdBy,
             @RequestParam(value = "fileName", required = false) String fileNameParam,
-            @RequestParam(value = "originalFileName", required = false) String originalFileNameParam) {
+            @RequestParam(value = "originalFileName", required = false) String originalFileNameParam,
+            @RequestParam(value = "encrypted", required = false, defaultValue = "false") boolean encrypted) {
         try {
             if (file.isEmpty()) {
                 return ResponseEntity.badRequest().body(Map.of("error", "No file uploaded"));
@@ -120,8 +125,12 @@ public class IncomingBatchController {
                     ? fileNameParam
                     : originalFilename;
 
-            // Validate file extension using renamed filename
+            // Strip .enc suffix if the file was encrypted, then validate the real extension
             String lowerName = renamedFilename.toLowerCase();
+            if (encrypted && lowerName.endsWith(".enc")) {
+                lowerName = lowerName.substring(0, lowerName.length() - 4); // remove ".enc"
+                renamedFilename = renamedFilename.substring(0, renamedFilename.length() - 4);
+            }
             if (!lowerName.endsWith(".csv") && !lowerName.endsWith(".xlsx") && !lowerName.endsWith(".xls") && !lowerName.endsWith(".txt")) {
                 return ResponseEntity.badRequest().body(Map.of("error", "Unsupported file type. Allowed: csv, xlsx, xls, txt"));
             }
@@ -134,8 +143,24 @@ public class IncomingBatchController {
                 ));
             }
 
+            // --- Decrypt file if uploaded as encrypted ---
+            byte[] rawFileBytes = file.getBytes();
+            if (encrypted) {
+                try {
+                    rawFileBytes = fileDecryptionService.decryptFile(merchantId, rawFileBytes);
+                } catch (Exception ex) {
+                    ex.printStackTrace();
+                    String errMsg = ex.getMessage() != null ? ex.getMessage()
+                            : ex.getClass().getSimpleName() + " (no message)";
+                    return ResponseEntity.badRequest().body(Map.of(
+                            "error", "File decryption failed",
+                            "detail", "Could not decrypt the uploaded file for merchant '" + merchantId + "'. " + errMsg
+                    ));
+                }
+            }
+
             // Generate SHA-256 hash of file content to detect duplicates
-            String fileHash = generateSHA256Hash(file.getBytes());
+            String fileHash = generateSHA256Hash(rawFileBytes);
 
             // Check for duplicate file
             Optional<RtaUploadedFileHash> existingHash = uploadedFileHashRepository
@@ -188,11 +213,18 @@ public class IncomingBatchController {
             String storedFileName = merchantId + "_" + dateTimeSuffix + fileExtension;
             String objectName = UPLOAD_DIR + "/" + storedFileName;
 
-            // Upload file to MinIO
-            String storageUri = minioStorageService.uploadFile(objectName, file);
+            // Upload file to MinIO (store the decrypted/plain content)
+            String storageUri;
+            if (encrypted) {
+                // Upload decrypted bytes to MinIO so stored files are always plaintext
+                String contentType = file.getContentType() != null ? file.getContentType() : "application/octet-stream";
+                storageUri = minioStorageService.uploadFile(objectName, rawFileBytes, contentType);
+            } else {
+                storageUri = minioStorageService.uploadFile(objectName, file);
+            }
 
-            // Download file content for validation
-            byte[] fileContent = minioStorageService.downloadFileAsBytes(objectName);
+            // Use decrypted bytes for validation (skip re-download when encrypted)
+            byte[] fileContent = encrypted ? rawFileBytes : minioStorageService.downloadFileAsBytes(objectName);
 
             // Validate file format against merchant's file profile and insert transaction records
             List<String> validationErrors = new ArrayList<>();

@@ -126,7 +126,7 @@
   color: white;
   width: 220px;
   height: 100vh;
-  padding: 30px 20px;
+  padding: 30px 20px 20px;
   display: flex;
   flex-direction: column;
   align-items: flex-start;
@@ -159,6 +159,7 @@
     padding: 0;
     width: 100%;
     margin: 0;
+    flex: 1;
   }
 
   li {
@@ -208,45 +209,85 @@
 }
 
 // =============================================
-// TOP RIGHT BAR (user id + logout)
+// SIDEBAR FOOTER (user info + logout)
 // =============================================
-.top-right-bar {
-  position: absolute;
-  top: 20px;
-  right: 40px;
+.sidebar-footer {
+  width: 100%;
+  border-top: 1px solid #334155;
+  padding: 16px 0 0 0;
+  margin-top: 8px;
   display: flex;
+  flex-direction: column;
   align-items: center;
   gap: 10px;
-  z-index: 100;
-  font-size: 14px;
-  font-weight: 600;
-  color: #1e293b;
 }
 
-.current-user-id {
-  font-size: 14px;
-  font-weight: 600;
-  color: #1e293b;
+.sidebar-user-info {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
 }
 
-// =============================================
-// LOGOUT BUTTON
-// =============================================
-.logout-btn {
-  position: static;
-  background: none;
-  color: #1e293b;
-  border: none;
-  padding: 0;
+.sidebar-avatar-icon {
+  width: 22px;
+  height: 22px;
+  min-width: 22px;
+  color: #94a3b8;
+  flex-shrink: 0;
+}
+
+.sidebar-user-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  overflow: hidden;
+  flex: 1;
+  min-width: 0;
+}
+
+.sidebar-user-id {
+  font-size: 13px;
+  font-weight: 600;
+  color: #e2e8f0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sidebar-user-role {
+  font-size: 11px;
+  font-weight: 500;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.sidebar-logout-btn {
+  width: 100%;
+  padding: 8px 0;
+  background: transparent;
+  color: #f87171;
+  border: 1px solid #f8717140;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
   cursor: pointer;
-  font-size: 14px;
-  font-weight: 600;
-  text-decoration: underline;
-  text-underline-offset: 3px;
-  transition: color 0.2s;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+
+  svg {
+    flex-shrink: 0;
+  }
 
   &:hover {
-    color: #475569;
+    background: #f8717120;
+    border-color: #f87171;
+    color: #fca5a5;
   }
 }
 
@@ -1357,9 +1398,6 @@
     .profile-content {
       margin-left: 0;
     }
-    .logout-btn {
-      margin-left: 0;
-    }
     .sidebar-toggle {
       left: 238px;
     }
@@ -1371,12 +1409,6 @@
 
   .search-input {
     max-width: 100%;
-  }
-
-  .logout-btn {
-    top: 10px;
-    right: 10px;
-    font-size: 12px;
   }
 
   .form-row {
