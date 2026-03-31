@@ -212,6 +212,10 @@ export class ProfileService {
     return this.http.post<any>(`${this.merchantApiUrl}`, payload);
   }
 
+  getAllMerchants(): Observable<any[]> {
+    return this.http.get<any[]>(`${this.merchantApiUrl}`);
+  }
+
   getMerchant(merchantId: string): Observable<any> {
     return this.http.get<any>(`${this.merchantApiUrl}/${encodeURIComponent(merchantId)}`);
   }

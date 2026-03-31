@@ -7,12 +7,16 @@ import { ProfileService, UserProfile } from '../../services/profile.service';
 import { AuthService } from '../../services/auth.service';
 import { TopBarComponent } from '../../top-bar/top-bar.component';
 
+interface MerchantOption {
+  merchantId: string;
+  name: string;
+}
+
 /**
  * BatchListComponent
  * - Shows uploaded RTA batch files for the current user
- * - Allows uploading a new batch file (renamed with userId + timestamp)
- * - Supports viewing simple batch details and deleting a batch
- * - Demonstrates Angular features: standalone component, routing links, *ngFor, pipes, service calls, error handling
+ * - Allows uploading a new batch file
+ * - Prompts a modal for merchant selection before uploading
  */
 
 @Component({
@@ -30,6 +34,12 @@ export class BatchListComponent implements OnInit {
   // Holds the file chosen from the input
   selectedFile?: File;
   user: UserProfile | null = null;
+
+  // Merchant selection modal
+  showMerchantModal = false;
+  merchants: MerchantOption[] = [];
+  selectedMerchantId = '';
+  isLoadingMerchants = false;
 
   // Pagination
   currentPage = 1;
@@ -130,10 +140,42 @@ export class BatchListComponent implements OnInit {
   }
 
   // Upload selected file:
-  // - Guard: require both file and merchant
-  // - Rename file to {userId}_{yyyy-mm-dd_HH-mm-ss}.xlsx before upload
-  // - Call service and refresh list; log success/error
+  // - Guard: require file
+  // - Open merchant selection modal
   uploadBatch(): void {
+    if (!this.selectedFile) {
+      alert('Please select a file first.');
+      return;
+    }
+
+    // Load merchants and show selection modal
+    this.isLoadingMerchants = true;
+    this.selectedMerchantId = '';
+    this.profileService.getAllMerchants().subscribe({
+      next: (data) => {
+        this.merchants = data.map((m: any) => ({ merchantId: m.merchantId, name: m.name }));
+        this.isLoadingMerchants = false;
+        this.showMerchantModal = true;
+      },
+      error: (err) => {
+        console.error('Failed to load merchants:', err);
+        this.isLoadingMerchants = false;
+        alert('Failed to load merchant list. Please try again.');
+      }
+    });
+  }
+
+  closeMerchantModal(): void {
+    this.showMerchantModal = false;
+    this.selectedMerchantId = '';
+  }
+
+  // Confirm upload after merchant selection
+  confirmUpload(): void {
+    if (!this.selectedMerchantId) {
+      alert('Please select a merchant.');
+      return;
+    }
     if (!this.selectedFile || !this.user) {
       alert('Missing file or user info.');
       return;
@@ -157,22 +199,25 @@ export class BatchListComponent implements OnInit {
       .toString()
       .padStart(2, '0')}-${timestamp.getSeconds().toString().padStart(2, '0')}`;
 
-    // Create a new File object with the new name (content unchanged)
-    const newFileName = `${this.user.userId}_${formattedTime}.xlsx`;
+    // Create a new File object with the new name using selected merchantId
+    const newFileName = `${this.selectedMerchantId}_${formattedTime}.xlsx`;
     const renamedFile = new File([this.selectedFile], newFileName, {
       type: this.selectedFile.type,
     });
 
-    // Call upload API with renamed file, userId and original name for audit trail
+    // Call upload API with renamed file, selected merchantId and original name for audit trail
     this.portalService
-      .uploadBatch(renamedFile, this.user.userId, originalFileName)
+      .uploadBatch(renamedFile, this.selectedMerchantId, originalFileName)
       .subscribe({
         next: (res) => {
-          console.log(`File ${res.fileName} uploaded successfully`);
+          console.log(`File ${res.fileName} uploaded successfully for merchant ${this.selectedMerchantId}`);
+          this.closeMerchantModal();
+          this.selectedFile = undefined;
           this.loadBatches();
         },
         error: (err) => {
           console.error(`Upload failed: ${err.message}`);
+          this.closeMerchantModal();
           this.loadBatches();
         },
       });
