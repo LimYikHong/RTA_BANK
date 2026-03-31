@@ -471,8 +471,13 @@ public class IncomingBatchController {
                                             }
 
                                             if (failCount > 0) {
-                                                validationStatus = "PARTIAL";
-                                                validationRemark = failCount + " out of " + totalRecordCount + " records failed validation";
+                                                if (successCount == 0) {
+                                                    validationStatus = "INVALID_FILE_CONTENT";
+                                                    validationRemark = "All " + totalRecordCount + " record(s) failed validation — no valid transactions";
+                                                } else {
+                                                    validationStatus = "PARTIAL";
+                                                    validationRemark = failCount + " out of " + totalRecordCount + " records failed validation";
+                                                }
                                             }
                                         }
                                     } else {
@@ -641,8 +646,13 @@ public class IncomingBatchController {
                                         }
 
                                         if (failCount > 0) {
-                                            validationStatus = "PARTIAL";
-                                            validationRemark = failCount + " out of " + totalRecordCount + " records failed validation";
+                                            if (successCount == 0) {
+                                                validationStatus = "INVALID_FILE_CONTENT";
+                                                validationRemark = "All " + totalRecordCount + " record(s) failed validation — no valid transactions";
+                                            } else {
+                                                validationStatus = "PARTIAL";
+                                                validationRemark = failCount + " out of " + totalRecordCount + " records failed validation";
+                                            }
                                         }
                                     }
                                 }
@@ -885,8 +895,13 @@ public class IncomingBatchController {
                                                 }
 
                                                 if (failCount > 0) {
-                                                    validationStatus = "PARTIAL";
-                                                    validationRemark = failCount + " out of " + totalRecordCount + " records failed validation";
+                                                    if (successCount == 0) {
+                                                        validationStatus = "INVALID_FILE_CONTENT";
+                                                        validationRemark = "All " + totalRecordCount + " record(s) failed validation — no valid transactions";
+                                                    } else {
+                                                        validationStatus = "PARTIAL";
+                                                        validationRemark = failCount + " out of " + totalRecordCount + " records failed validation";
+                                                    }
                                                 }
                                             }
                                         }
@@ -1072,8 +1087,13 @@ public class IncomingBatchController {
                                         }
 
                                         if (failCount > 0) {
-                                            validationStatus = "PARTIAL";
-                                            validationRemark = failCount + " out of " + totalRecordCount + " records failed validation";
+                                            if (successCount == 0) {
+                                                validationStatus = "INVALID_FILE_CONTENT";
+                                                validationRemark = "All " + totalRecordCount + " record(s) failed validation — no valid transactions";
+                                            } else {
+                                                validationStatus = "PARTIAL";
+                                                validationRemark = failCount + " out of " + totalRecordCount + " records failed validation";
+                                            }
                                         }
                                     }
                                 }
@@ -1124,6 +1144,7 @@ public class IncomingBatchController {
                     || "MISSING_HEADER".equals(validationStatus)
                     || "VALIDATION_FAILED".equals(validationStatus)
                     || "VALIDATION_ERROR".equals(validationStatus)
+                    || "INVALID_FILE_CONTENT".equals(validationStatus)
                     || successCount == 0;
 
             // Only save incoming batch file + transactions if validation passed (at least some records valid)
@@ -1798,8 +1819,13 @@ public class IncomingBatchController {
                             }
 
                             if (failCount > 0) {
-                                validationStatus = "PARTIAL";
-                                validationRemark = failCount + " out of " + totalRecordCount + " records failed validation";
+                                if (successCount == 0) {
+                                    validationStatus = "INVALID_FILE_CONTENT";
+                                    validationRemark = "All " + totalRecordCount + " record(s) failed validation — no valid transactions";
+                                } else {
+                                    validationStatus = "PARTIAL";
+                                    validationRemark = failCount + " out of " + totalRecordCount + " records failed validation";
+                                }
                             }
                         }
                     }
@@ -2058,8 +2084,13 @@ public class IncomingBatchController {
                         }
 
                         if (failCount > 0) {
-                            validationStatus = "PARTIAL";
-                            validationRemark = failCount + " out of " + totalRecordCount + " records failed validation";
+                            if (successCount == 0) {
+                                validationStatus = "INVALID_FILE_CONTENT";
+                                validationRemark = "All " + totalRecordCount + " record(s) failed validation — no valid transactions";
+                            } else {
+                                validationStatus = "PARTIAL";
+                                validationRemark = failCount + " out of " + totalRecordCount + " records failed validation";
+                            }
                         }
                     }
                 } catch (Exception e) {

@@ -2,7 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule, Router } from '@angular/router';
-import { PortalService, UploadHistoryItem, UploadResponse } from '../../services/portal.service';
+import { PortalService, UploadHistoryItem } from '../../services/portal.service';
 import { ProfileService, UserProfile } from '../../services/profile.service';
 import { AuthService } from '../../services/auth.service';
 import { TopBarComponent } from '../../top-bar/top-bar.component';
@@ -40,11 +40,6 @@ export class BatchListComponent implements OnInit {
   merchants: MerchantOption[] = [];
   selectedMerchantId = '';
   isLoadingMerchants = false;
-
-  // Upload result modal
-  showResultModal = false;
-  uploadResult: UploadResponse | null = null;
-  uploadError: string | null = null;
 
   // Pagination
   currentPage = 1;
@@ -182,45 +177,47 @@ export class BatchListComponent implements OnInit {
 
     const originalFileName = this.selectedFile.name;
     const createdBy = this.user.userId || 'unknown';
+    const merchantId = this.selectedMerchantId;
+
+    // Close modal immediately — don't make user wait
+    this.closeMerchantModal();
+
+    // Insert a temporary "UPLOADING" row at the top of the list
+    const tempRow: UploadHistoryItem = {
+      id: 0,
+      merchantId: merchantId,
+      originalFilename: originalFileName,
+      storedFilename: '',
+      fileHash: '',
+      uploadedAt: new Date().toISOString(),
+      status: 'UPLOADING',
+      uploadCount: 0,
+      validationRemark: 'Upload in progress…',
+      createdBy: createdBy,
+      sizeBytes: this.selectedFile.size
+    };
+    this.files = [tempRow, ...this.files];
+
+    // Clear file input
+    const fileRef = this.selectedFile;
+    this.selectedFile = undefined;
+    const fileInput = document.querySelector('.file-input') as HTMLInputElement;
+    if (fileInput) fileInput.value = '';
 
     // Call incoming upload API (full validation pipeline)
     this.portalService
-      .uploadIncoming(this.selectedFile, this.selectedMerchantId, originalFileName, createdBy)
+      .uploadIncoming(fileRef, merchantId, originalFileName, createdBy)
       .subscribe({
-        next: (res) => {
-          console.log(`File uploaded for merchant ${this.selectedMerchantId}`, res);
-          this.closeMerchantModal();
-          this.selectedFile = undefined;
-          // Clear file input
-          const fileInput = document.querySelector('.file-input') as HTMLInputElement;
-          if (fileInput) fileInput.value = '';
-          // Show upload result
-          this.uploadResult = res;
-          this.uploadError = null;
-          this.showResultModal = true;
+        next: () => {
+          // Reload real data from backend to replace the temp row
           this.loadFiles();
         },
         error: (err) => {
           console.error('Upload failed:', err);
-          this.closeMerchantModal();
-          // Show error details from backend
-          const errorBody = err.error;
-          if (errorBody && typeof errorBody === 'object') {
-            this.uploadError = errorBody.detail || errorBody.error || 'Upload failed. Please try again.';
-          } else {
-            this.uploadError = 'Upload failed. Please try again.';
-          }
-          this.uploadResult = null;
-          this.showResultModal = true;
+          // Reload to get the latest state (hash record may still have been saved)
           this.loadFiles();
         },
       });
-  }
-
-  closeResultModal(): void {
-    this.showResultModal = false;
-    this.uploadResult = null;
-    this.uploadError = null;
   }
 
   // Navigate to batch file detail page (only for files that passed validation)
@@ -264,8 +261,10 @@ export class BatchListComponent implements OnInit {
       case 'NO_FIELD_MAPPING':
       case 'MISSING_HEADER':
       case 'VALIDATION_ERROR':
+      case 'INVALID_FILE_CONTENT':
         return 'status-failed';
       case 'PROCESSING': return 'status-processing';
+      case 'UPLOADING': return 'status-uploading';
       default: return '';
     }
   }
