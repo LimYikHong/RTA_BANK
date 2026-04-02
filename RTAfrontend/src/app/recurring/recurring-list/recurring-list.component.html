@@ -93,7 +93,7 @@
       <table class="recurring-table">
         <thead>
           <tr>
-            <th class="th-sort" (click)="sortBy('recurringReference')" [attr.data-sort]="sortKey==='recurringReference' ? sortDir : ''">Recurring Reference</th>
+            <th class="th-sort" (click)="sortBy('recurringReference')" [attr.data-sort]="sortKey==='recurringReference' ? sortDir : ''">Recurring Ref / TXN ID</th>
             <th class="th-sort" (click)="sortBy('merchantId')" [attr.data-sort]="sortKey==='merchantId' ? sortDir : ''">Merchant ID</th>
             <th class="th-sort" (click)="sortBy('totalTransactions')" [attr.data-sort]="sortKey==='totalTransactions' ? sortDir : ''">Total Transactions</th>
             <th class="th-sort" (click)="sortBy('successCount')" [attr.data-sort]="sortKey==='successCount' ? sortDir : ''">Success</th>
@@ -105,7 +105,7 @@
         </thead>
         <tbody>
           <tr *ngFor="let item of sortedItems">
-            <td class="recurring-ref">{{ item.recurringReference }}</td>
+            <td class="recurring-ref">{{ item.isRecurring === false ? (item.recurringReference || ('TXN#' + item.transactionId)) : item.recurringReference }}</td>
             <td>{{ item.merchantId }}</td>
             <td class="count-cell">{{ item.totalTransactions }}</td>
             <td class="count-cell success-count">{{ item.successCount }}</td>
@@ -121,7 +121,7 @@
               </span>
             </td>
             <td class="action-cell">
-              <button class="btn-action btn-view" (click)="viewDetail(item.recurringReference)" title="View"></button>
+              <button class="btn-action btn-view" (click)="viewDetail(item)" title="View"></button>
             </td>
           </tr>
           <tr *ngIf="totalElements === 0">

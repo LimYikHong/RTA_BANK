@@ -12,6 +12,8 @@ interface RecurringItem {
   successCount: number;
   failedCount: number;
   authStatus: string | null;
+  transactionId: number | null;
+  isRecurring: boolean | null;
 }
 
 interface PagedResponse {
@@ -234,8 +236,14 @@ export class RecurringListComponent implements OnInit {
     return pages;
   }
 
-  viewDetail(recurringReference: string): void {
-    this.router.navigate(['/recurring-detail', recurringReference]);
+  viewDetail(item: RecurringItem): void {
+    if (item.isRecurring === false || item.isRecurring === null) {
+      // Non-recurring: navigate to batch file detail using batchFileId if available,
+      // or just show nothing — for now navigate to recurring-detail by transactionId as fallback
+      this.router.navigate(['/recurring-detail', item.transactionId ?? item.recurringReference]);
+    } else {
+      this.router.navigate(['/recurring-detail', item.recurringReference]);
+    }
   }
 
   getStatusSummary(item: RecurringItem): string {

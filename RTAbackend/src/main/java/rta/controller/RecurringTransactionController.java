@@ -52,7 +52,7 @@ public class RecurringTransactionController {
         List<String> conditions = new ArrayList<>();
         Map<String, Object> params = new LinkedHashMap<>();
 
-        // recurringType filter — based on is_recurring column (1=recurring, 0=non-recurring)
+        // recurringType filter
         if ("RECURRING".equalsIgnoreCase(recurringType)) {
             conditions.add("t.isRecurring = true");
         } else if ("NON_RECURRING".equalsIgnoreCase(recurringType)) {
@@ -73,40 +73,94 @@ public class RecurringTransactionController {
 
         String whereClause = conditions.isEmpty() ? "" : "WHERE " + String.join(" AND ", conditions);
 
-        // Grouping strategy depends on recurring type
-        String groupByFields;
-        String selectFields;
-        String countDistinctField;
-
-        if ("NON_RECURRING".equalsIgnoreCase(recurringType)) {
-            // Non-recurring: group by merchantId (no meaningful recurringReference)
-            selectFields = "COALESCE(t.merchantBillingRef, '') AS recurringRef, t.merchantId AS merchantId";
-            groupByFields = "COALESCE(t.merchantBillingRef, ''), t.merchantId";
-            countDistinctField = "CONCAT(COALESCE(t.merchantBillingRef, ''), '|', t.merchantId)";
-        } else if ("RECURRING".equalsIgnoreCase(recurringType)) {
-            // Recurring only: group by recurringReference + merchantId
-            selectFields = "t.recurringReference AS recurringRef, t.merchantId AS merchantId";
-            groupByFields = "t.recurringReference, t.merchantId";
-            countDistinctField = "CONCAT(t.recurringReference, '|', t.merchantId)";
-        } else {
-            // ALL: use COALESCE so both recurring and non-recurring group properly
-            selectFields = "COALESCE(t.recurringReference, t.merchantBillingRef, '') AS recurringRef, t.merchantId AS merchantId";
-            groupByFields = "COALESCE(t.recurringReference, t.merchantBillingRef, ''), t.merchantId";
-            countDistinctField = "CONCAT(COALESCE(t.recurringReference, t.merchantBillingRef, ''), '|', t.merchantId)";
-        }
-
-        // Data query — LEFT JOIN authorization batch to get auth status
         String joinClause = "LEFT JOIN RtaAuthorizationBatch ab ON ab.authBatchId = t.authBatchId";
-        String dataJpql = "SELECT " + selectFields + ", COUNT(t), "
-                + "SUM(CASE WHEN t.status = 'SUCCESS' THEN 1 ELSE 0 END), "
-                + "SUM(CASE WHEN t.status = 'FAILED' THEN 1 ELSE 0 END), "
-                + "MAX(ab.batchStatus) "
-                + "FROM RtaTransaction t " + joinClause + " " + whereClause + " "
-                + "GROUP BY " + groupByFields + " ORDER BY recurringRef ASC";
 
-        // Count query
-        String countJpql = "SELECT COUNT(DISTINCT " + countDistinctField + ") "
-                + "FROM RtaTransaction t " + whereClause;
+        String dataJpql;
+        String countJpql;
+
+        if ("RECURRING".equalsIgnoreCase(recurringType)) {
+            // Recurring: group by recurringReference + merchantId
+            dataJpql = "SELECT t.recurringReference, t.merchantId, COUNT(t), "
+                    + "SUM(CASE WHEN t.status = 'SUCCESS' THEN 1 ELSE 0 END), "
+                    + "SUM(CASE WHEN t.status = 'FAILED' THEN 1 ELSE 0 END), "
+                    + "MAX(ab.batchStatus), "
+                    + "CAST(NULL AS long), "
+                    + "CAST(1 AS boolean) "
+                    + "FROM RtaTransaction t " + joinClause + " " + whereClause + " "
+                    + "GROUP BY t.recurringReference, t.merchantId ORDER BY t.recurringReference ASC";
+            countJpql = "SELECT COUNT(DISTINCT CONCAT(t.recurringReference, '|', t.merchantId)) "
+                    + "FROM RtaTransaction t " + whereClause;
+        } else if ("NON_RECURRING".equalsIgnoreCase(recurringType)) {
+            // Non-recurring: list each transaction individually by ID
+            dataJpql = "SELECT CAST(t.id AS string), t.merchantId, CAST(1 AS long), "
+                    + "SUM(CASE WHEN t.status = 'SUCCESS' THEN 1 ELSE 0 END), "
+                    + "SUM(CASE WHEN t.status = 'FAILED' THEN 1 ELSE 0 END), "
+                    + "MAX(ab.batchStatus), "
+                    + "t.id, "
+                    + "CAST(0 AS boolean) "
+                    + "FROM RtaTransaction t " + joinClause + " " + whereClause + " "
+                    + "GROUP BY t.id, t.merchantId ORDER BY t.id DESC";
+            countJpql = "SELECT COUNT(t) FROM RtaTransaction t " + whereClause;
+        } else {
+            // ALL: recurring rows grouped by reference, non-recurring listed individually
+            // Split into two queries and merge in Java
+            List<String> recurringConds = new ArrayList<>(conditions);
+            recurringConds.add("t.isRecurring = true");
+            String recurringWhere = "WHERE " + String.join(" AND ", recurringConds);
+
+            List<String> nonRecurringConds = new ArrayList<>(conditions);
+            nonRecurringConds.add("(t.isRecurring = false OR t.isRecurring IS NULL)");
+            String nonRecurringWhere = "WHERE " + String.join(" AND ", nonRecurringConds);
+
+            // Recurring grouped rows
+            String recurringJpql = "SELECT t.recurringReference, t.merchantId, COUNT(t), "
+                    + "SUM(CASE WHEN t.status = 'SUCCESS' THEN 1 ELSE 0 END), "
+                    + "SUM(CASE WHEN t.status = 'FAILED' THEN 1 ELSE 0 END), "
+                    + "MAX(ab.batchStatus), "
+                    + "CAST(NULL AS long), "
+                    + "CAST(1 AS boolean) "
+                    + "FROM RtaTransaction t " + joinClause + " " + recurringWhere + " "
+                    + "GROUP BY t.recurringReference, t.merchantId ORDER BY t.recurringReference ASC";
+
+            // Non-recurring individual rows
+            String nonRecurringJpql = "SELECT CAST(t.id AS string), t.merchantId, CAST(1 AS long), "
+                    + "SUM(CASE WHEN t.status = 'SUCCESS' THEN 1 ELSE 0 END), "
+                    + "SUM(CASE WHEN t.status = 'FAILED' THEN 1 ELSE 0 END), "
+                    + "MAX(ab.batchStatus), "
+                    + "t.id, "
+                    + "CAST(0 AS boolean) "
+                    + "FROM RtaTransaction t " + joinClause + " " + nonRecurringWhere + " "
+                    + "GROUP BY t.id, t.merchantId ORDER BY t.id DESC";
+
+            TypedQuery<Object[]> recurringQuery = entityManager.createQuery(recurringJpql, Object[].class);
+            TypedQuery<Object[]> nonRecurringQuery = entityManager.createQuery(nonRecurringJpql, Object[].class);
+            for (Map.Entry<String, Object> entry : params.entrySet()) {
+                recurringQuery.setParameter(entry.getKey(), entry.getValue());
+                nonRecurringQuery.setParameter(entry.getKey(), entry.getValue());
+            }
+
+            List<Object[]> allRows = new ArrayList<>();
+            allRows.addAll(recurringQuery.getResultList());
+            allRows.addAll(nonRecurringQuery.getResultList());
+
+            long total = allRows.size();
+            int fromIdx = (int) pageable.getOffset();
+            int toIdx = (int) Math.min(fromIdx + pageable.getPageSize(), total);
+            List<Object[]> pageRows = fromIdx >= total ? new ArrayList<>() : allRows.subList(fromIdx, toIdx);
+
+            List<Map<String, Object>> content = new ArrayList<>();
+            for (Object[] row : pageRows) {
+                content.add(buildRowMap(row));
+            }
+
+            Map<String, Object> response = new LinkedHashMap<>();
+            response.put("content", content);
+            response.put("totalElements", total);
+            response.put("totalPages", (int) Math.ceil((double) total / pageable.getPageSize()));
+            response.put("currentPage", page);
+            response.put("pageSize", pageable.getPageSize());
+            return ResponseEntity.ok(response);
+        }
 
         TypedQuery<Object[]> dataQuery = entityManager.createQuery(dataJpql, Object[].class);
         TypedQuery<Long> countQuery = entityManager.createQuery(countJpql, Long.class);
@@ -125,14 +179,7 @@ public class RecurringTransactionController {
 
         List<Map<String, Object>> content = new ArrayList<>();
         for (Object[] row : resultPage.getContent()) {
-            Map<String, Object> item = new LinkedHashMap<>();
-            item.put("recurringReference", row[0]);
-            item.put("merchantId", row[1]);
-            item.put("totalTransactions", row[2]);
-            item.put("successCount", row[3]);
-            item.put("failedCount", row[4]);
-            item.put("authStatus", row.length > 5 ? row[5] : null);
-            content.add(item);
+            content.add(buildRowMap(row));
         }
 
         Map<String, Object> response = new LinkedHashMap<>();
@@ -143,6 +190,25 @@ public class RecurringTransactionController {
         response.put("pageSize", resultPage.getSize());
 
         return ResponseEntity.ok(response);
+    }
+
+    /**
+     * Maps a result row array to the response map. Row layout: [0]
+     * recurringRef/billingRef, [1] merchantId, [2] totalCount, [3]
+     * successCount, [4] failedCount, [5] authStatus, [6] transactionId (null
+     * for recurring groups), [7] isRecurring (boolean)
+     */
+    private Map<String, Object> buildRowMap(Object[] row) {
+        Map<String, Object> item = new LinkedHashMap<>();
+        item.put("recurringReference", row[0]);
+        item.put("merchantId", row[1]);
+        item.put("totalTransactions", row[2]);
+        item.put("successCount", row[3]);
+        item.put("failedCount", row[4]);
+        item.put("authStatus", row.length > 5 ? row[5] : null);
+        item.put("transactionId", row.length > 6 ? row[6] : null);
+        item.put("isRecurring", row.length > 7 ? row[7] : null);
+        return item;
     }
 
     /**

@@ -397,14 +397,26 @@ public class IncomingBatchController {
                                                 }
 
                                                 // Validate required fields are not null/empty
+                                                // Determine upfront if this row is non-recurring so we can relax recurring-only required fields
+                                                boolean rowIsNonRecurring = isRecurringStr != null
+                                                        && !isRecurringStr.trim().isEmpty()
+                                                        && ("false".equals(isRecurringStr.trim().toLowerCase())
+                                                        || "0".equals(isRecurringStr.trim())
+                                                        || "no".equals(isRecurringStr.trim().toLowerCase())
+                                                        || "n".equals(isRecurringStr.trim().toLowerCase()));
+                                                java.util.Set<String> RECURRING_ONLY_FIELDS = java.util.Set.of(
+                                                        "recurring_reference", "recurring_type", "frequency_value");
                                                 for (RtaFieldMapping mapping : mappings) {
                                                     if (Boolean.TRUE.equals(mapping.getRequired())) {
+                                                        // Skip recurring-only fields if this row is non-recurring
+                                                        if (rowIsNonRecurring && RECURRING_ONLY_FIELDS.contains(mapping.getCanonicalField())) {
+                                                            continue;
+                                                        }
                                                         String val = getFieldValue(row, headerMap, mappings, mapping.getCanonicalField());
                                                         if (val == null || val.trim().isEmpty()) {
                                                             rowErrors.add("Empty value for required field '" + mapping.getCanonicalField() + "'");
                                                             txnStatus = "FAILED";
                                                         } else {
-                                                            // Type validation
                                                             if (mapping.getDataType() != null) {
                                                                 switch (mapping.getDataType().toUpperCase()) {
                                                                     case "INTEGER":
@@ -583,8 +595,19 @@ public class IncomingBatchController {
                                                 }
                                             }
 
+                                            boolean rowIsNonRecurring = isRecurringStr != null
+                                                    && !isRecurringStr.trim().isEmpty()
+                                                    && ("false".equals(isRecurringStr.trim().toLowerCase())
+                                                    || "0".equals(isRecurringStr.trim())
+                                                    || "no".equals(isRecurringStr.trim().toLowerCase())
+                                                    || "n".equals(isRecurringStr.trim().toLowerCase()));
+                                            java.util.Set<String> RECURRING_ONLY_FIELDS = java.util.Set.of(
+                                                    "recurring_reference", "recurring_type", "frequency_value");
                                             for (RtaFieldMapping mapping : mappings) {
                                                 if (Boolean.TRUE.equals(mapping.getRequired())) {
+                                                    if (rowIsNonRecurring && RECURRING_ONLY_FIELDS.contains(mapping.getCanonicalField())) {
+                                                        continue;
+                                                    }
                                                     String val = getFieldValue(row, headerMap, mappings, mapping.getCanonicalField());
                                                     if (val == null || val.trim().isEmpty()) {
                                                         rowErrors.add("Empty value for required field '" + mapping.getCanonicalField() + "'");
@@ -825,14 +848,24 @@ public class IncomingBatchController {
                                                     }
 
                                                     // Validate required fields
+                                                    boolean rowIsNonRecurring = isRecurringStr != null
+                                                            && !isRecurringStr.trim().isEmpty()
+                                                            && ("false".equals(isRecurringStr.trim().toLowerCase())
+                                                            || "0".equals(isRecurringStr.trim())
+                                                            || "no".equals(isRecurringStr.trim().toLowerCase())
+                                                            || "n".equals(isRecurringStr.trim().toLowerCase()));
+                                                    java.util.Set<String> RECURRING_ONLY_FIELDS = java.util.Set.of(
+                                                            "recurring_reference", "recurring_type", "frequency_value");
                                                     for (RtaFieldMapping mapping : mappings) {
                                                         if (Boolean.TRUE.equals(mapping.getRequired())) {
+                                                            if (rowIsNonRecurring && RECURRING_ONLY_FIELDS.contains(mapping.getCanonicalField())) {
+                                                                continue;
+                                                            }
                                                             String val = getFieldValue(row, headerMap, mappings, mapping.getCanonicalField());
                                                             if (val == null || val.trim().isEmpty()) {
                                                                 rowErrors.add("Empty value for required field '" + mapping.getCanonicalField() + "'");
                                                                 txnStatus = "FAILED";
                                                             } else {
-                                                                // Type validation
                                                                 if (mapping.getDataType() != null) {
                                                                     switch (mapping.getDataType().toUpperCase()) {
                                                                         case "INTEGER":
@@ -1024,8 +1057,19 @@ public class IncomingBatchController {
                                                 }
                                             }
 
+                                            boolean rowIsNonRecurring = isRecurringStr != null
+                                                    && !isRecurringStr.trim().isEmpty()
+                                                    && ("false".equals(isRecurringStr.trim().toLowerCase())
+                                                    || "0".equals(isRecurringStr.trim())
+                                                    || "no".equals(isRecurringStr.trim().toLowerCase())
+                                                    || "n".equals(isRecurringStr.trim().toLowerCase()));
+                                            java.util.Set<String> RECURRING_ONLY_FIELDS = java.util.Set.of(
+                                                    "recurring_reference", "recurring_type", "frequency_value");
                                             for (RtaFieldMapping mapping : mappings) {
                                                 if (Boolean.TRUE.equals(mapping.getRequired())) {
+                                                    if (rowIsNonRecurring && RECURRING_ONLY_FIELDS.contains(mapping.getCanonicalField())) {
+                                                        continue;
+                                                    }
                                                     String val = getFieldValue(row, headerMap, mappings, mapping.getCanonicalField());
                                                     if (val == null || val.trim().isEmpty()) {
                                                         rowErrors.add("Empty value for required field '" + mapping.getCanonicalField() + "'");
