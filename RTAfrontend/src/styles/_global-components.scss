@@ -126,7 +126,7 @@
   color: white;
   width: 220px;
   height: 100vh;
-  padding: 30px 20px;
+  padding: 30px 20px 20px;
   display: flex;
   flex-direction: column;
   align-items: flex-start;
@@ -159,6 +159,7 @@
     padding: 0;
     width: 100%;
     margin: 0;
+    flex: 1;
   }
 
   li {
@@ -185,6 +186,7 @@
   margin-left: 0;
   padding: 40px 60px;
   transition: margin-left 0.3s ease;
+  position: relative;
 }
 
 // =============================================
@@ -208,54 +210,11 @@
 }
 
 // =============================================
-// TOP RIGHT BAR (user id + logout)
-// =============================================
-.top-right-bar {
-  position: absolute;
-  top: 20px;
-  right: 40px;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  z-index: 100;
-  font-size: 14px;
-  font-weight: 600;
-  color: #1e293b;
-}
-
-.current-user-id {
-  font-size: 14px;
-  font-weight: 600;
-  color: #1e293b;
-}
-
-// =============================================
-// LOGOUT BUTTON
-// =============================================
-.logout-btn {
-  position: static;
-  background: none;
-  color: #1e293b;
-  border: none;
-  padding: 0;
-  cursor: pointer;
-  font-size: 14px;
-  font-weight: 600;
-  text-decoration: underline;
-  text-underline-offset: 3px;
-  transition: color 0.2s;
-
-  &:hover {
-    color: #475569;
-  }
-}
-
-// =============================================
 // BACK BUTTON
 // =============================================
 .back-btn,
 .btn-back {
-  background-color: #64748b;
+  background-color: none;
   color: white;
   border: none;
   padding: 8px 16px;
@@ -267,7 +226,7 @@
   margin-bottom: 12px;
 
   &:hover {
-    background-color: #475569;
+    background-color: #7a7a7b;
   }
 }
 
@@ -285,20 +244,20 @@
 }
 
 .btn-primary {
-  background-color: #3b82f6;
+  background-color: #000000;
   color: white;
 
   &:hover {
-    background-color: #2563eb;
+    background-color: #7a7a7b;
   }
 }
 
 .btn-refresh {
-  background-color: #3b82f6;
+  background-color: #000000;
   color: white;
 
   &:hover {
-    background-color: #2563eb;
+    background-color: #7a7a7b;
   }
 }
 
@@ -358,7 +317,7 @@
   }
 
   &:hover {
-    background-color: #eff6ff;
+    background-color: #7a7a7b;
     color: #2563eb;
     border-color: #bfdbfe;
     box-shadow: 0 2px 8px rgba(37, 99, 235, 0.15);
@@ -376,7 +335,7 @@
   }
 
   &:hover {
-    background-color: #fffbeb;
+    background-color: #7a7a7b;
     color: #2563eb;
     border-color: #fde68a;
     box-shadow: 0 2px 8px rgba(217, 119, 6, 0.15);
@@ -395,7 +354,7 @@
 
   &:hover {
     background-color: #fef2f2;
-    color: #2563eb;
+    color: #7a7a7b;
     border-color: #fecaca;
     box-shadow: 0 2px 8px rgba(220, 38, 38, 0.15);
   }
@@ -412,7 +371,7 @@
   }
 
   &:hover {
-    background-color: #f0fdf4;
+    background-color: #7a7a7b;
     color: #16a34a;
     border-color: #bbf7d0;
     box-shadow: 0 2px 8px rgba(22, 163, 74, 0.15);
@@ -528,6 +487,11 @@
 .status-received {
   background-color: #dbeafe;
   color: #2563eb;
+}
+
+.status-ready {
+  background-color: #dbeafe;
+  color: #1d4ed8;
 }
 
 .status-processing {
@@ -723,7 +687,7 @@
 
     .btn-search {
       padding: 8px 24px;
-      background: #3b82f6;
+      background: #000000;
       color: #fff;
       border: none;
       border-radius: 8px;
@@ -734,8 +698,8 @@
       transition: background 0.2s;
       height: 38px;
 
-      &:hover { background: #2563eb; }
-      &:active { background: #1d4ed8; }
+      &:hover { background: #7a7a7b; }
+      &:active { background: #7a7a7b; }
     }
   }
 
@@ -780,7 +744,7 @@
         line-height: 1;
         border-radius: 0 8px 8px 0;
 
-        &:hover { color: #475569; }
+        &:hover { color: #7a7a7b; }
       }
     }
 
@@ -938,22 +902,22 @@
 }
 
 .btn-add {
-  background-color: #3b82f6;
+  background-color: #000000;
   color: white;
 
-  &:hover { background-color: #2563eb; }
+  &:hover { background-color: #7a7a7b; }
 }
 
 .btn-search {
-  background-color: #1e293b;
+  background-color: #000000;
   color: white;
 
-  &:hover { background-color: #334155; }
+  &:hover { background-color: #7a7a7b; }
 }
 
 .btn-clear {
   background-color: #f1f5f9;
-  color: #475569;
+  color: #000000;
 
   &:hover { background-color: #e2e8f0; }
 }
@@ -1177,7 +1141,7 @@
   display: inline-block;
 
   &:hover {
-    color: #2563eb;
+    color: #7a7a7b;
     text-decoration: underline;
   }
 }
@@ -1332,10 +1296,10 @@
 }
 
 .btn-submit {
-  background-color: #3b82f6;
+  background-color: #000000;
   color: white;
 
-  &:hover { background-color: #2563eb; }
+  &:hover { background-color: #7a7a7b; }
 
   &:disabled {
     background-color: #93c5fd;
@@ -1357,9 +1321,6 @@
     .profile-content {
       margin-left: 0;
     }
-    .logout-btn {
-      margin-left: 0;
-    }
     .sidebar-toggle {
       left: 238px;
     }
@@ -1371,12 +1332,6 @@
 
   .search-input {
     max-width: 100%;
-  }
-
-  .logout-btn {
-    top: 10px;
-    right: 10px;
-    font-size: 12px;
   }
 
   .form-row {

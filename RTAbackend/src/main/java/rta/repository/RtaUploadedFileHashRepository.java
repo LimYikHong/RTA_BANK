@@ -1,11 +1,12 @@
 package rta.repository;
 
+import java.util.List;
+import java.util.Optional;
+
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
-import rta.entity.RtaUploadedFileHash;
 
-import java.util.Optional;
-import java.util.List;
+import rta.entity.RtaUploadedFileHash;
 
 @Repository
 public interface RtaUploadedFileHashRepository extends JpaRepository<RtaUploadedFileHash, Long> {
@@ -36,4 +37,10 @@ public interface RtaUploadedFileHashRepository extends JpaRepository<RtaUploaded
      * the Upload Batch File page to show full upload history.
      */
     List<RtaUploadedFileHash> findAllByOrderByUploadedAtDesc();
+
+    /**
+     * Find all upload hash records with a given file hash, across all
+     * merchants. Used to detect cross-merchant duplicate file uploads.
+     */
+    List<RtaUploadedFileHash> findByFileHash(String fileHash);
 }

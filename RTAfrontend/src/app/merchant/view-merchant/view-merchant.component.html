@@ -16,19 +16,18 @@
       <li routerLink="/batch-file-maintenance" routerLinkActive="active"><b>Batch File Maintenance</b></li>
       <li routerLink="/batch-maintenance" routerLinkActive="active"><b>Batch Maintenance</b></li>
       <li routerLink="/recurring-list" routerLinkActive="active"><b>Track Transaction</b></li>
-      <li routerLink="/profile" routerLinkActive="active">View Profile</li>
+      <li routerLink="/profile" routerLinkActive="active"><b>View Profile</b></li>
       <li routerLink="/users" routerLinkActive="active"><b>User Management</b></li>
       <li routerLink="/merchant-maintenance" routerLinkActive="active"><b>Merchant Maintenance</b></li>
     </ul>
   </aside>
 
   <!-- Main Content -->
-  <app-top-bar></app-top-bar>
   <main class="main-content">
+    <app-top-bar></app-top-bar>
     <div class="page-header">
       <button class="back-btn" (click)="back()">&lt; Back to Merchants</button>
       <h1>View Merchant</h1>
-      <p class="subtitle">Merchant details — read-only view.</p>
     </div>
 
     <div class="loading-text" *ngIf="isLoading">Loading merchant data...</div>

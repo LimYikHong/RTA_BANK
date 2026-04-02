@@ -31,4 +31,7 @@ public class MerchantCreatedEvent implements Serializable {
     private String merchantAccName;
     private String transactionCurrency;
     private String settlementCurrency;
+
+    // RSA public key for file encryption (PEM format)
+    private String rsaPublicKeyPem;
 }

@@ -11,6 +11,9 @@ interface RecurringItem {
   totalTransactions: number;
   successCount: number;
   failedCount: number;
+  authStatus: string | null;
+  transactionId: number | null;
+  isRecurring: boolean | null;
 }
 
 interface PagedResponse {
@@ -233,8 +236,14 @@ export class RecurringListComponent implements OnInit {
     return pages;
   }
 
-  viewDetail(recurringReference: string): void {
-    this.router.navigate(['/recurring-detail', recurringReference]);
+  viewDetail(item: RecurringItem): void {
+    if (item.isRecurring === false || item.isRecurring === null) {
+      // Non-recurring: navigate to batch file detail using batchFileId if available,
+      // or just show nothing — for now navigate to recurring-detail by transactionId as fallback
+      this.router.navigate(['/recurring-detail', item.transactionId ?? item.recurringReference]);
+    } else {
+      this.router.navigate(['/recurring-detail', item.recurringReference]);
+    }
   }
 
   getStatusSummary(item: RecurringItem): string {
@@ -254,6 +263,29 @@ export class RecurringListComponent implements OnInit {
       return 'status-failed';
     } else {
       return 'status-partial';
+    }
+  }
+
+  getAuthStatusClass(authStatus: string | null): string {
+    const status = (authStatus || 'PENDING').toUpperCase();
+    switch (status) {
+      case 'READY_TO_SEND': return 'status-ready';
+      case 'PROCESSING':    return 'status-processing';
+      case 'COMPLETED':     return 'status-success';
+      case 'FAILED':        return 'status-failed';
+      default:              return 'status-pending';
+    }
+  }
+
+  formatAuthStatus(authStatus: string | null): string {
+    const status = (authStatus || 'PENDING').toUpperCase();
+    switch (status) {
+      case 'READY_TO_SEND': return 'Ready to Send';
+      case 'PROCESSING':    return 'Processing';
+      case 'COMPLETED':     return 'Completed';
+      case 'FAILED':        return 'Failed';
+      case 'PENDING':       return 'Pending';
+      default:              return status.replace(/_/g, ' ');
     }
   }
 }

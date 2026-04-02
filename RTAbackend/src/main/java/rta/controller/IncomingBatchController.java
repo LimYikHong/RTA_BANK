@@ -47,6 +47,7 @@ import rta.repository.RtaBatchRepository;
 import rta.repository.RtaIncomingBatchFileRepository;
 import rta.repository.RtaTransactionRepository;
 import rta.repository.RtaUploadedFileHashRepository;
+import rta.service.FileDecryptionService;
 import rta.service.FileProfileService;
 import rta.service.MinioStorageService;
 
@@ -68,6 +69,7 @@ public class IncomingBatchController {
     private final RtaAuthorizationBatchRepository authBatchRepository;
     private final FileProfileService fileProfileService;
     private final MinioStorageService minioStorageService;
+    private final FileDecryptionService fileDecryptionService;
 
     private static final String UPLOAD_DIR = "incoming-uploads";
 
@@ -78,7 +80,8 @@ public class IncomingBatchController {
             MerchantInfoRepository merchantInfoRepository,
             RtaAuthorizationBatchRepository authBatchRepository,
             FileProfileService fileProfileService,
-            MinioStorageService minioStorageService) {
+            MinioStorageService minioStorageService,
+            FileDecryptionService fileDecryptionService) {
         this.batchRepository = batchRepository;
         this.uploadedFileHashRepository = uploadedFileHashRepository;
         this.incomingFileRepository = incomingFileRepository;
@@ -87,6 +90,7 @@ public class IncomingBatchController {
         this.authBatchRepository = authBatchRepository;
         this.fileProfileService = fileProfileService;
         this.minioStorageService = minioStorageService;
+        this.fileDecryptionService = fileDecryptionService;
     }
 
     /**
@@ -101,7 +105,8 @@ public class IncomingBatchController {
             @RequestParam("merchantId") String merchantId,
             @RequestParam(value = "createdBy", required = false, defaultValue = "merchant") String createdBy,
             @RequestParam(value = "fileName", required = false) String fileNameParam,
-            @RequestParam(value = "originalFileName", required = false) String originalFileNameParam) {
+            @RequestParam(value = "originalFileName", required = false) String originalFileNameParam,
+            @RequestParam(value = "encrypted", required = false, defaultValue = "false") boolean encrypted) {
         try {
             if (file.isEmpty()) {
                 return ResponseEntity.badRequest().body(Map.of("error", "No file uploaded"));
@@ -120,8 +125,12 @@ public class IncomingBatchController {
                     ? fileNameParam
                     : originalFilename;
 
-            // Validate file extension using renamed filename
+            // Strip .enc suffix if the file was encrypted, then validate the real extension
             String lowerName = renamedFilename.toLowerCase();
+            if (encrypted && lowerName.endsWith(".enc")) {
+                lowerName = lowerName.substring(0, lowerName.length() - 4); // remove ".enc"
+                renamedFilename = renamedFilename.substring(0, renamedFilename.length() - 4);
+            }
             if (!lowerName.endsWith(".csv") && !lowerName.endsWith(".xlsx") && !lowerName.endsWith(".xls") && !lowerName.endsWith(".txt")) {
                 return ResponseEntity.badRequest().body(Map.of("error", "Unsupported file type. Allowed: csv, xlsx, xls, txt"));
             }
@@ -134,10 +143,53 @@ public class IncomingBatchController {
                 ));
             }
 
-            // Generate SHA-256 hash of file content to detect duplicates
-            String fileHash = generateSHA256Hash(file.getBytes());
+            // --- Decrypt file if uploaded as encrypted ---
+            byte[] rawFileBytes = file.getBytes();
+            if (encrypted) {
+                try {
+                    rawFileBytes = fileDecryptionService.decryptFile(merchantId, rawFileBytes);
+                } catch (Exception ex) {
+                    ex.printStackTrace();
+                    String errMsg = ex.getMessage() != null ? ex.getMessage()
+                            : ex.getClass().getSimpleName() + " (no message)";
+                    return ResponseEntity.badRequest().body(Map.of(
+                            "error", "File decryption failed",
+                            "detail", "Could not decrypt the uploaded file for merchant '" + merchantId + "'. " + errMsg
+                    ));
+                }
+            }
 
-            // Check for duplicate file
+            // Generate SHA-256 hash of file content to detect duplicates
+            String fileHash = generateSHA256Hash(rawFileBytes);
+
+            // Statuses that indicate the file has valid/processed transactions — reject re-upload globally
+            java.util.Set<String> BLOCKING_STATUSES = java.util.Set.of(
+                    "PARTIAL", "PASS", "SUCCESS", "VALIDATED", "PARTIAL_SUCCESS", "PROCESSED");
+
+            // Check for duplicate file across ALL merchants first
+            List<rta.entity.RtaUploadedFileHash> allHashRecords = uploadedFileHashRepository.findByFileHash(fileHash);
+            for (rta.entity.RtaUploadedFileHash anyRecord : allHashRecords) {
+                String anyStatus = anyRecord.getStatus() != null ? anyRecord.getStatus() : "";
+                if (BLOCKING_STATUSES.contains(anyStatus)) {
+                    // Same file content was already accepted (with valid transactions) by some merchant — reject
+                    return ResponseEntity.badRequest().body(Map.of(
+                            "error", "Duplicate file detected",
+                            "detail", "This file has already been uploaded and accepted"
+                            + (anyRecord.getMerchantId().equals(merchantId) ? "."
+                            : " by another merchant (" + anyRecord.getMerchantId() + ")."),
+                            "duplicateFileInfo", Map.of(
+                                    "id", anyRecord.getId(),
+                                    "originalFilename", anyRecord.getOriginalFilename() != null ? anyRecord.getOriginalFilename() : "",
+                                    "merchantId", anyRecord.getMerchantId(),
+                                    "uploadedAt", anyRecord.getUploadedAt() != null ? anyRecord.getUploadedAt().toString() : "N/A",
+                                    "status", anyStatus,
+                                    "uploadCount", anyRecord.getUploadCount() != null ? anyRecord.getUploadCount() : 1
+                            )
+                    ));
+                }
+            }
+
+            // Check for same-merchant duplicate (handles WRONG_FILE_FORMAT re-upload and upload limit)
             Optional<RtaUploadedFileHash> existingHash = uploadedFileHashRepository
                     .findByMerchantIdAndFileHash(merchantId, fileHash);
             if (existingHash.isPresent()) {
@@ -188,11 +240,18 @@ public class IncomingBatchController {
             String storedFileName = merchantId + "_" + dateTimeSuffix + fileExtension;
             String objectName = UPLOAD_DIR + "/" + storedFileName;
 
-            // Upload file to MinIO
-            String storageUri = minioStorageService.uploadFile(objectName, file);
+            // Upload file to MinIO (store the decrypted/plain content)
+            String storageUri;
+            if (encrypted) {
+                // Upload decrypted bytes to MinIO so stored files are always plaintext
+                String contentType = file.getContentType() != null ? file.getContentType() : "application/octet-stream";
+                storageUri = minioStorageService.uploadFile(objectName, rawFileBytes, contentType);
+            } else {
+                storageUri = minioStorageService.uploadFile(objectName, file);
+            }
 
-            // Download file content for validation
-            byte[] fileContent = minioStorageService.downloadFileAsBytes(objectName);
+            // Use decrypted bytes for validation (skip re-download when encrypted)
+            byte[] fileContent = encrypted ? rawFileBytes : minioStorageService.downloadFileAsBytes(objectName);
 
             // Validate file format against merchant's file profile and insert transaction records
             List<String> validationErrors = new ArrayList<>();
@@ -338,14 +397,26 @@ public class IncomingBatchController {
                                                 }
 
                                                 // Validate required fields are not null/empty
+                                                // Determine upfront if this row is non-recurring so we can relax recurring-only required fields
+                                                boolean rowIsNonRecurring = isRecurringStr != null
+                                                        && !isRecurringStr.trim().isEmpty()
+                                                        && ("false".equals(isRecurringStr.trim().toLowerCase())
+                                                        || "0".equals(isRecurringStr.trim())
+                                                        || "no".equals(isRecurringStr.trim().toLowerCase())
+                                                        || "n".equals(isRecurringStr.trim().toLowerCase()));
+                                                java.util.Set<String> RECURRING_ONLY_FIELDS = java.util.Set.of(
+                                                        "recurring_reference", "recurring_type", "frequency_value");
                                                 for (RtaFieldMapping mapping : mappings) {
                                                     if (Boolean.TRUE.equals(mapping.getRequired())) {
+                                                        // Skip recurring-only fields if this row is non-recurring
+                                                        if (rowIsNonRecurring && RECURRING_ONLY_FIELDS.contains(mapping.getCanonicalField())) {
+                                                            continue;
+                                                        }
                                                         String val = getFieldValue(row, headerMap, mappings, mapping.getCanonicalField());
                                                         if (val == null || val.trim().isEmpty()) {
                                                             rowErrors.add("Empty value for required field '" + mapping.getCanonicalField() + "'");
                                                             txnStatus = "FAILED";
                                                         } else {
-                                                            // Type validation
                                                             if (mapping.getDataType() != null) {
                                                                 switch (mapping.getDataType().toUpperCase()) {
                                                                     case "INTEGER":
@@ -524,8 +595,19 @@ public class IncomingBatchController {
                                                 }
                                             }
 
+                                            boolean rowIsNonRecurring = isRecurringStr != null
+                                                    && !isRecurringStr.trim().isEmpty()
+                                                    && ("false".equals(isRecurringStr.trim().toLowerCase())
+                                                    || "0".equals(isRecurringStr.trim())
+                                                    || "no".equals(isRecurringStr.trim().toLowerCase())
+                                                    || "n".equals(isRecurringStr.trim().toLowerCase()));
+                                            java.util.Set<String> RECURRING_ONLY_FIELDS = java.util.Set.of(
+                                                    "recurring_reference", "recurring_type", "frequency_value");
                                             for (RtaFieldMapping mapping : mappings) {
                                                 if (Boolean.TRUE.equals(mapping.getRequired())) {
+                                                    if (rowIsNonRecurring && RECURRING_ONLY_FIELDS.contains(mapping.getCanonicalField())) {
+                                                        continue;
+                                                    }
                                                     String val = getFieldValue(row, headerMap, mappings, mapping.getCanonicalField());
                                                     if (val == null || val.trim().isEmpty()) {
                                                         rowErrors.add("Empty value for required field '" + mapping.getCanonicalField() + "'");
@@ -766,14 +848,24 @@ public class IncomingBatchController {
                                                     }
 
                                                     // Validate required fields
+                                                    boolean rowIsNonRecurring = isRecurringStr != null
+                                                            && !isRecurringStr.trim().isEmpty()
+                                                            && ("false".equals(isRecurringStr.trim().toLowerCase())
+                                                            || "0".equals(isRecurringStr.trim())
+                                                            || "no".equals(isRecurringStr.trim().toLowerCase())
+                                                            || "n".equals(isRecurringStr.trim().toLowerCase()));
+                                                    java.util.Set<String> RECURRING_ONLY_FIELDS = java.util.Set.of(
+                                                            "recurring_reference", "recurring_type", "frequency_value");
                                                     for (RtaFieldMapping mapping : mappings) {
                                                         if (Boolean.TRUE.equals(mapping.getRequired())) {
+                                                            if (rowIsNonRecurring && RECURRING_ONLY_FIELDS.contains(mapping.getCanonicalField())) {
+                                                                continue;
+                                                            }
                                                             String val = getFieldValue(row, headerMap, mappings, mapping.getCanonicalField());
                                                             if (val == null || val.trim().isEmpty()) {
                                                                 rowErrors.add("Empty value for required field '" + mapping.getCanonicalField() + "'");
                                                                 txnStatus = "FAILED";
                                                             } else {
-                                                                // Type validation
                                                                 if (mapping.getDataType() != null) {
                                                                     switch (mapping.getDataType().toUpperCase()) {
                                                                         case "INTEGER":
@@ -965,8 +1057,19 @@ public class IncomingBatchController {
                                                 }
                                             }
 
+                                            boolean rowIsNonRecurring = isRecurringStr != null
+                                                    && !isRecurringStr.trim().isEmpty()
+                                                    && ("false".equals(isRecurringStr.trim().toLowerCase())
+                                                    || "0".equals(isRecurringStr.trim())
+                                                    || "no".equals(isRecurringStr.trim().toLowerCase())
+                                                    || "n".equals(isRecurringStr.trim().toLowerCase()));
+                                            java.util.Set<String> RECURRING_ONLY_FIELDS = java.util.Set.of(
+                                                    "recurring_reference", "recurring_type", "frequency_value");
                                             for (RtaFieldMapping mapping : mappings) {
                                                 if (Boolean.TRUE.equals(mapping.getRequired())) {
+                                                    if (rowIsNonRecurring && RECURRING_ONLY_FIELDS.contains(mapping.getCanonicalField())) {
+                                                        continue;
+                                                    }
                                                     String val = getFieldValue(row, headerMap, mappings, mapping.getCanonicalField());
                                                     if (val == null || val.trim().isEmpty()) {
                                                         rowErrors.add("Empty value for required field '" + mapping.getCanonicalField() + "'");
