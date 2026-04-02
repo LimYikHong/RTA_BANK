@@ -1,14 +1,25 @@
 package rta.controller;
 
-import lombok.RequiredArgsConstructor;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
-import rta.entity.MerchantInfo;
-import rta.service.MerchantService;
-
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
+import jakarta.servlet.http.HttpServletRequest;
+import rta.entity.MerchantInfo;
+import rta.service.AuditLogService;
+import rta.service.MerchantService;
 
 /**
  * MerchantController - REST API for merchant management. - POST /api/merchants
@@ -17,11 +28,16 @@ import java.util.Map;
  */
 @RestController
 @RequestMapping("/api/merchants")
-@RequiredArgsConstructor
 @CrossOrigin(origins = {"http://localhost:4200", "https://localhost:4200"})
 public class MerchantController {
 
     private final MerchantService merchantService;
+    private final AuditLogService auditLogService;
+
+    public MerchantController(MerchantService merchantService, AuditLogService auditLogService) {
+        this.merchantService = merchantService;
+        this.auditLogService = auditLogService;
+    }
 
     /**
      * POST /api/merchants Creates a new merchant with bank account info.
@@ -34,7 +50,7 @@ public class MerchantController {
      */
     @SuppressWarnings("unchecked")
     @PostMapping
-    public ResponseEntity<?> createMerchant(@RequestBody Map<String, Object> payload) {
+    public ResponseEntity<?> createMerchant(@RequestBody Map<String, Object> payload, HttpServletRequest request) {
         try {
             MerchantInfo merchantInfo = new MerchantInfo();
             merchantInfo.setMerchantId((String) payload.get("merchantId"));
@@ -73,6 +89,15 @@ public class MerchantController {
                     merchantInfo, merchantAccNum, merchantAccName,
                     txnCurrency, settleCurrency, createdBy,
                     fileType, fieldDelimiter, hasHeader, dateFormat, fieldMappings);
+
+            try {
+                String creatorUserId = getAuthenticatedUserId();
+                auditLogService.logUserActivity("CREATE_MERCHANT", creatorUserId, created.getMerchantId(),
+                        "Created merchant '" + created.getMerchantId() + "'",
+                        "SUCCESS", request.getRemoteAddr());
+            } catch (Exception ignored) {
+                // audit logging must never break the main flow
+            }
 
             return ResponseEntity.ok(created);
         } catch (RuntimeException e) {
@@ -136,7 +161,7 @@ public class MerchantController {
      */
     @PutMapping("/{merchantId}")
     public ResponseEntity<?> updateMerchant(@PathVariable String merchantId,
-            @RequestBody Map<String, Object> payload) {
+            @RequestBody Map<String, Object> payload, HttpServletRequest request) {
         try {
             MerchantInfo updates = new MerchantInfo();
             updates.setName((String) payload.get("name"));
@@ -149,6 +174,14 @@ public class MerchantController {
                 updates.setPassword((String) payload.get("password"));
             }
             MerchantInfo updated = merchantService.updateMerchant(merchantId, updates);
+            try {
+                String editorUserId = getAuthenticatedUserId();
+                auditLogService.logUserActivity("EDIT_MERCHANT", editorUserId, merchantId,
+                        "Edited merchant '" + merchantId + "'",
+                        "SUCCESS", request.getRemoteAddr());
+            } catch (Exception ignored) {
+                // audit logging must never break the main flow
+            }
             return ResponseEntity.ok(updated);
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().body(e.getMessage());
@@ -159,12 +192,25 @@ public class MerchantController {
      * DELETE /api/merchants/{merchantId} Deletes a merchant.
      */
     @DeleteMapping("/{merchantId}")
-    public ResponseEntity<?> deleteMerchant(@PathVariable String merchantId) {
+    public ResponseEntity<?> deleteMerchant(@PathVariable String merchantId, HttpServletRequest request) {
         try {
             merchantService.deleteMerchant(merchantId);
+            try {
+                String deleterUserId = getAuthenticatedUserId();
+                auditLogService.logUserActivity("DELETE_MERCHANT", deleterUserId, merchantId,
+                        "Deleted merchant '" + merchantId + "'",
+                        "SUCCESS", request.getRemoteAddr());
+            } catch (Exception ignored) {
+                // audit logging must never break the main flow
+            }
             return ResponseEntity.ok(Map.of("message", "Merchant deleted successfully"));
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
+    }
+
+    private String getAuthenticatedUserId() {
+        var auth = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
+        return auth != null ? String.valueOf(auth.getPrincipal()) : "unknown";
     }
 }

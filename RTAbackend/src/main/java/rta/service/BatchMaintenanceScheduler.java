@@ -46,6 +46,7 @@ public class BatchMaintenanceScheduler {
     private final RtaAuthorizationBatchRepository authBatchRepository;
     private final RtaIncomingBatchFileRepository incomingFileRepository;
     private final RtaBatchRepository batchRepository;
+    private final AuditLogService auditLogService;
 
     /**
      * Epoch millis of the last completed batch run
@@ -55,11 +56,13 @@ public class BatchMaintenanceScheduler {
     public BatchMaintenanceScheduler(RtaTransactionRepository transactionRepository,
             RtaAuthorizationBatchRepository authBatchRepository,
             RtaIncomingBatchFileRepository incomingFileRepository,
-            RtaBatchRepository batchRepository) {
+            RtaBatchRepository batchRepository,
+            AuditLogService auditLogService) {
         this.transactionRepository = transactionRepository;
         this.authBatchRepository = authBatchRepository;
         this.incomingFileRepository = incomingFileRepository;
         this.batchRepository = batchRepository;
+        this.auditLogService = auditLogService;
     }
 
     /**
@@ -159,6 +162,14 @@ public class BatchMaintenanceScheduler {
 
         log.info("[BatchMaintenance] Batch {} created — {} file(s), {} total records ({} success, {} fail)",
                 savedBatch.getBatchId(), eligibleFiles.size(), totalCount, totalSuccess, totalFail);
+
+        // Audit log: system activity for run batch
+        auditLogService.logSystemActivity("RUN_BATCH",
+                String.valueOf(savedBatch.getBatchId()),
+                "Batch scheduler created batch #" + savedBatch.getBatchId()
+                + " with " + eligibleFiles.size() + " file(s), "
+                + totalCount + " records (" + totalSuccess + " success, " + totalFail + " fail)",
+                "SUCCESS");
     }
 
     /**

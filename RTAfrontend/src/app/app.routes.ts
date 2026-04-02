@@ -17,6 +17,7 @@ import { UserManagementComponent } from './user/user-management/user-management.
 import { MerchantMaintenanceComponent } from './merchant/merchant-maintenance/merchant-maintenance.component';
 import { RecurringListComponent } from './recurring/recurring-list/recurring-list.component';
 import { RecurringDetailComponent } from './recurring/recurring-detail/recurring-detail.component';
+import { AuditLogComponent } from './audit-log/audit-log.component';
 import { authGuard } from './services/auth.guard';
 import { superAdminGuard, permissionGuard } from './services/role.guard';
 
@@ -40,5 +41,6 @@ export const routes: Routes = [
   { path: 'add-merchant', component: AddMerchantComponent, canActivate: [authGuard, permissionGuard('MERCHANT_CREATE')] },
   { path: 'edit-merchant/:merchantId', component: EditMerchantComponent, canActivate: [authGuard, permissionGuard('MERCHANT_EDIT')] },
   { path: 'view-merchant/:merchantId', component: ViewMerchantComponent, canActivate: [authGuard] },
+  { path: 'audit-log', component: AuditLogComponent, canActivate: [authGuard] },
   { path: '', redirectTo: '/login', pathMatch: 'full' },
 ];

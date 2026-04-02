@@ -41,7 +41,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             String token = authHeader.substring(7);
 
             if (jwtUtil.isTokenValid(token)) {
-                String username = jwtUtil.getUsername(token);
                 String role = jwtUtil.getRole(token);
                 List<String> permissions = jwtUtil.getPermissions(token);
 
@@ -54,8 +53,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     }
                 }
 
+                String userId = jwtUtil.getUserId(token);
+
+                // Use userId as principal so controllers can get it via getPrincipal().
+                // The username is not needed downstream — only userId and authorities are.
                 UsernamePasswordAuthenticationToken authentication
-                        = new UsernamePasswordAuthenticationToken(username, null, authorities);
+                        = new UsernamePasswordAuthenticationToken(userId, null, authorities);
 
                 SecurityContextHolder.getContext().setAuthentication(authentication);
             }

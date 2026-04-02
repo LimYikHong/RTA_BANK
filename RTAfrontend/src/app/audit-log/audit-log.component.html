@@ -1,0 +1,198 @@
+<div class="page-container" [class.drawer-open]="drawerOpen">
+    <!-- Open sidebar button (top-left, visible when closed) -->
+    <button class="sidebar-open-btn" (click)="toggleDrawer()">
+        <span></span><span></span><span></span>
+    </button>
+
+    <!-- Sidebar -->
+    <aside class="sidebar" [class.open]="drawerOpen">
+        <button class="sidebar-toggle" (click)="toggleDrawer()">
+            <span></span><span></span><span></span>
+        </button>
+        <h2>RTA Upload</h2>
+        <ul>
+            <li routerLink="/batch-list" routerLinkActive="active"><b>Upload Batch File</b></li>
+            <li routerLink="/incoming-batch" routerLinkActive="active"><b>Incoming Batch File</b></li>
+            <li routerLink="/batch-file-maintenance" routerLinkActive="active"><b>Batch File Maintenance</b></li>
+            <li routerLink="/batch-maintenance" routerLinkActive="active"><b>Batch Maintenance</b></li>
+            <li routerLink="/recurring-list" routerLinkActive="active"><b>Track Transaction</b></li>
+            <li routerLink="/profile" routerLinkActive="active"><b>View Profile</b></li>
+            <li routerLink="/users" routerLinkActive="active"><b>User Management</b></li>
+            <li routerLink="/merchant-maintenance" routerLinkActive="active"><b>Merchant Maintenance</b></li>
+            <li routerLink="/audit-log" routerLinkActive="active"><b>Audit Log</b></li>
+        </ul>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <app-top-bar></app-top-bar>
+
+        <!-- Page Header -->
+        <div class="page-header">
+            <h1>Audit Log</h1>
+            <p class="subtitle">Track user and system activities across the platform</p>
+        </div>
+
+        <!-- ============================== -->
+        <!-- USER ACTIVITY LOG              -->
+        <!-- ============================== -->
+        <div class="log-section">
+            <div class="section-header">
+                <h2>User Activity Log</h2>
+                <button class="btn btn-refresh" (click)="loadUserLogs()">Refresh</button>
+            </div>
+
+            <!-- Search -->
+            <div class="search-section">
+                <div class="search-box">
+                    <input type="text" class="search-input" [(ngModel)]="userSearchKeyword"
+                        (keyup.enter)="onUserSearch()"
+                        placeholder="Search by action, user ID, status..." />
+                    <button class="btn btn-search" (click)="onUserSearch()">Search</button>
+                    <button class="btn btn-clear" *ngIf="userSearchKeyword" (click)="clearUserSearch()">Clear</button>
+                </div>
+                <p class="result-count">Showing {{ filteredUserLogs.length }} record(s)</p>
+            </div>
+
+            <!-- Loading -->
+            <div class="loading-text" *ngIf="userLoading">Loading user activity logs...</div>
+
+            <!-- Table -->
+            <div class="table-card" *ngIf="!userLoading">
+                <table *ngIf="filteredUserLogs.length > 0; else noUserLogs">
+                    <thead>
+                        <tr>
+                            <th class="th-sort" (click)="userSortBy('createdAt')"
+                                [attr.data-sort]="userSortKey==='createdAt' ? userSortDir : ''">Date &amp; Time</th>
+                            <th class="th-sort" (click)="userSortBy('description')"
+                                [attr.data-sort]="userSortKey==='description' ? userSortDir : ''">Action</th>
+                            <th class="th-sort" (click)="userSortBy('userId')"
+                                [attr.data-sort]="userSortKey==='userId' ? userSortDir : ''">User ID</th>
+                            <th class="th-sort" (click)="userSortBy('status')"
+                                [attr.data-sort]="userSortKey==='status' ? userSortDir : ''">Status</th>
+                            <th class="th-sort" (click)="userSortBy('ipAddress')"
+                                [attr.data-sort]="userSortKey==='ipAddress' ? userSortDir : ''">IP Address</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr *ngFor="let log of sortedUserLogs">
+                            <td>{{ log.createdAt | date: 'medium' }}</td>
+                            <td>{{ log.description || log.action }}</td>
+                            <td>{{ log.userId || '-' }}</td>
+                            <td>
+                                <span class="status-badge" [ngClass]="getStatusClass(log.status)">
+                                    {{ log.status || '-' }}
+                                </span>
+                            </td>
+                            <td>{{ log.ipAddress || '-' }}</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <!-- Pagination -->
+                <div class="pagination-section" *ngIf="userTotalElements > 0">
+                    <div class="pagination-info">
+                        <div class="page-size-selector">
+                            <label>Rows:</label>
+                            <select [(ngModel)]="userPageSize" (change)="onUserPageSizeChange()" class="filter-select">
+                                <option *ngFor="let size of pageSizeOptions" [ngValue]="size">{{ size }}</option>
+                            </select>
+                        </div>
+                        <span>Showing {{ userStartRecord }}–{{ userEndRecord }} of {{ userTotalElements }}</span>
+                    </div>
+                    <div class="pagination-controls">
+                        <button class="page-btn" (click)="goToUserPage(1)" [disabled]="userCurrentPage === 1">«</button>
+                        <button class="page-btn" (click)="goToUserPage(userCurrentPage - 1)" [disabled]="userCurrentPage === 1">‹</button>
+                        <button *ngFor="let p of userVisiblePages" class="page-btn" [class.active]="p === userCurrentPage" (click)="goToUserPage(p)">{{ p }}</button>
+                        <button class="page-btn" (click)="goToUserPage(userCurrentPage + 1)" [disabled]="userCurrentPage === userTotalPages">›</button>
+                        <button class="page-btn" (click)="goToUserPage(userTotalPages)" [disabled]="userCurrentPage === userTotalPages">»</button>
+                    </div>
+                </div>
+
+                <ng-template #noUserLogs>
+                    <div class="empty-state">
+                        <p>No user activity logs found.</p>
+                    </div>
+                </ng-template>
+            </div>
+        </div>
+
+        <!-- ============================== -->
+        <!-- SYSTEM ACTIVITY LOG            -->
+        <!-- ============================== -->
+        <div class="log-section">
+            <div class="section-header">
+                <h2>System Activity Log</h2>
+                <button class="btn btn-refresh" (click)="loadSystemLogs()">Refresh</button>
+            </div>
+
+            <!-- Search -->
+            <div class="search-section">
+                <div class="search-box">
+                    <input type="text" class="search-input" [(ngModel)]="systemSearchKeyword"
+                        (keyup.enter)="onSystemSearch()"
+                        placeholder="Search by action, status..." />
+                    <button class="btn btn-search" (click)="onSystemSearch()">Search</button>
+                    <button class="btn btn-clear" *ngIf="systemSearchKeyword" (click)="clearSystemSearch()">Clear</button>
+                </div>
+                <p class="result-count">Showing {{ filteredSystemLogs.length }} record(s)</p>
+            </div>
+
+            <!-- Loading -->
+            <div class="loading-text" *ngIf="systemLoading">Loading system activity logs...</div>
+
+            <!-- Table -->
+            <div class="table-card" *ngIf="!systemLoading">
+                <table *ngIf="filteredSystemLogs.length > 0; else noSystemLogs">
+                    <thead>
+                        <tr>
+                            <th class="th-sort" (click)="systemSortBy('createdAt')"
+                                [attr.data-sort]="systemSortKey==='createdAt' ? systemSortDir : ''">Date &amp; Time</th>
+                            <th class="th-sort" (click)="systemSortBy('description')"
+                                [attr.data-sort]="systemSortKey==='description' ? systemSortDir : ''">Action</th>
+                            <th class="th-sort" (click)="systemSortBy('status')"
+                                [attr.data-sort]="systemSortKey==='status' ? systemSortDir : ''">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr *ngFor="let log of sortedSystemLogs">
+                            <td>{{ log.createdAt | date: 'medium' }}</td>
+                            <td>{{ log.description || log.action }}</td>
+                            <td>
+                                <span class="status-badge" [ngClass]="getStatusClass(log.status)">
+                                    {{ log.status || '-' }}
+                                </span>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <!-- Pagination -->
+                <div class="pagination-section" *ngIf="systemTotalElements > 0">
+                    <div class="pagination-info">
+                        <div class="page-size-selector">
+                            <label>Rows:</label>
+                            <select [(ngModel)]="systemPageSize" (change)="onSystemPageSizeChange()" class="filter-select">
+                                <option *ngFor="let size of pageSizeOptions" [ngValue]="size">{{ size }}</option>
+                            </select>
+                        </div>
+                        <span>Showing {{ systemStartRecord }}–{{ systemEndRecord }} of {{ systemTotalElements }}</span>
+                    </div>
+                    <div class="pagination-controls">
+                        <button class="page-btn" (click)="goToSystemPage(1)" [disabled]="systemCurrentPage === 1">«</button>
+                        <button class="page-btn" (click)="goToSystemPage(systemCurrentPage - 1)" [disabled]="systemCurrentPage === 1">‹</button>
+                        <button *ngFor="let p of systemVisiblePages" class="page-btn" [class.active]="p === systemCurrentPage" (click)="goToSystemPage(p)">{{ p }}</button>
+                        <button class="page-btn" (click)="goToSystemPage(systemCurrentPage + 1)" [disabled]="systemCurrentPage === systemTotalPages">›</button>
+                        <button class="page-btn" (click)="goToSystemPage(systemTotalPages)" [disabled]="systemCurrentPage === systemTotalPages">»</button>
+                    </div>
+                </div>
+
+                <ng-template #noSystemLogs>
+                    <div class="empty-state">
+                        <p>No system activity logs found.</p>
+                    </div>
+                </ng-template>
+            </div>
+        </div>
+    </main>
+</div>

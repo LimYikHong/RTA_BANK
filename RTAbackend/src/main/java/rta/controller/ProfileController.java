@@ -18,19 +18,26 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
-import lombok.RequiredArgsConstructor;
+import jakarta.servlet.http.HttpServletRequest;
 import rta.model.UserProfile;
 import rta.repository.ProfileRepository;
+import rta.service.AuditLogService;
 import rta.service.ProfileService;
 
 @RestController
 @RequestMapping("/api/profile")
-@RequiredArgsConstructor
 @CrossOrigin(origins = {"http://localhost:4200", "http://localhost:8088"})
 public class ProfileController {
 
     private final ProfileService profileService;
     private final ProfileRepository profileRepository;
+    private final AuditLogService auditLogService;
+
+    public ProfileController(ProfileService profileService, ProfileRepository profileRepository, AuditLogService auditLogService) {
+        this.profileService = profileService;
+        this.profileRepository = profileRepository;
+        this.auditLogService = auditLogService;
+    }
 
     /**
      * POST /api/profile/register - Creates a new user profile (demo
@@ -73,8 +80,17 @@ public class ProfileController {
     @PutMapping("/{userId}")
     public ResponseEntity<UserProfile> updateProfile(
             @PathVariable String userId,
-            @RequestBody UserProfile updatedProfile) {
+            @RequestBody UserProfile updatedProfile,
+            HttpServletRequest request) {
         UserProfile updated = profileService.updateProfile(userId, updatedProfile);
+        try {
+            String editorUserId = getAuthenticatedUserId();
+            auditLogService.logUserActivity("EDIT_USER", editorUserId, userId,
+                    "Edited profile of user '" + userId + "'", "SUCCESS",
+                    request.getRemoteAddr());
+        } catch (Exception ignored) {
+            // audit logging must never break the main flow
+        }
         return ResponseEntity.ok(updated);
     }
 
@@ -171,9 +187,18 @@ public class ProfileController {
      * POST /api/profile/users - Creates a new user with a role.
      */
     @PostMapping("/users")
-    public ResponseEntity<?> createUser(@RequestBody UserProfile user, @RequestParam String role) {
+    public ResponseEntity<?> createUser(@RequestBody UserProfile user, @RequestParam String role,
+            HttpServletRequest request) {
         try {
             UserProfile created = profileService.createUser(user, role);
+            try {
+                String creatorUserId = getAuthenticatedUserId();
+                auditLogService.logUserActivity("CREATE_USER", creatorUserId, created.getUserId(),
+                        "Created user '" + created.getUserId() + "' with role '" + role + "'",
+                        "SUCCESS", request.getRemoteAddr());
+            } catch (Exception ignored) {
+                // audit logging must never break the main flow
+            }
             return ResponseEntity.ok(created);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(e.getMessage());
@@ -185,9 +210,17 @@ public class ProfileController {
      * assignments.
      */
     @DeleteMapping("/users/{userId}")
-    public ResponseEntity<?> deleteUser(@PathVariable String userId) {
+    public ResponseEntity<?> deleteUser(@PathVariable String userId, HttpServletRequest request) {
         try {
             profileService.deleteUser(userId);
+            try {
+                String deleterUserId = getAuthenticatedUserId();
+                auditLogService.logUserActivity("DELETE_USER", deleterUserId, userId,
+                        "Deleted user '" + userId + "'", "SUCCESS",
+                        request.getRemoteAddr());
+            } catch (Exception ignored) {
+                // audit logging must never break the main flow
+            }
             return ResponseEntity.ok(Map.of("message", "User deleted successfully"));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(e.getMessage());
@@ -238,6 +271,14 @@ public class ProfileController {
             return map;
         }).collect(Collectors.toList());
         return ResponseEntity.ok(result);
+    }
+
+    /**
+     * Helper: extract authenticated userId from the Security context principal.
+     */
+    private String getAuthenticatedUserId() {
+        var auth = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
+        return auth != null ? String.valueOf(auth.getPrincipal()) : "unknown";
     }
 
 }
