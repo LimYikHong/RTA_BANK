@@ -41,6 +41,11 @@ export class BatchListComponent implements OnInit {
   selectedMerchantId = '';
   isLoadingMerchants = false;
 
+  // Error modal
+  showErrorModal = false;
+  errorTitle = '';
+  errorMessage = '';
+
   // Pagination
   currentPage = 1;
   pageSize = 10;
@@ -214,10 +219,32 @@ export class BatchListComponent implements OnInit {
         },
         error: (err) => {
           console.error('Upload failed:', err);
-          // Reload to get the latest state (hash record may still have been saved)
+          // Remove the temp "UPLOADING" row immediately
+          this.files = this.files.filter(f => f.status !== 'UPLOADING');
+          // Show error modal with backend rejection message
+          const errorData = err.error || {};
+          this.errorTitle = errorData.error || 'Upload Failed';
+          const detail = errorData.detail || err.message || 'An unexpected error occurred during upload.';
+          const dupInfo = errorData.duplicateFileInfo;
+          if (dupInfo) {
+            this.errorMessage = detail +
+              (dupInfo.merchantId && dupInfo.merchantId !== merchantId
+                ? '\n\nOriginal upload: Merchant ' + dupInfo.merchantId + ' | Status: ' + dupInfo.status + ' | Uploaded at: ' + dupInfo.uploadedAt
+                : '\n\nStatus: ' + dupInfo.status + ' | Uploaded at: ' + dupInfo.uploadedAt);
+          } else {
+            this.errorMessage = detail;
+          }
+          this.showErrorModal = true;
+          // Also reload to ensure list is in sync
           this.loadFiles();
         },
       });
+  }
+
+  closeErrorModal(): void {
+    this.showErrorModal = false;
+    this.errorTitle = '';
+    this.errorMessage = '';
   }
 
   // Navigate to batch file detail page (only for files that passed validation)

@@ -47,8 +47,8 @@ import rta.repository.RtaBatchRepository;
 import rta.repository.RtaIncomingBatchFileRepository;
 import rta.repository.RtaTransactionRepository;
 import rta.repository.RtaUploadedFileHashRepository;
-import rta.service.FileProfileService;
 import rta.service.FileDecryptionService;
+import rta.service.FileProfileService;
 import rta.service.MinioStorageService;
 
 /**
@@ -162,7 +162,34 @@ public class IncomingBatchController {
             // Generate SHA-256 hash of file content to detect duplicates
             String fileHash = generateSHA256Hash(rawFileBytes);
 
-            // Check for duplicate file
+            // Statuses that indicate the file has valid/processed transactions — reject re-upload globally
+            java.util.Set<String> BLOCKING_STATUSES = java.util.Set.of(
+                    "PARTIAL", "PASS", "SUCCESS", "VALIDATED", "PARTIAL_SUCCESS", "PROCESSED");
+
+            // Check for duplicate file across ALL merchants first
+            List<rta.entity.RtaUploadedFileHash> allHashRecords = uploadedFileHashRepository.findByFileHash(fileHash);
+            for (rta.entity.RtaUploadedFileHash anyRecord : allHashRecords) {
+                String anyStatus = anyRecord.getStatus() != null ? anyRecord.getStatus() : "";
+                if (BLOCKING_STATUSES.contains(anyStatus)) {
+                    // Same file content was already accepted (with valid transactions) by some merchant — reject
+                    return ResponseEntity.badRequest().body(Map.of(
+                            "error", "Duplicate file detected",
+                            "detail", "This file has already been uploaded and accepted"
+                            + (anyRecord.getMerchantId().equals(merchantId) ? "."
+                            : " by another merchant (" + anyRecord.getMerchantId() + ")."),
+                            "duplicateFileInfo", Map.of(
+                                    "id", anyRecord.getId(),
+                                    "originalFilename", anyRecord.getOriginalFilename() != null ? anyRecord.getOriginalFilename() : "",
+                                    "merchantId", anyRecord.getMerchantId(),
+                                    "uploadedAt", anyRecord.getUploadedAt() != null ? anyRecord.getUploadedAt().toString() : "N/A",
+                                    "status", anyStatus,
+                                    "uploadCount", anyRecord.getUploadCount() != null ? anyRecord.getUploadCount() : 1
+                            )
+                    ));
+                }
+            }
+
+            // Check for same-merchant duplicate (handles WRONG_FILE_FORMAT re-upload and upload limit)
             Optional<RtaUploadedFileHash> existingHash = uploadedFileHashRepository
                     .findByMerchantIdAndFileHash(merchantId, fileHash);
             if (existingHash.isPresent()) {
