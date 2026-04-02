@@ -1,0 +1,179 @@
+// Shared styles from _global-components.scss
+
+// Profile header with avatar (own profile mode)
+.profile-header {
+  display: flex;
+  align-items: center;
+  background: white;
+  padding: 30px;
+  border-radius: 10px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  margin-bottom: 30px;
+}
+
+.header-info {
+  display: flex;
+  flex-direction: column;
+
+  h1 {
+    margin: 0 0 4px 0;
+    font-size: 26px;
+    font-weight: 700;
+    color: #1e293b;
+  }
+
+  .email {
+    margin: 0 0 2px 0;
+    color: #64748b;
+    font-size: 14px;
+  }
+}
+
+.username-display {
+  margin: 0 0 12px 0;
+  color: #94a3b8;
+  font-size: 13px;
+  font-style: italic;
+}
+
+.avatar {
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  background-color: #3b82f6;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 36px;
+  font-weight: bold;
+  margin-right: 25px;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+
+  &:hover .edit-overlay {
+    opacity: 1;
+  }
+}
+
+.edit-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.profile-photo {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.edit-btn {
+  background-color: #3b82f6;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 5px;
+  cursor: pointer;
+
+  &:hover {
+    background-color: #2563eb;
+  }
+}
+
+// View user detail card
+.detail-card {
+  background: white;
+  padding: 30px;
+  border-radius: 10px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  margin-bottom: 24px;
+
+  h2 {
+    font-size: 18px;
+    font-weight: 600;
+    color: #334155;
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid #e2e8f0;
+  }
+}
+
+.details-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 15px 50px;
+}
+
+.detail-item {
+  label {
+    font-weight: bold;
+    color: #334155;
+    font-size: 13px;
+  }
+
+  span {
+    display: block;
+    margin-top: 2px;
+    color: #1e293b;
+    font-size: 15px;
+  }
+}
+
+// Role badges (same as user-management)
+.role-badge {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+}
+
+.role-super-admin {
+  background-color: #ede9fe;
+  color: #5b21b6;
+}
+
+.role-admin {
+  background-color: #dbeafe;
+  color: #1e40af;
+}
+
+.role-default {
+  background-color: #f1f5f9;
+  color: #475569;
+}
+
+// Status badges
+.status-active {
+  background-color: #dcfce7;
+  color: #166534;
+}
+
+.status-inactive {
+  background-color: #fef3c7;
+  color: #92400e;
+}
+
+.status-suspended {
+  background-color: #fee2e2;
+  color: #991b1b;
+}
+
+@media (max-width: 768px) {
+  .details-grid {
+    grid-template-columns: 1fr;
+  }
+}

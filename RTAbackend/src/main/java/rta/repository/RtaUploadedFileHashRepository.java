@@ -30,4 +30,10 @@ public interface RtaUploadedFileHashRepository extends JpaRepository<RtaUploaded
      * Find uploaded file hash by original filename and merchant.
      */
     Optional<RtaUploadedFileHash> findByMerchantIdAndOriginalFilename(String merchantId, String originalFilename);
+
+    /**
+     * List all upload hash records ordered by upload time descending. Used by
+     * the Upload Batch File page to show full upload history.
+     */
+    List<RtaUploadedFileHash> findAllByOrderByUploadedAtDesc();
 }

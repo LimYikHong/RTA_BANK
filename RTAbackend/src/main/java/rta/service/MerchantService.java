@@ -46,13 +46,13 @@ public class MerchantService {
             String dateFormat,
             List<Map<String, Object>> fieldMappings) {
 
-        // Validate merchantId uniqueness
-        if (merchantInfoRepository.findByMerchantId(merchantInfo.getMerchantId()).isPresent()) {
+        // Validate merchantId uniqueness (only among active merchants)
+        if (merchantInfoRepository.findByMerchantIdAndDeletedAtIsNull(merchantInfo.getMerchantId()).isPresent()) {
             throw new RuntimeException("Merchant ID already exists: " + merchantInfo.getMerchantId());
         }
 
-        // Validate username uniqueness
-        if (merchantInfoRepository.findByUsername(merchantInfo.getUsername()).isPresent()) {
+        // Validate username uniqueness (only among active merchants)
+        if (merchantInfoRepository.findByUsernameAndDeletedAtIsNull(merchantInfo.getUsername()).isPresent()) {
             throw new RuntimeException("Username already exists: " + merchantInfo.getUsername());
         }
 
@@ -105,71 +105,72 @@ public class MerchantService {
     }
 
     /**
-     * Get all merchants.
+     * Get all active (non-deleted) merchants.
      */
     public List<MerchantInfo> getAllMerchants() {
-        return merchantInfoRepository.findAll();
+        return merchantInfoRepository.findAllActive();
     }
 
     /**
-     * Check if a merchantId already exists.
+     * Check if a merchantId already exists (active only).
      */
     public boolean merchantIdExists(String merchantId) {
-        return merchantInfoRepository.findByMerchantId(merchantId).isPresent();
+        return merchantInfoRepository.findByMerchantIdAndDeletedAtIsNull(merchantId).isPresent();
     }
 
     public boolean usernameExists(String username) {
-        return merchantInfoRepository.findByUsername(username).isPresent();
+        return merchantInfoRepository.findByUsernameAndDeletedAtIsNull(username).isPresent();
     }
 
     /**
-     * Get a single merchant by merchantId.
+     * Get a single active merchant by merchantId.
      */
     public Optional<MerchantInfo> getMerchantById(String merchantId) {
-        return merchantInfoRepository.findByMerchantId(merchantId);
+        return merchantInfoRepository.findByMerchantIdAndDeletedAtIsNull(merchantId);
     }
 
     /**
      * Update an existing merchant's basic info.
      */
     @Transactional
-    public MerchantInfo updateMerchant(String merchantId, MerchantInfo updates) {
-        MerchantInfo existing = merchantInfoRepository.findByMerchantId(merchantId)
+    public MerchantInfo updateMerchant(String merchantId, MerchantInfo updated) {
+        MerchantInfo existing = merchantInfoRepository.findByMerchantIdAndDeletedAtIsNull(merchantId)
                 .orElseThrow(() -> new RuntimeException("Merchant not found: " + merchantId));
 
-        if (updates.getName() != null) {
-            existing.setName(updates.getName());
+        if (updated.getName() != null) {
+            existing.setName(updated.getName());
         }
-        if (updates.getEmail() != null) {
-            existing.setEmail(updates.getEmail());
+        if (updated.getEmail() != null) {
+            existing.setEmail(updated.getEmail());
         }
-        if (updates.getCompany() != null) {
-            existing.setCompany(updates.getCompany());
+        if (updated.getCompany() != null) {
+            existing.setCompany(updated.getCompany());
         }
-        if (updates.getContact() != null) {
-            existing.setContact(updates.getContact());
+        if (updated.getContact() != null) {
+            existing.setContact(updated.getContact());
         }
-        if (updates.getPhone() != null) {
-            existing.setPhone(updates.getPhone());
+        if (updated.getPhone() != null) {
+            existing.setPhone(updated.getPhone());
         }
-        if (updates.getAddress() != null) {
-            existing.setAddress(updates.getAddress());
+        if (updated.getAddress() != null) {
+            existing.setAddress(updated.getAddress());
         }
-        if (updates.getPassword() != null && !updates.getPassword().isBlank()) {
-            existing.setPassword(updates.getPassword());
+        if (updated.getPassword() != null && !updated.getPassword().isBlank()) {
+            existing.setPassword(updated.getPassword());
         }
         existing.setLastModifiedAt(java.time.LocalDateTime.now());
         return merchantInfoRepository.save(existing);
     }
 
     /**
-     * Delete a merchant by merchantId.
+     * Soft-delete a merchant by merchantId. Sets deleted_at timestamp.
      */
     @Transactional
     public void deleteMerchant(String merchantId) {
-        MerchantInfo existing = merchantInfoRepository.findByMerchantId(merchantId)
+        MerchantInfo existing = merchantInfoRepository.findByMerchantIdAndDeletedAtIsNull(merchantId)
                 .orElseThrow(() -> new RuntimeException("Merchant not found: " + merchantId));
-        merchantInfoRepository.delete(existing);
+        existing.setDeletedAt(java.time.LocalDateTime.now());
+        merchantInfoRepository.save(existing);
     }
 
     /**

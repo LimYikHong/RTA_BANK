@@ -30,6 +30,9 @@ export interface UserProfile {
   lastModifiedBy?: string;
   deletedAt?: string;
   isTwoFactorEnabled?: boolean;
+  token?: string;
+  role?: string;
+  permissions?: string[];
 }
 
 export interface UserListItem {
@@ -193,8 +196,24 @@ export class ProfileService {
     );
   }
 
+  deleteUser(userId: string): Observable<any> {
+    return this.http.delete<any>(`${this.apiUrl}/users/${encodeURIComponent(userId)}`);
+  }
+
+  getUserRole(userId: string): Observable<{ role: string }> {
+    return this.http.get<{ role: string }>(`${this.apiUrl}/${encodeURIComponent(userId)}/role`);
+  }
+
+  updateUserRole(userId: string, role: string): Observable<any> {
+    return this.http.put<any>(`${this.apiUrl}/${encodeURIComponent(userId)}/role`, { role });
+  }
+
   createMerchant(payload: MerchantInfoPayload): Observable<any> {
     return this.http.post<any>(`${this.merchantApiUrl}`, payload);
+  }
+
+  getAllMerchants(): Observable<any[]> {
+    return this.http.get<any[]>(`${this.merchantApiUrl}`);
   }
 
   getMerchant(merchantId: string): Observable<any> {

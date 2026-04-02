@@ -95,9 +95,10 @@ public class BatchMaintenanceScheduler {
     }
 
     /**
-     * Finds incoming files with successCount > 0 and no batchId, creates an
-     * RtaBatch for each, and links the file and its transactions to the batch.
-     * Files with 0 successful records are excluded — no batch ID is wasted.
+     * Finds all incoming files with successCount > 0 and no batchId, creates a
+     * SINGLE RtaBatch for the entire run, and links all eligible files and
+     * their transactions to that batch. All files uploaded within the time
+     * period are grouped together in one batch run.
      */
     private void assignBatchIds() {
         List<RtaIncomingBatchFile> eligibleFiles = incomingFileRepository.findEligibleForBatch();
@@ -109,21 +110,36 @@ public class BatchMaintenanceScheduler {
 
         log.info("[BatchMaintenance] Found {} eligible file(s) for batch assignment.", eligibleFiles.size());
 
-        for (RtaIncomingBatchFile file : eligibleFiles) {
-            // Create RtaBatch record
-            RtaBatch batch = new RtaBatch();
-            batch.setFileName(file.getStoredFilename());
-            batch.setOriginalFileName(file.getOriginalFilename());
-            batch.setMerchantId(file.getMerchantId());
-            batch.setStatus(file.getFileStatus());
-            batch.setCreatedBy(file.getCreateBy() != null ? file.getCreateBy() : "SYSTEM");
-            batch.setCreatedAt(LocalDateTime.now());
-            batch.setTotalCount(file.getTotalRecordCount());
-            batch.setTotalSuccessCount(file.getSuccessCount());
-            batch.setTotalFailCount(file.getFailCount());
-            RtaBatch savedBatch = batchRepository.save(batch);
+        // Aggregate totals across all eligible files
+        int totalCount = 0;
+        int totalSuccess = 0;
+        int totalFail = 0;
+        for (RtaIncomingBatchFile f : eligibleFiles) {
+            totalCount += (f.getTotalRecordCount() != null ? f.getTotalRecordCount() : 0);
+            totalSuccess += (f.getSuccessCount() != null ? f.getSuccessCount() : 0);
+            totalFail += (f.getFailCount() != null ? f.getFailCount() : 0);
+        }
 
-            // Assign the generated batch_id from rta_batch to the incoming file
+        // Build a batch reference: BATCH-yyyyMMddHHmmss
+        String batchRef = "BATCH-" + LocalDateTime.now().format(REF_FORMAT);
+
+        // Create ONE RtaBatch record for all files in this run
+        RtaBatch batch = new RtaBatch();
+        batch.setFileName(batchRef);
+        batch.setOriginalFileName(eligibleFiles.size() + " file(s)");
+        batch.setMerchantId(eligibleFiles.size() == 1
+                ? eligibleFiles.get(0).getMerchantId()
+                : "MULTIPLE");
+        batch.setStatus("BATCHED");
+        batch.setCreatedBy("SYSTEM");
+        batch.setCreatedAt(LocalDateTime.now());
+        batch.setTotalCount(totalCount);
+        batch.setTotalSuccessCount(totalSuccess);
+        batch.setTotalFailCount(totalFail);
+        RtaBatch savedBatch = batchRepository.save(batch);
+
+        // Assign the single batch to every eligible file and their transactions
+        for (RtaIncomingBatchFile file : eligibleFiles) {
             file.setBatchId(savedBatch.getBatchId());
             file.setBatchStatus("BATCHED");
             incomingFileRepository.save(file);
@@ -136,10 +152,13 @@ public class BatchMaintenanceScheduler {
             }
             transactionRepository.saveAll(transactions);
 
-            log.info("[BatchMaintenance] Batch {} created for file '{}' (merchant: {}, {} records)",
-                    savedBatch.getBatchId(), file.getOriginalFilename(),
-                    file.getMerchantId(), file.getSuccessCount());
+            log.info("[BatchMaintenance] File '{}' (merchant: {}, {} records) assigned to batch {}",
+                    file.getOriginalFilename(), file.getMerchantId(),
+                    file.getSuccessCount(), savedBatch.getBatchId());
         }
+
+        log.info("[BatchMaintenance] Batch {} created — {} file(s), {} total records ({} success, {} fail)",
+                savedBatch.getBatchId(), eligibleFiles.size(), totalCount, totalSuccess, totalFail);
     }
 
     /**

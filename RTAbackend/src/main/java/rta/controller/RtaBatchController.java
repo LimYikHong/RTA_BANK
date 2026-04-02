@@ -61,9 +61,9 @@ public class RtaBatchController {
     public List<RtaBatch> getAllBatches(
             @RequestParam(value = "merchantId", required = false) String merchantId) {
         if (merchantId != null && !merchantId.isBlank()) {
-            return batchRepository.findByMerchantIdOrderByCreatedAtDesc(merchantId);
+            return batchRepository.findByMerchantIdAndDeletedAtIsNullOrderByCreatedAtDesc(merchantId);
         }
-        return batchRepository.findAll();
+        return batchRepository.findAllActive();
     }
 
     /**
@@ -220,32 +220,15 @@ public class RtaBatchController {
     }
 
     /**
-     * DELETE /api/batches/{id} - Deletes related transactions, the file on disk
-     * (if present), and the batch record itself. - Returns success JSON or an
-     * error message if file deletion fails after DB delete.
+     * DELETE /api/batches/{id} - Soft-deletes the batch by setting deleted_at.
+     * Related transactions and files are preserved.
      */
     @DeleteMapping("/{id}")
     public ResponseEntity<?> deleteBatch(@PathVariable Long id) {
         return batchRepository.findById(id).map(batch -> {
-            try {
-                List<RtaTransaction> transactions = transactionRepository.findByBatchBatchId(id);
-                if (!transactions.isEmpty()) {
-                    transactionRepository.deleteAll(transactions);
-                }
-
-                // Delete file from MinIO
-                String objectName = UPLOAD_DIR + "/" + batch.getFileName();
-                if (minioStorageService.fileExists(objectName)) {
-                    minioStorageService.deleteFile(objectName);
-                }
-
-                batchRepository.delete(batch);
-
-                return ResponseEntity.ok(Map.of("message", "Batch and related records deleted successfully"));
-            } catch (Exception e) {
-                return ResponseEntity.internalServerError()
-                        .body(Map.of("error", "Batch deleted from DB, but file removal failed"));
-            }
+            batch.setDeletedAt(LocalDateTime.now());
+            batchRepository.save(batch);
+            return ResponseEntity.ok(Map.of("message", "Batch deleted successfully"));
         }).orElse(ResponseEntity.notFound().build());
     }
 }

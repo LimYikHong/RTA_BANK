@@ -105,6 +105,14 @@ export class MerchantMaintenanceComponent implements OnInit, OnDestroy {
     private http: HttpClient
   ) {}
 
+  get isSuperAdmin(): boolean {
+    return this.authService.isSuperAdmin();
+  }
+
+  hasPermission(perm: string): boolean {
+    return this.authService.hasPermission(perm);
+  }
+
   ngOnInit(): void {
     this.loadMerchants();
 

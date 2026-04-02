@@ -27,6 +27,7 @@
   <main class="main-content">
     <div class="page-header">
       <h1>Upload Batch File</h1>
+      <p class="subtitle">Upload batch files for merchants. Files are validated automatically (duplicate check, format, content).</p>
     </div>
 
     <div class="toolbar">
@@ -37,30 +38,43 @@
         (change)="onFileSelected($event)"
       />
       <button class="btn btn-primary" (click)="uploadBatch()">Upload</button>
+      <button class="btn btn-refresh" (click)="loadFiles()">Refresh</button>
     </div>
 
     <div class="table-wrapper">
       <table class="data-table">
         <thead>
           <tr>
-            <th class="th-sort" (click)="sortBy('fileName')" [attr.data-sort]="sortKey==='fileName' ? sortDir : ''">File Name</th>
+            <th class="th-sort" (click)="sortBy('id')" [attr.data-sort]="sortKey==='id' ? sortDir : ''">ID</th>
+            <th class="th-sort" (click)="sortBy('originalFilename')" [attr.data-sort]="sortKey==='originalFilename' ? sortDir : ''">Original File Name</th>
+            <th class="th-sort" (click)="sortBy('merchantId')" [attr.data-sort]="sortKey==='merchantId' ? sortDir : ''">Merchant</th>
             <th class="th-sort" (click)="sortBy('status')" [attr.data-sort]="sortKey==='status' ? sortDir : ''">Status</th>
-            <th class="th-sort" (click)="sortBy('merchantId')" [attr.data-sort]="sortKey==='merchantId' ? sortDir : ''">User</th>
-            <th class="th-sort" (click)="sortBy('createdBy')" [attr.data-sort]="sortKey==='createdBy' ? sortDir : ''">Created By</th>
-            <th class="th-sort" (click)="sortBy('createdAt')" [attr.data-sort]="sortKey==='createdAt' ? sortDir : ''">Created At</th>
-            <th>Action</th>
+            <th class="th-sort" (click)="sortBy('uploadCount')" [attr.data-sort]="sortKey==='uploadCount' ? sortDir : ''">Upload Count</th>
+            <th>Remark</th>
+            <th class="th-sort" (click)="sortBy('createdBy')" [attr.data-sort]="sortKey==='createdBy' ? sortDir : ''">Uploaded By</th>
+            <th class="th-sort" (click)="sortBy('uploadedAt')" [attr.data-sort]="sortKey==='uploadedAt' ? sortDir : ''">Uploaded At</th>
           </tr>
         </thead>
         <tbody>
-          <tr *ngFor="let batch of sortedBatches">
-            <td>{{ getDisplayFileName(batch.fileName) }}</td>
-            <td>{{ batch.status }}</td>
-            <td>{{ batch.merchantId }}</td>
-            <td>{{ batch.createdBy }}</td>
-            <td>{{ batch.createdAt | date : 'short' }}</td>
-            <td class="action-cell">
-              <button class="btn-action btn-view" (click)="viewBatch(batch.batchId!)" title="View"></button>
-              <button class="btn-action btn-delete" (click)="deleteBatch(batch.batchId!)" title="Delete"></button>
+          <tr *ngFor="let file of sortedFiles" [class.row-failed]="!isValidated(file.status)">
+            <td>{{ file.id }}</td>
+            <td class="filename-cell" [title]="file.originalFilename">{{ file.originalFilename }}</td>
+            <td>{{ file.merchantId }}</td>
+            <td>
+              <span class="status-badge" [ngClass]="getFileStatusClass(file.status)">
+                {{ file.status }}
+              </span>
+            </td>
+            <td class="count-cell">{{ file.uploadCount }}</td>
+            <td class="remark-cell" [title]="file.validationRemark || ''">{{ file.validationRemark || '—' }}</td>
+            <td>{{ file.createdBy }}</td>
+            <td>{{ file.uploadedAt | date : 'short' }}</td>
+          </tr>
+          <tr *ngIf="sortedFiles.length === 0">
+            <td colspan="8" class="no-data-cell">
+              <div class="no-data">
+                <p>No uploaded files found.</p>
+              </div>
             </td>
           </tr>
         </tbody>
@@ -88,3 +102,33 @@
     </div>
   </main>
 </div>
+
+<!-- Merchant Selection Modal -->
+<div class="modal-overlay" *ngIf="showMerchantModal" (click)="closeMerchantModal()">
+  <div class="modal-content" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h3>Select Merchant</h3>
+      <button class="modal-close" (click)="closeMerchantModal()">&times;</button>
+    </div>
+    <div class="modal-body">
+      <p class="modal-description">Please select the merchant this batch file is being uploaded for:</p>
+      <div class="form-group">
+        <label for="merchantSelect">Merchant</label>
+        <select id="merchantSelect" class="form-select" [(ngModel)]="selectedMerchantId">
+          <option value="" disabled>-- Select a Merchant --</option>
+          <option *ngFor="let m of merchants" [value]="m.merchantId">
+            {{ m.merchantId }} - {{ m.name }}
+          </option>
+        </select>
+      </div>
+      <div *ngIf="selectedFile" class="file-info">
+        <span class="file-label">File:</span> {{ selectedFile.name }}
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" (click)="closeMerchantModal()">Cancel</button>
+      <button class="btn btn-primary" (click)="confirmUpload()" [disabled]="!selectedMerchantId">Confirm Upload</button>
+    </div>
+  </div>
+</div>
+

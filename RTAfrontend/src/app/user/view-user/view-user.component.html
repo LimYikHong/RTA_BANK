@@ -1,5 +1,5 @@
-<div class="profile-container" [class.drawer-open]="drawerOpen">
-  <!-- Open sidebar button (top-left, visible when closed) -->
+<div class="page-container" [class.drawer-open]="drawerOpen">
+  <!-- Open sidebar button -->
   <button class="sidebar-open-btn" (click)="toggleDrawer()">
     <span></span><span></span><span></span>
   </button>
@@ -22,16 +22,21 @@
     </ul>
   </aside>
 
-  <!-- Profile Content -->
+  <!-- Main Content -->
   <app-top-bar></app-top-bar>
-  <main class="profile-content" *ngIf="profile; else loading">
-    <div class="profile-header">
+  <main class="main-content" *ngIf="!isLoading && profile; else loading">
+
+    <!-- Back button (only when viewing from user management) -->
+    <button class="back-btn" *ngIf="!isOwnProfile" routerLink="/users">← Back to Users</button>
+
+    <!-- Profile Header with Avatar (own profile) -->
+    <div class="profile-header" *ngIf="isOwnProfile">
       <div class="avatar" (click)="openPhotoUpload()">
         <img *ngIf="profile.profilePhotoUrl" [src]="'https://localhost:8086' + profile.profilePhotoUrl"
           alt="Profile Photo" class="profile-photo" />
         <span *ngIf="!profile.profilePhotoUrl">{{
           profile.name ? profile.name.charAt(0) : '?'
-          }}</span>
+        }}</span>
         <div class="edit-overlay">
           <i class="fas fa-pencil-alt"></i>
         </div>
@@ -41,12 +46,23 @@
         <h1>{{ profile.name }}</h1>
         <p class="email">{{ profile.email }}</p>
         <p class="username-display">{{'@'}}{{ profile.username }}</p>
-        <button class="edit-btn" routerLink="/edit-profile">Edit Profile</button>
+        <button class="edit-btn" *ngIf="hasPermission('USER_EDIT')" (click)="editUser()">Edit Profile</button>
+      </div>
+    </div>
+
+    <!-- Simple Header (viewing other user from management) -->
+    <div class="page-header" *ngIf="!isOwnProfile">
+      <div class="header-top">
+        <div>
+          <h1>{{ profile.name || 'User Details' }}</h1>
+          <p class="subtitle">{{'@'}}{{ profile.username }} · {{ profile.userId }}</p>
+        </div>
+        <button class="btn btn-primary" *ngIf="hasPermission('USER_EDIT')" (click)="editUser()">Edit User</button>
       </div>
     </div>
 
     <!-- Account Information -->
-    <div class="profile-details">
+    <div class="detail-card">
       <h2>Account Information</h2>
       <div class="details-grid">
         <div class="detail-item">
@@ -62,6 +78,10 @@
           <span>{{ profile.userId || '-' }}</span>
         </div>
         <div class="detail-item">
+          <label>Role</label>
+          <span class="role-badge" [ngClass]="getRoleBadgeClass(userRole)">{{ userRole }}</span>
+        </div>
+        <div class="detail-item">
           <label>Status</label>
           <span class="status-badge" [ngClass]="getStatusClass(profile.status)">{{ profile.status || '-' }}</span>
         </div>
@@ -69,15 +89,11 @@
           <label>Two-Factor Auth</label>
           <span>{{ profile.isTwoFactorEnabled ? 'Enabled' : 'Disabled' }}</span>
         </div>
-        <div class="detail-item">
-          <label>Account Enabled</label>
-          <span>{{ profile.isEnabled ? 'Yes' : 'No' }}</span>
-        </div>
       </div>
     </div>
 
     <!-- Personal Information -->
-    <div class="profile-details">
+    <div class="detail-card">
       <h2>Personal Information</h2>
       <div class="details-grid">
         <div class="detail-item">
@@ -108,7 +124,7 @@
     </div>
 
     <!-- Company Information -->
-    <div class="profile-details">
+    <div class="detail-card">
       <h2>Company Information</h2>
       <div class="details-grid">
         <div class="detail-item">
@@ -123,7 +139,7 @@
     </div>
 
     <!-- Audit Information -->
-    <div class="profile-details">
+    <div class="detail-card">
       <h2>Audit Information</h2>
       <div class="details-grid">
         <div class="detail-item">
@@ -156,6 +172,8 @@
 
   <!-- Loading -->
   <ng-template #loading>
-    <div class="loading-text">Loading profile...</div>
+    <main class="main-content">
+      <div class="loading-text">Loading user details...</div>
+    </main>
   </ng-template>
 </div>

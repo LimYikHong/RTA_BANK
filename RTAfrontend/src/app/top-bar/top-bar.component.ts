@@ -13,6 +13,7 @@ import { ProfileService } from '../services/profile.service';
 })
 export class TopBarComponent implements OnInit {
   userId: string | null = null;
+  userRole: string | null = null;
 
   constructor(
     private authService: AuthService,
@@ -23,6 +24,7 @@ export class TopBarComponent implements OnInit {
   ngOnInit(): void {
     const profile = this.profileService.getProfile();
     this.userId = profile?.userId ?? null;
+    this.userRole = profile?.role ?? null;
   }
 
   logout(): void {

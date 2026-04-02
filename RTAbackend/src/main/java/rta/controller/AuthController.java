@@ -1,14 +1,21 @@
 package rta.controller;
 
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
-import rta.model.UserProfile;
-import rta.service.ProfileService;
-
-import java.util.Map;
-import java.util.HashMap;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import rta.config.JwtUtil;
+import rta.model.UserProfile;
+import rta.service.ProfileService;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -16,9 +23,11 @@ import java.nio.charset.StandardCharsets;
 public class AuthController {
 
     private final ProfileService profileService;
+    private final JwtUtil jwtUtil;
 
-    public AuthController(ProfileService profileService) {
+    public AuthController(ProfileService profileService, JwtUtil jwtUtil) {
         this.profileService = profileService;
+        this.jwtUtil = jwtUtil;
     }
 
     /**
@@ -31,8 +40,6 @@ public class AuthController {
         try {
             UserProfile user = profileService.login(credentials.getUsername(), credentials.getPassword());
 
-            // Generate secret if missing (force setup) or retrieve existing status
-            // For this flow, we'll force setup if it's not enabled/present
             Map<String, Object> response = new HashMap<>();
 
             if (!user.isTwoFactorEnabled()) {
@@ -43,12 +50,10 @@ public class AuthController {
 
                 response.put("secret", secret);
 
-                // Correctly encode the OTP Auth URL for the QR code
                 String otpAuthUrl = "otpauth://totp/RTA_Example:" + user.getUsername()
                         + "?secret=" + secret
                         + "&issuer=RTA_Example";
 
-                // Return the raw URI for client-side QR generation
                 response.put("otpAuthUri", otpAuthUrl);
 
                 String encodedOtpAuthUrl = URLEncoder.encode(otpAuthUrl, StandardCharsets.UTF_8);
@@ -60,7 +65,6 @@ public class AuthController {
                 response.put("status", "2FA_REQUIRED");
             }
 
-            // Don't return the full user profile yet! Wait for 2FA verify.
             response.put("username", user.getUsername());
 
             return ResponseEntity.ok(response);
@@ -70,6 +74,10 @@ public class AuthController {
         }
     }
 
+    /**
+     * POST /api/auth/verify-2fa - Step 2: Verify 2FA code. - On success,
+     * returns the user profile + JWT token + role.
+     */
     @PostMapping("/verify-2fa")
     public ResponseEntity<?> verify2fa(@RequestBody Map<String, Object> payload) {
         String username = (String) payload.get("username");
@@ -90,7 +98,34 @@ public class AuthController {
 
         if (isValid) {
             UserProfile user = profileService.getProfileByUsername(username);
-            return ResponseEntity.ok(user);
+            String role = profileService.getUserRole(user.getId());
+            List<String> permissions = profileService.getUserPermissions(user.getId());
+
+            // Generate JWT token with role and permissions
+            String token = jwtUtil.generateToken(username, user.getUserId(), role, permissions);
+
+            // Build response with user profile, token, role, and permissions
+            Map<String, Object> response = new HashMap<>();
+            response.put("userId", user.getUserId());
+            response.put("name", user.getName());
+            response.put("email", user.getEmail());
+            response.put("company", user.getCompany());
+            response.put("contact", user.getContact());
+            response.put("address", user.getAddress());
+            response.put("joinedOn", user.getJoinedOn());
+            response.put("username", user.getUsername());
+            response.put("profilePhotoUrl", user.getProfilePhotoUrl());
+            response.put("phone", user.getPhone());
+            response.put("firstName", user.getFirstName());
+            response.put("lastName", user.getLastName());
+            response.put("officeNumber", user.getOfficeNumber());
+            response.put("status", user.getStatus());
+            response.put("isTwoFactorEnabled", user.isTwoFactorEnabled());
+            response.put("token", token);
+            response.put("role", role);
+            response.put("permissions", permissions);
+
+            return ResponseEntity.ok(response);
         } else {
             return ResponseEntity.status(401).body("Invalid 2FA Code");
         }

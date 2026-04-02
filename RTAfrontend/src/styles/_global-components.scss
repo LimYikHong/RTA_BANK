@@ -1084,6 +1084,85 @@
 }
 
 // =============================================
+// DELETE CONFIRMATION MODAL (shared)
+// =============================================
+.modal-box {
+  background: white;
+  border-radius: 12px;
+  padding: 32px;
+  width: 420px;
+  max-width: 90%;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.2);
+}
+
+.modal-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: #1e293b;
+  margin: 0 0 16px 0;
+}
+
+.btn-cancel-modal {
+  padding: 9px 20px;
+  background-color: #f1f5f9;
+  color: #475569;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+
+  &:hover:not(:disabled) {
+    background-color: #e2e8f0;
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+}
+
+.btn-confirm-delete {
+  padding: 9px 20px;
+  background-color: #dc2626;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+
+  &:hover:not(:disabled) {
+    background-color: #b91c1c;
+  }
+
+  &:disabled {
+    background-color: #fca5a5;
+    cursor: not-allowed;
+  }
+}
+
+// =============================================
+// READONLY INPUTS (shared for edit forms)
+// =============================================
+.readonly-input {
+  background-color: #f1f5f9;
+  color: #64748b;
+  cursor: not-allowed;
+
+  &:focus {
+    border-color: #d1d5db;
+    box-shadow: none;
+  }
+}
+
+.readonly-hint {
+  font-size: 12px;
+  color: #94a3b8;
+  margin-top: 4px;
+}
+
+// =============================================
 // FORM STYLES (shared across add/edit/view forms)
 // =============================================
 .back-btn {

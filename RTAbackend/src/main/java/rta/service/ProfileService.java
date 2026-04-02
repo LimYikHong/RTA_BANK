@@ -1,20 +1,24 @@
 package rta.service;
 
-import org.springframework.stereotype.Service;
-import org.springframework.web.multipart.MultipartFile;
-
-import rta.model.UserProfile;
-import rta.repository.ProfileRepository;
-import rta.entity.RtaRole;
-import rta.entity.RtaUserRole;
-import rta.repository.RtaRoleRepository;
-import rta.repository.RtaUserRoleRepository;
-
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
+
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
+
 import com.warrenstrange.googleauth.GoogleAuthenticator;
 import com.warrenstrange.googleauth.GoogleAuthenticatorKey;
+
+import rta.entity.RtaRole;
+import rta.entity.RtaRolePermission;
+import rta.entity.RtaUserRole;
+import rta.model.UserProfile;
+import rta.repository.ProfileRepository;
+import rta.repository.RtaRolePermissionRepository;
+import rta.repository.RtaRoleRepository;
+import rta.repository.RtaUserRoleRepository;
 
 @Service
 
@@ -27,15 +31,17 @@ public class ProfileService {
     private final ProfileRepository profileRepository;
     private final RtaRoleRepository roleRepository;
     private final RtaUserRoleRepository userRoleRepository;
+    private final RtaRolePermissionRepository rolePermissionRepository;
     private final MinioStorageService minioStorageService;
     private final GoogleAuthenticator gAuth = new GoogleAuthenticator();
 
     private static final String PROFILE_PHOTOS_DIR = "uploads/profile-photos";
 
-    public ProfileService(ProfileRepository profileRepository, RtaRoleRepository roleRepository, RtaUserRoleRepository userRoleRepository, MinioStorageService minioStorageService) {
+    public ProfileService(ProfileRepository profileRepository, RtaRoleRepository roleRepository, RtaUserRoleRepository userRoleRepository, RtaRolePermissionRepository rolePermissionRepository, MinioStorageService minioStorageService) {
         this.profileRepository = profileRepository;
         this.roleRepository = roleRepository;
         this.userRoleRepository = userRoleRepository;
+        this.rolePermissionRepository = rolePermissionRepository;
         this.minioStorageService = minioStorageService;
     }
 
@@ -46,6 +52,10 @@ public class ProfileService {
     public UserProfile login(String username, String password) {
         UserProfile profile = profileRepository.findByUsername(username)
                 .orElseThrow(() -> new RuntimeException("User not found"));
+
+        if (profile.getDeletedAt() != null) {
+            throw new RuntimeException("User account has been deleted");
+        }
 
         if (!profile.getPassword().equals(password)) {
             throw new RuntimeException("Invalid password");
@@ -101,7 +111,7 @@ public class ProfileService {
      * Register a new user profile. - Rejects duplicate usernames.
      */
     public UserProfile register(UserProfile profile) {
-        if (profileRepository.findByUsername(profile.getUsername()).isPresent()) {
+        if (profileRepository.findByUsernameAndDeletedAtIsNull(profile.getUsername()).isPresent()) {
             throw new RuntimeException("Username already exists");
         }
         UserProfile saved = profileRepository.save(profile);
@@ -112,7 +122,7 @@ public class ProfileService {
      * Fetch profile by userId. - Throws if not found.
      */
     public UserProfile getProfile(String userId) {
-        return profileRepository.findByUserId(userId)
+        return profileRepository.findByUserIdAndDeletedAtIsNull(userId)
                 .orElseThrow(() -> new RuntimeException("User profile not found: " + userId));
     }
 
@@ -121,7 +131,7 @@ public class ProfileService {
      * to existing record.
      */
     public UserProfile updateProfile(String userId, UserProfile newProfile) {
-        UserProfile existing = profileRepository.findByUserId(userId)
+        UserProfile existing = profileRepository.findByUserIdAndDeletedAtIsNull(userId)
                 .orElseThrow(() -> new RuntimeException("User profile not found: " + userId));
 
         existing.setName(newProfile.getName());
@@ -129,10 +139,38 @@ public class ProfileService {
         existing.setCompany(newProfile.getCompany());
         existing.setContact(newProfile.getContact());
         existing.setAddress(newProfile.getAddress());
-        existing.setJoinedOn(newProfile.getJoinedOn());
+        existing.setPhone(newProfile.getPhone());
+        existing.setFirstName(newProfile.getFirstName());
+        existing.setLastName(newProfile.getLastName());
+        existing.setOfficeNumber(newProfile.getOfficeNumber());
+        if (newProfile.getStatus() != null) {
+            existing.setStatus(newProfile.getStatus());
+        }
+        existing.setUpdatedAt(LocalDateTime.now());
+        existing.setLastModifiedBy(newProfile.getLastModifiedBy());
 
         UserProfile updated = profileRepository.save(existing);
         return updated;
+    }
+
+    /**
+     * Update the role for a given user (by userId string).
+     */
+    @Transactional
+    public void updateUserRole(String userId, String newRoleName) {
+        UserProfile user = profileRepository.findByUserIdAndDeletedAtIsNull(userId)
+                .orElseThrow(() -> new RuntimeException("User not found: " + userId));
+        RtaRole newRole = roleRepository.findByRoleName(newRoleName)
+                .orElseThrow(() -> new RuntimeException("Role not found: " + newRoleName));
+
+        // Remove existing roles and assign new one
+        userRoleRepository.deleteByUser_Id(user.getId());
+
+        RtaUserRole userRole = new RtaUserRole();
+        userRole.setUser(user);
+        userRole.setRole(newRole);
+        userRole.setAssignedBy("system");
+        userRoleRepository.save(userRole);
     }
 
     /**
@@ -173,10 +211,10 @@ public class ProfileService {
      * Create a new user with a specific role.
      */
     public UserProfile createUser(UserProfile user, String roleName) {
-        if (profileRepository.findByUsername(user.getUsername()).isPresent()) {
+        if (profileRepository.findByUsernameAndDeletedAtIsNull(user.getUsername()).isPresent()) {
             throw new RuntimeException("Username already exists");
         }
-        if (profileRepository.findByUserId(user.getUserId()).isPresent()) {
+        if (profileRepository.findByUserIdAndDeletedAtIsNull(user.getUserId()).isPresent()) {
             throw new RuntimeException("User ID already exists");
         }
 
@@ -211,10 +249,10 @@ public class ProfileService {
     }
 
     /**
-     * Get all users.
+     * Get all active (non-deleted) users.
      */
     public List<UserProfile> getAllUsers() {
-        return profileRepository.findAll();
+        return profileRepository.findAllActive();
     }
 
     /**
@@ -222,9 +260,20 @@ public class ProfileService {
      */
     public List<UserProfile> searchUsers(String keyword) {
         if (keyword == null || keyword.trim().isEmpty()) {
-            return profileRepository.findAll();
+            return profileRepository.findAllActive();
         }
-        return profileRepository.searchByKeyword(keyword.trim());
+        return profileRepository.searchByKeywordActive(keyword.trim());
+    }
+
+    /**
+     * Soft-delete a user by userId. Sets deleted_at timestamp.
+     */
+    @Transactional
+    public void deleteUser(String userId) {
+        UserProfile user = profileRepository.findByUserIdAndDeletedAtIsNull(userId)
+                .orElseThrow(() -> new RuntimeException("User not found: " + userId));
+        user.setDeletedAt(LocalDateTime.now());
+        profileRepository.save(user);
     }
 
     /**
@@ -236,6 +285,25 @@ public class ProfileService {
             return "N/A";
         }
         return userRoles.get(0).getRole().getRoleName();
+    }
+
+    /**
+     * Get all permission names for a given user. Traverses: user -> user_role
+     * -> role -> role_permission -> permission
+     */
+    public List<String> getUserPermissions(Long userId) {
+        List<RtaUserRole> userRoles = userRoleRepository.findByUser_Id(userId);
+        List<String> permissions = new java.util.ArrayList<>();
+        for (RtaUserRole ur : userRoles) {
+            List<RtaRolePermission> rolePerms = rolePermissionRepository.findByRole_Id(ur.getRole().getId());
+            for (RtaRolePermission rp : rolePerms) {
+                String permName = rp.getPermission().getPermissionName();
+                if (!permissions.contains(permName)) {
+                    permissions.add(permName);
+                }
+            }
+        }
+        return permissions;
     }
 
     /**

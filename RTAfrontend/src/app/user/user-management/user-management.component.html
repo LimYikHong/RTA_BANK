@@ -42,7 +42,7 @@
                     placeholder="Search by name, username, email, ID, or company..." />
                 <button class="btn btn-search" (click)="onSearch()">Search</button>
                 <button class="btn btn-clear" *ngIf="searchKeyword" (click)="clearSearch()">Clear</button>
-                <button class="btn btn-add" (click)="addUser()">Add User</button>
+                <button class="btn btn-add" *ngIf="hasPermission('USER_CREATE')" (click)="addUser()">Add User</button>
             </div>
             <p class="result-count">Showing {{ filteredUsers.length }} user(s)</p>
         </div>
@@ -63,6 +63,7 @@
                         <th class="th-sort" (click)="sortBy('role')" [attr.data-sort]="sortKey==='role' ? sortDir : ''">Role</th>
                         <th class="th-sort" (click)="sortBy('status')" [attr.data-sort]="sortKey==='status' ? sortDir : ''">Status</th>
                         <th class="th-sort" (click)="sortBy('joinedOn')" [attr.data-sort]="sortKey==='joinedOn' ? sortDir : ''">Joined On</th>
+                        <th>Actions</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -83,6 +84,11 @@
                             </span>
                         </td>
                         <td>{{ user.joinedOn | date: 'mediumDate' }}</td>
+                        <td class="action-cell">
+                            <button class="btn-action btn-view" (click)="viewUser(user)" title="View"></button>
+                            <button class="btn-action btn-edit" *ngIf="hasPermission('USER_EDIT')" (click)="editUser(user)" title="Edit"></button>
+                            <button class="btn-action btn-delete" *ngIf="hasPermission('USER_DELETE')" (click)="openDeleteModal(user)" title="Delete"></button>
+                        </td>
                     </tr>
                 </tbody>
             </table>
@@ -114,4 +120,23 @@
             </ng-template>
         </div>
     </main>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal-overlay" *ngIf="showDeleteModal" (click)="closeDeleteModal()">
+    <div class="modal-box" (click)="$event.stopPropagation()">
+        <h3 class="modal-title">Confirm Delete</h3>
+        <p class="modal-body">
+            Are you sure you want to delete user
+            <strong>{{ userToDelete?.userId }}</strong>
+            ({{ userToDelete?.name }})?
+            <br />This action cannot be undone.
+        </p>
+        <div class="modal-actions">
+            <button class="btn btn-cancel-modal" (click)="closeDeleteModal()" [disabled]="isDeleting">Cancel</button>
+            <button class="btn btn-confirm-delete" (click)="confirmDelete()" [disabled]="isDeleting">
+                {{ isDeleting ? 'Deleting...' : 'Yes, Delete' }}
+            </button>
+        </div>
+    </div>
 </div>
