@@ -20,14 +20,13 @@
       <li routerLink="/users" routerLinkActive="active"><b>User Management</b></li>
       <li routerLink="/merchant-maintenance" routerLinkActive="active"><b>Merchant Maintenance</b></li>
     </ul>
-    <app-top-bar></app-top-bar>
   </aside>
 
   <!-- Main Content -->
   <main class="main-content">
+    <app-top-bar></app-top-bar>
     <div class="page-header">
       <h1>Track Transaction</h1>
-      <p class="subtitle">View and monitor transaction references</p>
     </div>
 
     <div class="filter-section">
@@ -100,6 +99,7 @@
             <th class="th-sort" (click)="sortBy('successCount')" [attr.data-sort]="sortKey==='successCount' ? sortDir : ''">Success</th>
             <th class="th-sort" (click)="sortBy('failedCount')" [attr.data-sort]="sortKey==='failedCount' ? sortDir : ''">Failed</th>
             <th>Status</th>
+            <th>Auth Status</th>
             <th>Actions</th>
           </tr>
         </thead>
@@ -115,12 +115,17 @@
                 {{ getStatusSummary(item) }}
               </span>
             </td>
+            <td>
+              <span class="status-badge" [ngClass]="getAuthStatusClass(item.authStatus)">
+                {{ formatAuthStatus(item.authStatus) }}
+              </span>
+            </td>
             <td class="action-cell">
               <button class="btn-action btn-view" (click)="viewDetail(item.recurringReference)" title="View"></button>
             </td>
           </tr>
           <tr *ngIf="totalElements === 0">
-            <td colspan="7" class="no-data-cell">
+            <td colspan="8" class="no-data-cell">
               <div class="no-data">
                 <p>No transactions found.</p>
               </div>

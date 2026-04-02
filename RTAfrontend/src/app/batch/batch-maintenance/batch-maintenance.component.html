@@ -20,14 +20,13 @@
       <li routerLink="/users" routerLinkActive="active"><b>User Management</b></li>
       <li routerLink="/merchant-maintenance" routerLinkActive="active"><b>Merchant Maintenance</b></li>
     </ul>
-    <app-top-bar></app-top-bar>
   </aside>
 
   <!-- Main Content -->
   <main class="main-content">
+    <app-top-bar></app-top-bar>
     <div class="page-header">
       <h1>Batch Maintenance</h1>
-      <p class="subtitle">Authorization batches auto-run every 5 minutes. Groups validated transactions for sending.</p>
     </div>
 
     <!-- Countdown Timer -->
@@ -43,7 +42,7 @@
     <div *ngIf="isLoading" class="loading-text">Loading authorization batches...</div>
 
     <!-- Table -->
-    <div class="table-container" *ngIf="!isLoading">
+    <div class="table-container" *ngIf="!isLoading" style="margin-top: 20px;">
       <table class="data-table">
         <thead>
           <tr>

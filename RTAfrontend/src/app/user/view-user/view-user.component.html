@@ -20,7 +20,6 @@
       <li routerLink="/users" routerLinkActive="active"><b>User Management</b></li>
       <li routerLink="/merchant-maintenance" routerLinkActive="active"><b>Merchant Maintenance</b></li>
     </ul>
-    <app-top-bar></app-top-bar>
   </aside>
 
   <!-- Main Content -->
@@ -55,7 +54,6 @@
       <div class="header-top">
         <div>
           <h1>{{ profile.name || 'User Details' }}</h1>
-          <p class="subtitle">{{'@'}}{{ profile.username }} · {{ profile.userId }}</p>
         </div>
         <button class="btn btn-primary" *ngIf="hasPermission('USER_EDIT')" (click)="editUser()">Edit User</button>
       </div>
@@ -173,6 +171,7 @@
   <!-- Loading -->
   <ng-template #loading>
     <main class="main-content">
+    <app-top-bar></app-top-bar>
       <div class="loading-text">Loading user details...</div>
     </main>
   </ng-template>

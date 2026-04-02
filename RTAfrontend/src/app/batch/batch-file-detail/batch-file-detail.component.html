@@ -20,16 +20,15 @@
       <li routerLink="/users" routerLinkActive="active"><b>User Management</b></li>
       <li routerLink="/merchant-maintenance" routerLinkActive="active"><b>Merchant Maintenance</b></li>
     </ul>
-    <app-top-bar></app-top-bar>
   </aside>
 
   <!-- Main Content -->
   <main class="main-content">
+    <app-top-bar></app-top-bar>
     <!-- Header -->
     <div class="page-header">
       <button class="back-btn" (click)="goBack()">← Back to Batch File Maintenance</button>
       <h1>Batch File Detail</h1>
-      <p class="subtitle" *ngIf="detail">{{ detail.originalFilename }} — File #{{ detail.batchFileId }}</p>
     </div>
 
     <!-- Loading -->

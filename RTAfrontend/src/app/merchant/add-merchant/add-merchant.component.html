@@ -20,15 +20,14 @@
       <li routerLink="/users" routerLinkActive="active"><b>User Management</b></li>
       <li routerLink="/merchant-maintenance" routerLinkActive="active"><b>Merchant Maintenance</b></li>
     </ul>
-    <app-top-bar></app-top-bar>
   </aside>
 
   <!-- Main Content -->
   <main class="main-content">
+    <app-top-bar></app-top-bar>
     <div class="page-header">
       <button class="back-btn" routerLink="/merchant-maintenance">&lt; Back to Merchants</button>
       <h1>Add New Merchant</h1>
-      <p class="subtitle">Fill in the details below to create a new merchant. This will publish a Kafka event to notify all sub-systems.</p>
     </div>
 
     <div class="form-card">

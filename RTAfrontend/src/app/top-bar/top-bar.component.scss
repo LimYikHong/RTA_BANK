@@ -1,9 +1,132 @@
-// Make the host element stretch to full sidebar width
 :host {
   display: block;
-  width: 100%;
-  margin-top: auto;
+  position: absolute;
+  top: 16px;
+  right: 24px;
+  z-index: 100;
 }
 
-// Styles are provided globally via _global-components.scss
-// (.top-right-bar, .current-user-id, .logout-btn)
+.topbar-user-wrapper {
+  position: relative;
+}
+
+.topbar-user-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  background: transparent;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.2s;
+
+  &:hover {
+    background: rgba(0, 0, 0, 0.06);
+  }
+}
+
+.topbar-user-icon {
+  color: #475569;
+}
+
+.topbar-user-id {
+  font-size: 13px;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.topbar-chevron {
+  color: #94a3b8;
+  transition: transform 0.2s;
+
+  &.open {
+    transform: rotate(180deg);
+  }
+}
+
+.topbar-dropdown {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  min-width: 200px;
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  overflow: hidden;
+  animation: dropdownFadeIn 0.15s ease;
+}
+
+@keyframes dropdownFadeIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.topbar-dropdown-header {
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.topbar-dropdown-name {
+  font-size: 14px;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.topbar-dropdown-role {
+  font-size: 11px;
+  font-weight: 500;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.topbar-dropdown-divider {
+  height: 1px;
+  background: #f1f5f9;
+}
+
+.topbar-dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 16px;
+  background: transparent;
+  border: none;
+  font-size: 13px;
+  font-weight: 500;
+  color: #1e293b;
+  cursor: pointer;
+  transition: background 0.15s;
+  text-align: left;
+
+  svg {
+    color: #1e293b;
+    flex-shrink: 0;
+  }
+
+  &:hover {
+    background: #f8fafc;
+  }
+
+  &.logout {
+    color: #1e293b;
+
+    svg {
+      color: #1e293b;
+    }
+
+    &:hover {
+      background: #fef2f2;
+      color: #dc2626;
+
+      svg {
+        color: #dc2626;
+      }
+    }
+  }
+}

@@ -95,11 +95,13 @@ public class RecurringTransactionController {
             countDistinctField = "CONCAT(COALESCE(t.recurringReference, t.merchantBillingRef, ''), '|', t.merchantId)";
         }
 
-        // Data query
+        // Data query — LEFT JOIN authorization batch to get auth status
+        String joinClause = "LEFT JOIN RtaAuthorizationBatch ab ON ab.authBatchId = t.authBatchId";
         String dataJpql = "SELECT " + selectFields + ", COUNT(t), "
                 + "SUM(CASE WHEN t.status = 'SUCCESS' THEN 1 ELSE 0 END), "
-                + "SUM(CASE WHEN t.status = 'FAILED' THEN 1 ELSE 0 END) "
-                + "FROM RtaTransaction t " + whereClause + " "
+                + "SUM(CASE WHEN t.status = 'FAILED' THEN 1 ELSE 0 END), "
+                + "MAX(ab.batchStatus) "
+                + "FROM RtaTransaction t " + joinClause + " " + whereClause + " "
                 + "GROUP BY " + groupByFields + " ORDER BY recurringRef ASC";
 
         // Count query
@@ -129,6 +131,7 @@ public class RecurringTransactionController {
             item.put("totalTransactions", row[2]);
             item.put("successCount", row[3]);
             item.put("failedCount", row[4]);
+            item.put("authStatus", row.length > 5 ? row[5] : null);
             content.add(item);
         }
 
