@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule, Router } from '@angular/router';
@@ -26,11 +26,17 @@ interface MerchantOption {
   templateUrl: './batch-list.component.html',
   styleUrl: './batch-list.component.scss'
 })
-export class BatchListComponent implements OnInit {
+export class BatchListComponent implements OnInit, OnDestroy {
   drawerOpen = true;
   toggleDrawer() { this.drawerOpen = !this.drawerOpen; }
 
   files: UploadHistoryItem[] = [];
+
+  // Auto-polling: refresh every 1s while any file is still in-progress
+  private pollingTimer: any = null;
+  private readonly IN_PROGRESS_STATUSES = new Set([
+    'UPLOADING', 'PROCESSING', 'RECEIVED', 'PENDING'
+  ]);
   // Holds the file chosen from the input
   selectedFile?: File;
   user: UserProfile | null = null;
@@ -40,11 +46,6 @@ export class BatchListComponent implements OnInit {
   merchants: MerchantOption[] = [];
   selectedMerchantId = '';
   isLoadingMerchants = false;
-
-  // Error modal
-  showErrorModal = false;
-  errorTitle = '';
-  errorMessage = '';
 
   // Pagination
   currentPage = 1;
@@ -105,6 +106,10 @@ export class BatchListComponent implements OnInit {
     private router: Router
   ) {}
 
+  ngOnDestroy(): void {
+    this.stopPolling();
+  }
+
   ngOnInit(): void {
     this.user = this.profileService.getProfile();
 
@@ -128,9 +133,32 @@ export class BatchListComponent implements OnInit {
   // Fetch upload history from backend (all upload attempts including failed)
   loadFiles(): void {
     this.portalService.getUploadHistory().subscribe({
-      next: (data) => (this.files = data),
+      next: (data) => {
+        this.files = data;
+        // Check if any file is still in-progress — if so, keep polling; otherwise stop
+        const hasInProgress = this.files.some(f => this.IN_PROGRESS_STATUSES.has(f.status?.toUpperCase()));
+        if (hasInProgress) {
+          this.startPolling();
+        } else {
+          this.stopPolling();
+        }
+      },
       error: (err) => console.error('Failed to fetch upload history: ' + err.message),
     });
+  }
+
+  // Start auto-refresh polling (1s interval)
+  private startPolling(): void {
+    if (this.pollingTimer) return; // already polling
+    this.pollingTimer = setInterval(() => this.loadFiles(), 1000);
+  }
+
+  // Stop auto-refresh polling
+  private stopPolling(): void {
+    if (this.pollingTimer) {
+      clearInterval(this.pollingTimer);
+      this.pollingTimer = null;
+    }
   }
 
   // Handle <input type="file"> change event
@@ -203,6 +231,9 @@ export class BatchListComponent implements OnInit {
     };
     this.files = [tempRow, ...this.files];
 
+    // Start polling immediately since we have an UPLOADING row
+    this.startPolling();
+
     // Clear file input
     const fileRef = this.selectedFile;
     this.selectedFile = undefined;
@@ -214,37 +245,46 @@ export class BatchListComponent implements OnInit {
       .uploadIncoming(fileRef, merchantId, originalFileName, createdBy)
       .subscribe({
         next: () => {
-          // Reload real data from backend to replace the temp row
-          this.loadFiles();
+          // Replace temp row with actual data from backend, keep the rest of the list intact
+          this.portalService.getUploadHistory().subscribe({
+            next: (data) => {
+              // Merge: replace UPLOADING temp row with fresh data, preserve order of rest
+              this.files = data;
+            },
+            error: () => {
+              this.files = this.files.filter(f => f.status !== 'UPLOADING');
+            }
+          });
         },
         error: (err) => {
           console.error('Upload failed:', err);
-          // Remove the temp "UPLOADING" row immediately
-          this.files = this.files.filter(f => f.status !== 'UPLOADING');
-          // Show error modal with backend rejection message
+          // Build a local failed row to replace the UPLOADING temp row in-place
           const errorData = err.error || {};
-          this.errorTitle = errorData.error || 'Upload Failed';
-          const detail = errorData.detail || err.message || 'An unexpected error occurred during upload.';
+          const detail = errorData.detail || errorData.message || err.message || 'Upload failed.';
           const dupInfo = errorData.duplicateFileInfo;
+          let remark = detail;
           if (dupInfo) {
-            this.errorMessage = detail +
-              (dupInfo.merchantId && dupInfo.merchantId !== merchantId
-                ? '\n\nOriginal upload: Merchant ' + dupInfo.merchantId + ' | Status: ' + dupInfo.status + ' | Uploaded at: ' + dupInfo.uploadedAt
-                : '\n\nStatus: ' + dupInfo.status + ' | Uploaded at: ' + dupInfo.uploadedAt);
-          } else {
-            this.errorMessage = detail;
+            remark = detail + (dupInfo.merchantId && dupInfo.merchantId !== merchantId
+              ? ' (Original: Merchant ' + dupInfo.merchantId + ', Status: ' + dupInfo.status + ')'
+              : ' (Status: ' + dupInfo.status + ')');
           }
-          this.showErrorModal = true;
-          // Also reload to ensure list is in sync
-          this.loadFiles();
+          const failedRow: UploadHistoryItem = {
+            id: 0,
+            merchantId: merchantId,
+            originalFilename: originalFileName,
+            storedFilename: '',
+            fileHash: '',
+            uploadedAt: new Date().toISOString(),
+            status: 'DUPLICATE',
+            uploadCount: 0,
+            validationRemark: remark,
+            createdBy: createdBy,
+            sizeBytes: 0
+          };
+          // Swap UPLOADING temp row for the failed row
+          this.files = this.files.map(f => f.status === 'UPLOADING' ? failedRow : f);
         },
       });
-  }
-
-  closeErrorModal(): void {
-    this.showErrorModal = false;
-    this.errorTitle = '';
-    this.errorMessage = '';
   }
 
   // Navigate to batch file detail page (only for files that passed validation)
@@ -289,6 +329,7 @@ export class BatchListComponent implements OnInit {
       case 'MISSING_HEADER':
       case 'VALIDATION_ERROR':
       case 'INVALID_FILE_CONTENT':
+      case 'DUPLICATE':
         return 'status-failed';
       case 'PROCESSING': return 'status-processing';
       case 'UPLOADING': return 'status-uploading';
