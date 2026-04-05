@@ -1,5 +1,6 @@
 import { Routes } from '@angular/router';
 import { LoginComponent } from './login/login.component';
+import { DashboardComponent } from './dashboard/dashboard.component';
 import { BatchListComponent } from './batch/batch-list/batch-list.component';
 import { AddUserComponent } from './user/add-user/add-user.component';
 import { EditUserComponent } from './user/edit-user/edit-user.component';
@@ -23,6 +24,7 @@ import { superAdminGuard, permissionGuard } from './services/role.guard';
 
 export const routes: Routes = [
   { path: 'login', component: LoginComponent },
+  { path: 'dashboard', component: DashboardComponent, canActivate: [authGuard] },
   { path: 'batch-list', component: BatchListComponent, canActivate: [authGuard] },
   { path: 'incoming-batch', component: IncomingBatchComponent, canActivate: [authGuard] },
   { path: 'batch-detail/:batchFileId', component: BatchDetailComponent, canActivate: [authGuard] },
