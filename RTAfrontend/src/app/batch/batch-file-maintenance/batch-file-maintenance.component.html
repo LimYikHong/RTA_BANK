@@ -54,6 +54,7 @@
             <th class="th-sort" (click)="sortBy('batchFileId')" [attr.data-sort]="sortKey==='batchFileId' ? sortDir : ''">File ID</th>
             <th class="th-sort" (click)="sortBy('originalFilename')" [attr.data-sort]="sortKey==='originalFilename' ? sortDir : ''">File Name</th>
             <th class="th-sort" (click)="sortBy('fileStatus')" [attr.data-sort]="sortKey==='fileStatus' ? sortDir : ''">File Status</th>
+            <th class="th-sort" (click)="sortBy('insertionStatus')" [attr.data-sort]="sortKey==='insertionStatus' ? sortDir : ''">Data Insertion</th>
             <th class="th-sort" (click)="sortBy('merchantName')" [attr.data-sort]="sortKey==='merchantName' ? sortDir : ''">Merchant Name</th>
             <th class="th-sort" (click)="sortBy('totalRecordCount')" [attr.data-sort]="sortKey==='totalRecordCount' ? sortDir : ''">Total</th>
             <th class="th-sort" (click)="sortBy('successCount')" [attr.data-sort]="sortKey==='successCount' ? sortDir : ''">Success</th>
@@ -77,6 +78,12 @@
                 {{ item.fileStatus }}
               </span>
             </td>
+            <td>
+              <span class="status-badge" [ngClass]="getInsertionStatusClass(item.insertionStatus)" *ngIf="item.insertionStatus">
+                {{ item.insertionStatus }}
+              </span>
+              <span *ngIf="!item.insertionStatus" class="text-muted">—</span>
+            </td>
             <td>{{ item.merchantName || item.merchantId }}</td>
             <td class="count-cell">{{ item.totalRecordCount }}</td>
             <td class="count-cell success-count">{{ item.successCount }}</td>
@@ -86,7 +93,7 @@
             </td>
           </tr>
           <tr *ngIf="filteredItems.length === 0">
-            <td colspan="10" class="no-data-cell">
+            <td colspan="11" class="no-data-cell">
               <div class="no-data">
                 <p>No batch files found.</p>
               </div>

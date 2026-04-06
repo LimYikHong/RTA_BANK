@@ -247,6 +247,7 @@ CREATE TABLE rta_incoming_batch_file (
     file_status VARCHAR(20),
     batch_status VARCHAR(30) NULL,
     transaction_record_remark TEXT,
+    insertion_status VARCHAR(20) DEFAULT 'COMPLETED',
     deleted_at DATETIME,
     FOREIGN KEY (merchant_id) REFERENCES merchant_info(merchant_id),
     FOREIGN KEY (batch_id) REFERENCES rta_batch(batch_id)

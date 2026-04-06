@@ -14,6 +14,7 @@ interface BatchFileItem {
   merchantName: string;
   fileStatus: string;
   batchStatus: string;
+  insertionStatus: string;
   totalRecordCount: number;
   successCount: number;
   failCount: number;
@@ -107,7 +108,8 @@ export class BatchFileMaintenanceComponent implements OnInit {
       (item.merchantId || '').toLowerCase().includes(term) ||
       (item.merchantName || '').toLowerCase().includes(term) ||
       (item.fileStatus || '').toLowerCase().includes(term) ||
-      (item.batchStatus || '').toLowerCase().includes(term)
+      (item.batchStatus || '').toLowerCase().includes(term) ||
+      (item.insertionStatus || '').toLowerCase().includes(term)
     );
   }
 
@@ -193,6 +195,14 @@ export class BatchFileMaintenanceComponent implements OnInit {
       case 'PENDING': return 'status-ready';
       case 'PROCESSING': return 'status-processing';
       case 'FAILED': return 'status-failed';
+      default: return '';
+    }
+  }
+
+  getInsertionStatusClass(status: string): string {
+    switch (status?.toUpperCase()) {
+      case 'COMPLETED': return 'status-success';
+      case 'INSERTING': return 'status-processing';
       default: return '';
     }
   }

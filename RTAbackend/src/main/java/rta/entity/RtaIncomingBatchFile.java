@@ -64,6 +64,15 @@ public class RtaIncomingBatchFile {
     @Column(name = "transaction_record_remark")
     private String transactionRecordRemark;
 
+    /**
+     * Tracks whether transaction record insertion is still in progress. Values:
+     * INSERTING (upload still saving rows), COMPLETED (all rows saved). The
+     * batch scheduler will only pick up files with insertionStatus =
+     * 'COMPLETED'.
+     */
+    @Column(name = "insertion_status")
+    private String insertionStatus;
+
     @Column(name = "deleted_at")
     private LocalDateTime deletedAt;
 }

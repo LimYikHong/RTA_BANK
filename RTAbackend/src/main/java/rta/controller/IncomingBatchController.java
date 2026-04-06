@@ -1276,6 +1276,7 @@ public class IncomingBatchController {
                 incomingFile.setCreateBy(createdBy);
                 incomingFile.setCreatedAt(LocalDateTime.now());
                 incomingFile.setTransactionRecordRemark(validationRemark);
+                incomingFile.setInsertionStatus("INSERTING");
                 RtaIncomingBatchFile savedFile = incomingFileRepository.save(incomingFile);
                 savedBatchFileId = savedFile.getBatchFileId();
 
@@ -1319,6 +1320,12 @@ public class IncomingBatchController {
                                 validationRemark != null ? validationRemark + "; " + dupRemark : dupRemark);
                         incomingFileRepository.save(savedFile);
                     }
+                }
+
+                // Mark insertion as COMPLETED — file is now eligible for batch scheduler
+                if (savedBatchFileId != null) {
+                    savedFile.setInsertionStatus("COMPLETED");
+                    incomingFileRepository.save(savedFile);
                 }
             }
 
@@ -2237,11 +2244,17 @@ public class IncomingBatchController {
             incomingFile.setLastModifiedAt(LocalDateTime.now());
             incomingFileRepository.save(incomingFile);
 
-            // Save transactions (no batch assigned — batch will be set during run batch)
+            // Mark insertion in progress, save transactions, then mark completed
+            incomingFile.setInsertionStatus("INSERTING");
+            incomingFileRepository.save(incomingFile);
+
             for (RtaTransaction txn : transactionsToSave) {
                 txn.setBatchFileId(batchFileId);
             }
             transactionRepository.saveAll(transactionsToSave);
+
+            incomingFile.setInsertionStatus("COMPLETED");
+            incomingFileRepository.save(incomingFile);
 
             Map<String, Object> response = new LinkedHashMap<>();
             response.put("message", "Validation retry completed");

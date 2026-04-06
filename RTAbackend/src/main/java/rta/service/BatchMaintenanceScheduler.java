@@ -13,7 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 import rta.entity.RtaAuthorizationBatch;
 import rta.entity.RtaBatch;
 import rta.entity.RtaIncomingBatchFile;
-import rta.entity.RtaTransaction;
+import rta.entity.RtaTransaction; // still needed for createAuthorizationBatch
 import rta.repository.RtaAuthorizationBatchRepository;
 import rta.repository.RtaBatchRepository;
 import rta.repository.RtaIncomingBatchFileRepository;
@@ -81,7 +81,6 @@ public class BatchMaintenanceScheduler {
     @Transactional
     public void runBatchGrouping() {
         log.info("[BatchMaintenance] Scheduled batch grouping started...");
-        this.lastRunTimeMs = System.currentTimeMillis();
 
         // -------------------------------------------------------
         // Phase 1: Assign batch IDs to eligible incoming files
@@ -94,6 +93,10 @@ public class BatchMaintenanceScheduler {
         // -------------------------------------------------------
         createAuthorizationBatch();
 
+        // Record completion time AFTER the job finishes so that
+        // getNextRunTimeMs() reflects 5 minutes from job completion,
+        // not from job start (which caused early countdown display)
+        this.lastRunTimeMs = System.currentTimeMillis();
         log.info("[BatchMaintenance] Scheduled batch grouping completed.");
     }
 
@@ -141,23 +144,19 @@ public class BatchMaintenanceScheduler {
         batch.setTotalFailCount(totalFail);
         RtaBatch savedBatch = batchRepository.save(batch);
 
-        // Assign the single batch to every eligible file and their transactions
+        // Assign the single batch to every eligible file and bulk-update their transactions
         for (RtaIncomingBatchFile file : eligibleFiles) {
             file.setBatchId(savedBatch.getBatchId());
             file.setBatchStatus("BATCHED");
             incomingFileRepository.save(file);
 
-            // Assign batch to all transactions belonging to this file
-            List<RtaTransaction> transactions = transactionRepository
-                    .findUnbatchedByBatchFileId(file.getBatchFileId());
-            for (RtaTransaction txn : transactions) {
-                txn.setBatch(savedBatch);
-            }
-            transactionRepository.saveAll(transactions);
+            // Bulk-update all transactions for this file in ONE SQL statement
+            int updated = transactionRepository.bulkAssignBatchByFileId(
+                    savedBatch.getBatchId(), file.getBatchFileId());
 
-            log.info("[BatchMaintenance] File '{}' (merchant: {}, {} records) assigned to batch {}",
+            log.info("[BatchMaintenance] File '{}' (merchant: {}, {} records) assigned to batch {} — {} transaction(s) updated",
                     file.getOriginalFilename(), file.getMerchantId(),
-                    file.getSuccessCount(), savedBatch.getBatchId());
+                    file.getSuccessCount(), savedBatch.getBatchId(), updated);
         }
 
         log.info("[BatchMaintenance] Batch {} created — {} file(s), {} total records ({} success, {} fail)",
