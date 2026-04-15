@@ -74,11 +74,18 @@ public class AuthController {
             return ResponseEntity.ok(response);
 
         } catch (RuntimeException e) {
+            String message = e.getMessage();
+            boolean isDisabled = message != null && message.contains("disabled");
+
             try {
                 auditLogService.logUserActivity("LOGIN", credentials.getUsername(), null,
-                        "Login failed", "FAILED",
+                        isDisabled ? "Login blocked - account disabled" : "Login failed", "FAILED",
                         request.getRemoteAddr());
             } catch (Exception ignored) {
+            }
+
+            if (isDisabled) {
+                return ResponseEntity.status(403).body("User account has been disabled. Please contact your administrator.");
             }
             return ResponseEntity.status(401).body("Invalid username or password");
         }
@@ -104,10 +111,18 @@ public class AuthController {
             return ResponseEntity.badRequest().body("Invalid code format");
         }
 
+        // Re-check if the user is disabled before issuing JWT
+        UserProfile user = profileService.getProfileByUsername(username);
+        if (user == null) {
+            return ResponseEntity.status(401).body("User not found");
+        }
+        if (!"ACTIVE".equals(user.getStatus())) {
+            return ResponseEntity.status(403).body("User account has been disabled. Please contact your administrator.");
+        }
+
         boolean isValid = profileService.verify2FA(username, code);
 
         if (isValid) {
-            UserProfile user = profileService.getProfileByUsername(username);
             String role = profileService.getUserRole(user.getId());
             List<String> permissions = profileService.getUserPermissions(user.getId());
 

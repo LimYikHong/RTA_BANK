@@ -156,6 +156,7 @@ export class UserManagementComponent implements OnInit, OnDestroy {
       case 'ACTIVE': return 'status-active';
       case 'INACTIVE': return 'status-inactive';
       case 'SUSPENDED': return 'status-suspended';
+      case 'DISABLED': return 'status-disabled';
       default: return '';
     }
   }

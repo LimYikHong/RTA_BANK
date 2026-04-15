@@ -212,9 +212,18 @@ public class ProfileController {
     @DeleteMapping("/users/{userId}")
     public ResponseEntity<?> deleteUser(@PathVariable String userId, HttpServletRequest request) {
         try {
+            // Block superadmin from deleting themselves
+            String deleterUserId = getAuthenticatedUserId();
+            if (deleterUserId.equals(userId)) {
+                String role = profileService.getUserRole(
+                        profileService.getProfile(userId).getId());
+                if ("SUPER_ADMIN".equals(role)) {
+                    return ResponseEntity.badRequest().body(
+                            "Super Admin cannot delete their own account");
+                }
+            }
             profileService.deleteUser(userId);
             try {
-                String deleterUserId = getAuthenticatedUserId();
                 auditLogService.logUserActivity("DELETE_USER", deleterUserId, userId,
                         "Deleted user '" + userId + "'", "SUCCESS",
                         request.getRemoteAddr());
@@ -222,6 +231,47 @@ public class ProfileController {
                 // audit logging must never break the main flow
             }
             return ResponseEntity.ok(Map.of("message", "User deleted successfully"));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    /**
+     * PUT /api/profile/users/{userId}/disable - Disables a user account.
+     */
+    @PutMapping("/users/{userId}/disable")
+    public ResponseEntity<?> disableUser(@PathVariable String userId, HttpServletRequest request) {
+        try {
+            profileService.disableUser(userId);
+            try {
+                String disablerUserId = getAuthenticatedUserId();
+                auditLogService.logUserActivity("DISABLE_USER", disablerUserId, userId,
+                        "Disabled user '" + userId + "'", "SUCCESS",
+                        request.getRemoteAddr());
+            } catch (Exception ignored) {
+            }
+            return ResponseEntity.ok(Map.of("message", "User disabled successfully"));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    /**
+     * PUT /api/profile/users/{userId}/enable - Re-enables a disabled user
+     * account.
+     */
+    @PutMapping("/users/{userId}/enable")
+    public ResponseEntity<?> enableUser(@PathVariable String userId, HttpServletRequest request) {
+        try {
+            profileService.enableUser(userId);
+            try {
+                String enablerUserId = getAuthenticatedUserId();
+                auditLogService.logUserActivity("ENABLE_USER", enablerUserId, userId,
+                        "Enabled user '" + userId + "'", "SUCCESS",
+                        request.getRemoteAddr());
+            } catch (Exception ignored) {
+            }
+            return ResponseEntity.ok(Map.of("message", "User enabled successfully"));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }

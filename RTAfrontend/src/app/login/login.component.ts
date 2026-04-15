@@ -64,8 +64,12 @@ export class LoginComponent {
           this.handleLoginSuccess(response);
         }
       },
-      error: () => {
-        this.errorMessage = 'Invalid username or password';
+      error: (err) => {
+        if (err.status === 403) {
+          this.errorMessage = err.error || 'User account has been disabled.';
+        } else {
+          this.errorMessage = 'Invalid username or password';
+        }
       }
     });
   }
@@ -80,8 +84,14 @@ export class LoginComponent {
       next: (profile) => {
         this.handleLoginSuccess(profile);
       },
-      error: () => {
-        this.errorMessage = 'Invalid Code. Please try again.';
+      error: (err) => {
+        if (err.status === 403) {
+          this.errorMessage = err.error || 'User account has been disabled.';
+          this.step = 1;
+          this.twoFaCode = '';
+        } else {
+          this.errorMessage = 'Invalid Code. Please try again.';
+        }
       }
     });
   }

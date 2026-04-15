@@ -200,6 +200,14 @@ export class ProfileService {
     return this.http.delete<any>(`${this.apiUrl}/users/${encodeURIComponent(userId)}`);
   }
 
+  disableUser(userId: string): Observable<any> {
+    return this.http.put<any>(`${this.apiUrl}/users/${encodeURIComponent(userId)}/disable`, {});
+  }
+
+  enableUser(userId: string): Observable<any> {
+    return this.http.put<any>(`${this.apiUrl}/users/${encodeURIComponent(userId)}/enable`, {});
+  }
+
   getUserRole(userId: string): Observable<{ role: string }> {
     return this.http.get<{ role: string }>(`${this.apiUrl}/${encodeURIComponent(userId)}/role`);
   }
