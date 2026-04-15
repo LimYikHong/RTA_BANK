@@ -81,6 +81,7 @@ public class BatchFileMaintenanceController {
 
             item.put("fileStatus", f.getFileStatus());
             item.put("batchStatus", f.getBatchStatus());
+            item.put("insertionStatus", f.getInsertionStatus());
             item.put("totalRecordCount", f.getTotalRecordCount());
             item.put("successCount", f.getSuccessCount());
             item.put("failCount", f.getFailCount());
@@ -142,6 +143,7 @@ public class BatchFileMaintenanceController {
 
         result.put("fileStatus", f.getFileStatus());
         result.put("batchStatus", f.getBatchStatus());
+        result.put("insertionStatus", f.getInsertionStatus());
         result.put("sizeBytes", f.getSizeBytes());
         result.put("totalRecordCount", f.getTotalRecordCount());
         result.put("successCount", f.getSuccessCount());

@@ -47,6 +47,7 @@ import rta.repository.RtaBatchRepository;
 import rta.repository.RtaIncomingBatchFileRepository;
 import rta.repository.RtaTransactionRepository;
 import rta.repository.RtaUploadedFileHashRepository;
+import rta.service.AuditLogService;
 import rta.service.FileDecryptionService;
 import rta.service.FileProfileService;
 import rta.service.MinioStorageService;
@@ -70,6 +71,7 @@ public class IncomingBatchController {
     private final FileProfileService fileProfileService;
     private final MinioStorageService minioStorageService;
     private final FileDecryptionService fileDecryptionService;
+    private final AuditLogService auditLogService;
 
     private static final String UPLOAD_DIR = "incoming-uploads";
 
@@ -81,7 +83,8 @@ public class IncomingBatchController {
             RtaAuthorizationBatchRepository authBatchRepository,
             FileProfileService fileProfileService,
             MinioStorageService minioStorageService,
-            FileDecryptionService fileDecryptionService) {
+            FileDecryptionService fileDecryptionService,
+            AuditLogService auditLogService) {
         this.batchRepository = batchRepository;
         this.uploadedFileHashRepository = uploadedFileHashRepository;
         this.incomingFileRepository = incomingFileRepository;
@@ -91,6 +94,7 @@ public class IncomingBatchController {
         this.fileProfileService = fileProfileService;
         this.minioStorageService = minioStorageService;
         this.fileDecryptionService = fileDecryptionService;
+        this.auditLogService = auditLogService;
     }
 
     /**
@@ -1272,6 +1276,7 @@ public class IncomingBatchController {
                 incomingFile.setCreateBy(createdBy);
                 incomingFile.setCreatedAt(LocalDateTime.now());
                 incomingFile.setTransactionRecordRemark(validationRemark);
+                incomingFile.setInsertionStatus("INSERTING");
                 RtaIncomingBatchFile savedFile = incomingFileRepository.save(incomingFile);
                 savedBatchFileId = savedFile.getBatchFileId();
 
@@ -1316,6 +1321,12 @@ public class IncomingBatchController {
                         incomingFileRepository.save(savedFile);
                     }
                 }
+
+                // Mark insertion as COMPLETED — file is now eligible for batch scheduler
+                if (savedBatchFileId != null) {
+                    savedFile.setInsertionStatus("COMPLETED");
+                    incomingFileRepository.save(savedFile);
+                }
             }
 
             // Response
@@ -1348,6 +1359,23 @@ public class IncomingBatchController {
             }
             if (!validationErrors.isEmpty()) {
                 response.put("validationErrors", validationErrors);
+            }
+
+            // --- Audit logging ---
+            // Log user upload activity
+            auditLogService.logUserActivity("UPLOAD_FILE", createdBy, renamedFilename,
+                    "User '" + createdBy + "' uploaded file '" + originalFilename + "' for merchant '" + merchantId + "' — Status: " + validationStatus,
+                    validationStatus, null);
+            // Log system incoming-batch activity
+            auditLogService.logSystemActivity("INCOMING_BATCH", merchantId,
+                    "Received batch file '" + originalFilename + "' from merchant '" + merchantId + "' — "
+                    + totalRecordCount + " records, status: " + validationStatus,
+                    validationStatus);
+            // Log decrypt status if encrypted
+            if (encrypted) {
+                auditLogService.logSystemActivity("DECRYPT_FILE", merchantId,
+                        "Decrypted file '" + originalFilename + "' for merchant '" + merchantId + "'",
+                        "SUCCESS");
             }
 
             return ResponseEntity.ok(response);
@@ -2216,11 +2244,17 @@ public class IncomingBatchController {
             incomingFile.setLastModifiedAt(LocalDateTime.now());
             incomingFileRepository.save(incomingFile);
 
-            // Save transactions (no batch assigned — batch will be set during run batch)
+            // Mark insertion in progress, save transactions, then mark completed
+            incomingFile.setInsertionStatus("INSERTING");
+            incomingFileRepository.save(incomingFile);
+
             for (RtaTransaction txn : transactionsToSave) {
                 txn.setBatchFileId(batchFileId);
             }
             transactionRepository.saveAll(transactionsToSave);
+
+            incomingFile.setInsertionStatus("COMPLETED");
+            incomingFileRepository.save(incomingFile);
 
             Map<String, Object> response = new LinkedHashMap<>();
             response.put("message", "Validation retry completed");

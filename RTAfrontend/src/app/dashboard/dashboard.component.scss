@@ -1,0 +1,205 @@
+// Dashboard component — clean bank style
+// Shared layout (sidebar, page-container, btn, table-card, status-badge)
+// comes from _global-components.scss
+
+// ── Header ───────────────────────────────────────────────────────────
+.dash-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-shrink: 0;
+}
+.last-refresh {
+  font-size: 12px;
+  color: #94a3b8;
+  letter-spacing: 0.01em;
+}
+
+// ── Loading bar ─────────────────────────────────────────────────
+.loading-bar {
+  height: 2px;
+  background: #e2e8f0;
+  margin-bottom: 20px;
+  overflow: hidden;
+}
+.loading-bar-inner {
+  height: 100%;
+  width: 40%;
+  background: #1e2a38;
+  animation: slide 1.2s ease-in-out infinite;
+}
+@keyframes slide {
+  0%   { transform: translateX(-100%); }
+  100% { transform: translateX(350%); }
+}
+
+// ── Error banner ───────────────────────────────────────────────
+.error-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  background: #fff8f8;
+  border-left: 4px solid #c0392b;
+  color: #7f1d1d;
+  border-radius: 4px;
+  padding: 12px 18px;
+  margin-bottom: 24px;
+  font-size: 13px;
+}
+.btn-retry {
+  flex-shrink: 0;
+  background: #1e2a38;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  padding: 6px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  letter-spacing: 0.02em;
+  &:hover { background: #2d3f54; }
+}
+
+// ── KPI grid ───────────────────────────────────────────────────
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 14px;
+  margin-bottom: 24px;
+
+  @media (max-width: 1100px) { grid-template-columns: repeat(3, 1fr); }
+  @media (max-width: 700px)  { grid-template-columns: repeat(2, 1fr); }
+}
+
+.kpi-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-left-width: 4px;
+  border-radius: 4px;
+  padding: 18px 20px;
+  cursor: pointer;
+  transition: box-shadow 0.15s;
+
+  &:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.09); }
+}
+
+.kpi-value {
+  font-size: 28px;
+  font-weight: 700;
+  color: #1e293b;
+  line-height: 1.1;
+  letter-spacing: -0.5px;
+  margin-bottom: 6px;
+}
+.kpi-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+// left-border accent colours
+.kpi-blue   { border-left-color: #1e40af; }
+.kpi-teal   { border-left-color: #0f766e; }
+.kpi-indigo { border-left-color: #4338ca; }
+.kpi-amber  { border-left-color: #b45309; }
+.kpi-slate  { border-left-color: #475569; }
+
+// skeleton shimmer on KPI values while loading
+.kpi-skeleton {
+  color: transparent !important;
+  background: #e2e8f0;
+  border-radius: 4px;
+  min-width: 40px;
+  display: inline-block;
+  animation: shimmer 1.4s ease-in-out infinite;
+}
+@keyframes shimmer {
+  0%, 100% { opacity: 0.5; }
+  50%       { opacity: 1; }
+}
+
+// ── Chart rows ────────────────────────────────────────────────
+// Row 1: trend (flexible) + donut (fixed 280px)
+.chart-row {
+  display: grid;
+  grid-template-columns: 1fr 280px;
+  gap: 14px;
+  margin-bottom: 20px;
+  align-items: start;
+
+  @media (max-width: 860px) { grid-template-columns: 1fr; }
+}
+
+// Row 2: two equal halves
+.chart-row-half {
+  grid-template-columns: 1fr 1fr;
+  @media (max-width: 860px) { grid-template-columns: 1fr; }
+}
+
+// Row 3: three equal thirds
+.chart-row-thirds {
+  grid-template-columns: 1fr 1fr 1fr;
+  @media (max-width: 960px) { grid-template-columns: 1fr 1fr; }
+  @media (max-width: 660px) { grid-template-columns: 1fr; }
+}
+
+.chart-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 4px;
+  padding: 20px 24px;
+  overflow: hidden;
+  min-width: 0;   // prevent overflow in grid cells
+}
+
+.chart-wide  { min-width: 0; }
+.chart-narrow { min-width: 0; }
+
+.chart-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: #1e293b;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 16px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+// Canvas elements: always fill the full width of their card
+.chart-canvas {
+  display: block;
+  width: 100% !important;
+}
+// Fixed-height canvases (line/bar charts)
+.chart-canvas-md  { height: 220px; }
+// Bar charts: height is set dynamically via [style.height.px]
+// Square canvases for donuts and amount bars: aspect-ratio 1:1
+.chart-canvas-sq  { aspect-ratio: 1 / 1; height: auto; }
+// Narrow donut in Row 1 sidebar
+.chart-canvas-sm  { aspect-ratio: 1 / 1; height: auto; }
+
+// placeholder shown inside chart cards when no data
+.chart-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 160px;
+  color: #94a3b8;
+  font-size: 13px;
+  background: #f8fafc;
+  border: 1px dashed #cbd5e1;
+  border-radius: 4px;
+}
+
+

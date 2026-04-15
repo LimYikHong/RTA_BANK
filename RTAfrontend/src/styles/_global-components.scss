@@ -80,9 +80,9 @@
   }
 
   // Always shows X (close icon)
-  span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+  span:nth-child(1) { transform: translateY(6px) rotate(45deg); }
   span:nth-child(2) { opacity: 0; }
-  span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+  span:nth-child(3) { transform: translateY(-6px) rotate(-45deg); }
 
   span {
     display: block;
@@ -134,7 +134,7 @@
   top: 0;
   left: 0;
   z-index: 200;
-  overflow: visible;        // allow toggle button to poke out to the right
+  overflow: visible;     
   transform: translateX(-220px);
   transition: transform 0.3s ease;
   box-shadow: 4px 0 16px rgba(0, 0, 0, 0.15);

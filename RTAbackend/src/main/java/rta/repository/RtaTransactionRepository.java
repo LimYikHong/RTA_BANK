@@ -5,6 +5,7 @@ import java.util.List;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -43,6 +44,14 @@ public interface RtaTransactionRepository extends JpaRepository<RtaTransaction, 
      */
     @Query("SELECT t FROM RtaTransaction t WHERE t.batchFileId = :batchFileId AND t.batch IS NULL")
     List<RtaTransaction> findUnbatchedByBatchFileId(@Param("batchFileId") Long batchFileId);
+
+    /**
+     * Bulk-assign a batch to all transactions belonging to a given batch file
+     * in a single UPDATE statement instead of loading and saving each row.
+     */
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query(value = "UPDATE rta_transaction SET batch_id = :batchId WHERE batch_file_id = :batchFileId", nativeQuery = true)
+    int bulkAssignBatchByFileId(@Param("batchId") Long batchId, @Param("batchFileId") Long batchFileId);
 
     // Recurring transaction queries
     @Query("SELECT DISTINCT t.recurringReference, t.merchantId FROM RtaTransaction t WHERE t.recurringReference IS NOT NULL AND t.recurringReference <> ''")
@@ -140,7 +149,7 @@ public interface RtaTransactionRepository extends JpaRepository<RtaTransaction, 
      * batch (batch IS NOT NULL) but NOT yet assigned to an authorization batch
      * (authBatchId IS NULL).
      */
-    @Query("SELECT t FROM RtaTransaction t WHERE t.status = 'SUCCESS' AND t.batch IS NOT NULL AND t.authBatchId IS NULL")
+    @Query("SELECT t FROM RtaTransaction t JOIN RtaIncomingBatchFile f ON f.batchFileId = t.batchFileId WHERE t.status = 'SUCCESS' AND f.batchId IS NOT NULL AND t.authBatchId IS NULL")
     List<RtaTransaction> findUnbatchedValidTransactions();
 
     /**

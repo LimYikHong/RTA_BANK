@@ -13,8 +13,10 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import jakarta.servlet.http.HttpServletRequest;
 import rta.config.JwtUtil;
 import rta.model.UserProfile;
+import rta.service.AuditLogService;
 import rta.service.ProfileService;
 
 @RestController
@@ -24,10 +26,12 @@ public class AuthController {
 
     private final ProfileService profileService;
     private final JwtUtil jwtUtil;
+    private final AuditLogService auditLogService;
 
-    public AuthController(ProfileService profileService, JwtUtil jwtUtil) {
+    public AuthController(ProfileService profileService, JwtUtil jwtUtil, AuditLogService auditLogService) {
         this.profileService = profileService;
         this.jwtUtil = jwtUtil;
+        this.auditLogService = auditLogService;
     }
 
     /**
@@ -36,7 +40,7 @@ public class AuthController {
      * active) - 200 + { status: "SETUP_2FA", secret: "..." } (if not set up)
      */
     @PostMapping("/login")
-    public ResponseEntity<?> login(@RequestBody UserProfile credentials) {
+    public ResponseEntity<?> login(@RequestBody UserProfile credentials, HttpServletRequest request) {
         try {
             UserProfile user = profileService.login(credentials.getUsername(), credentials.getPassword());
 
@@ -70,6 +74,12 @@ public class AuthController {
             return ResponseEntity.ok(response);
 
         } catch (RuntimeException e) {
+            try {
+                auditLogService.logUserActivity("LOGIN", credentials.getUsername(), null,
+                        "Login failed", "FAILED",
+                        request.getRemoteAddr());
+            } catch (Exception ignored) {
+            }
             return ResponseEntity.status(401).body("Invalid username or password");
         }
     }
@@ -79,7 +89,7 @@ public class AuthController {
      * returns the user profile + JWT token + role.
      */
     @PostMapping("/verify-2fa")
-    public ResponseEntity<?> verify2fa(@RequestBody Map<String, Object> payload) {
+    public ResponseEntity<?> verify2fa(@RequestBody Map<String, Object> payload, HttpServletRequest request) {
         String username = (String) payload.get("username");
         Object codeObj = payload.get("code");
 
@@ -125,9 +135,37 @@ public class AuthController {
             response.put("role", role);
             response.put("permissions", permissions);
 
+            try {
+                auditLogService.logUserActivity("LOGIN", user.getUserId(), null,
+                        "Logged in successfully", "SUCCESS",
+                        request.getRemoteAddr());
+            } catch (Exception ignored) {
+            }
+
             return ResponseEntity.ok(response);
         } else {
+            try {
+                auditLogService.logUserActivity("LOGIN", username, null,
+                        "2FA verification failed", "FAILED",
+                        request.getRemoteAddr());
+            } catch (Exception ignored) {
+            }
             return ResponseEntity.status(401).body("Invalid 2FA Code");
         }
+    }
+
+    /**
+     * POST /api/auth/logout - Logs the logout activity.
+     */
+    @PostMapping("/logout")
+    public ResponseEntity<?> logout(@RequestBody Map<String, Object> payload, HttpServletRequest request) {
+        String userId = (String) payload.get("userId");
+        try {
+            auditLogService.logUserActivity("LOGOUT", userId, null,
+                    "Logged out", "SUCCESS",
+                    request.getRemoteAddr());
+        } catch (Exception ignored) {
+        }
+        return ResponseEntity.ok(Map.of("message", "Logged out successfully"));
     }
 }

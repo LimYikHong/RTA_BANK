@@ -38,12 +38,15 @@ export class AuthService {
   }
 
   /**
-   * Clears the local session.
-   * - Removes 'merchant' from localStorage.
-   * - Caller can also clear other caches if used elsewhere.
+   * Clears the local session and notifies backend for audit logging.
    */
-
   logout(): void {
+    const user = this.getCurrentUser();
+    const userId = user?.userId ?? 'unknown';
+    // Fire-and-forget: notify backend for audit logging
+    this.http.post<any>(`${this.apiUrl}/logout`, { userId }).subscribe({
+      error: () => { /* ignore errors on logout */ }
+    });
     localStorage.removeItem('user');
   }
 

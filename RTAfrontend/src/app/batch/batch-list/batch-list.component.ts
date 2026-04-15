@@ -47,6 +47,11 @@ export class BatchListComponent implements OnInit, OnDestroy {
   selectedMerchantId = '';
   isLoadingMerchants = false;
 
+  // Error modal
+  showErrorModal = false;
+  errorTitle = '';
+  errorMessage = '';
+
   // Pagination
   currentPage = 1;
   pageSize = 10;
@@ -195,6 +200,12 @@ export class BatchListComponent implements OnInit, OnDestroy {
   closeMerchantModal(): void {
     this.showMerchantModal = false;
     this.selectedMerchantId = '';
+  }
+
+  closeErrorModal(): void {
+    this.showErrorModal = false;
+    this.errorTitle = '';
+    this.errorMessage = '';
   }
 
   // Confirm upload after merchant selection — uses incoming validation pipeline
