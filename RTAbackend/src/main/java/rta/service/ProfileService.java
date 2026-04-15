@@ -57,6 +57,10 @@ public class ProfileService {
             throw new RuntimeException("User account has been deleted");
         }
 
+        if (!"ACTIVE".equals(profile.getStatus())) {
+            throw new RuntimeException("User account has been disabled. Please contact your administrator.");
+        }
+
         if (!profile.getPassword().equals(password)) {
             throw new RuntimeException("Invalid password");
         }
@@ -273,6 +277,33 @@ public class ProfileService {
         UserProfile user = profileRepository.findByUserIdAndDeletedAtIsNull(userId)
                 .orElseThrow(() -> new RuntimeException("User not found: " + userId));
         user.setDeletedAt(LocalDateTime.now());
+        profileRepository.save(user);
+    }
+
+    /**
+     * Disable a user account by setting status to DISABLED and isEnabled to
+     * false.
+     */
+    @Transactional
+    public void disableUser(String userId) {
+        UserProfile user = profileRepository.findByUserIdAndDeletedAtIsNull(userId)
+                .orElseThrow(() -> new RuntimeException("User not found: " + userId));
+        user.setStatus("DISABLED");
+        user.setIsEnabled(false);
+        user.setUpdatedAt(LocalDateTime.now());
+        profileRepository.save(user);
+    }
+
+    /**
+     * Re-enable a disabled user account.
+     */
+    @Transactional
+    public void enableUser(String userId) {
+        UserProfile user = profileRepository.findByUserIdAndDeletedAtIsNull(userId)
+                .orElseThrow(() -> new RuntimeException("User not found: " + userId));
+        user.setStatus("ACTIVE");
+        user.setIsEnabled(true);
+        user.setUpdatedAt(LocalDateTime.now());
         profileRepository.save(user);
     }
 

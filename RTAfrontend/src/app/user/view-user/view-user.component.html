@@ -56,7 +56,13 @@
         <div>
           <h1>{{ profile.name || 'User Details' }}</h1>
         </div>
-        <button class="btn btn-primary" *ngIf="hasPermission('USER_EDIT')" (click)="editUser()">Edit User</button>
+        <div class="header-actions">
+          <button class="btn btn-primary" *ngIf="hasPermission('USER_EDIT')" (click)="editUser()">Edit User</button>
+          <button class="btn btn-warning" *ngIf="canToggleStatus && !isDisabledUser" (click)="openDisableModal()">Disable User</button>
+          <button class="btn btn-enable" *ngIf="canToggleStatus && isDisabledUser" (click)="confirmEnable()"
+            [disabled]="isDisabling">{{ isDisabling ? 'Enabling...' : 'Enable User' }}</button>
+          <button class="btn btn-danger" *ngIf="canDelete" (click)="openDeleteModal()">Delete User</button>
+        </div>
       </div>
     </div>
 
@@ -176,4 +182,40 @@
       <div class="loading-text">Loading user details...</div>
     </main>
   </ng-template>
+</div>
+
+<!-- Disable Confirmation Modal -->
+<div class="modal-overlay" *ngIf="showDisableModal" (click)="closeDisableModal()">
+  <div class="modal-box" (click)="$event.stopPropagation()">
+    <h3 class="modal-title">Confirm Disable</h3>
+    <p class="modal-body">
+      Are you sure you want to disable user
+      <strong>{{ profile?.userId }}</strong> ({{ profile?.name }})?
+      <br />The user will no longer be able to log in.
+    </p>
+    <div class="modal-actions">
+      <button class="btn btn-cancel-modal" (click)="closeDisableModal()" [disabled]="isDisabling">Cancel</button>
+      <button class="btn btn-confirm-disable" (click)="confirmDisable()" [disabled]="isDisabling">
+        {{ isDisabling ? 'Disabling...' : 'Yes, Disable' }}
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal-overlay" *ngIf="showDeleteModal" (click)="closeDeleteModal()">
+  <div class="modal-box" (click)="$event.stopPropagation()">
+    <h3 class="modal-title">Confirm Delete</h3>
+    <p class="modal-body">
+      Are you sure you want to delete user
+      <strong>{{ profile?.userId }}</strong> ({{ profile?.name }})?
+      <br />This action cannot be undone.
+    </p>
+    <div class="modal-actions">
+      <button class="btn btn-cancel-modal" (click)="closeDeleteModal()" [disabled]="isDeleting">Cancel</button>
+      <button class="btn btn-confirm-delete" (click)="confirmDelete()" [disabled]="isDeleting">
+        {{ isDeleting ? 'Deleting...' : 'Yes, Delete' }}
+      </button>
+    </div>
+  </div>
 </div>

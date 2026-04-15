@@ -114,6 +114,7 @@ export class ViewUserComponent implements OnInit {
       case 'ACTIVE': return 'status-active';
       case 'INACTIVE': return 'status-inactive';
       case 'SUSPENDED': return 'status-suspended';
+      case 'DISABLED': return 'status-disabled';
       default: return '';
     }
   }
@@ -131,6 +132,105 @@ export class ViewUserComponent implements OnInit {
       const from = this.isOwnProfile ? 'profile' : 'view-user';
       this.router.navigate(['/edit-user', this.profile.userId], { queryParams: { from } });
     }
+  }
+
+  // --- Disable / Enable user ---
+  showDisableModal = false;
+  isDisabling = false;
+
+  /** Whether the viewed user is the currently logged-in user */
+  get isSelf(): boolean {
+    const currentUser = this.authService.getCurrentUser();
+    return !!currentUser && !!this.profile && currentUser.userId === this.profile.userId;
+  }
+
+  /** Can the current user disable/enable the viewed user? */
+  get canToggleStatus(): boolean {
+    // Don't show on own profile view, and user needs permission
+    return !this.isOwnProfile && this.hasPermission('USER_EDIT');
+  }
+
+  get isDisabledUser(): boolean {
+    const status = this.profile?.status?.toUpperCase();
+    return status === 'DISABLED' || status === 'INACTIVE';
+  }
+
+  openDisableModal(): void {
+    this.showDisableModal = true;
+  }
+
+  closeDisableModal(): void {
+    this.showDisableModal = false;
+    this.isDisabling = false;
+  }
+
+  confirmDisable(): void {
+    if (!this.profile) return;
+    this.isDisabling = true;
+    this.profileService.disableUser(this.profile.userId).subscribe({
+      next: () => {
+        this.closeDisableModal();
+        this.loadUser(this.profile!.userId);
+      },
+      error: (err) => {
+        console.error('Failed to disable user:', err);
+        this.isDisabling = false;
+        alert('Failed to disable user.');
+      }
+    });
+  }
+
+  confirmEnable(): void {
+    if (!this.profile) return;
+    this.isDisabling = true;
+    this.profileService.enableUser(this.profile.userId).subscribe({
+      next: () => {
+        this.isDisabling = false;
+        this.loadUser(this.profile!.userId);
+      },
+      error: (err) => {
+        console.error('Failed to enable user:', err);
+        this.isDisabling = false;
+        alert('Failed to enable user.');
+      }
+    });
+  }
+
+  // --- Delete user ---
+  showDeleteModal = false;
+  isDeleting = false;
+
+  /** Can the current user delete the viewed user? */
+  get canDelete(): boolean {
+    // SuperAdmin cannot delete themselves
+    if (this.isSelf && this.isSuperAdmin) return false;
+    return !this.isOwnProfile && this.hasPermission('USER_DELETE');
+  }
+
+  openDeleteModal(): void {
+    this.showDeleteModal = true;
+  }
+
+  closeDeleteModal(): void {
+    this.showDeleteModal = false;
+    this.isDeleting = false;
+  }
+
+  confirmDelete(): void {
+    if (!this.profile) return;
+    this.isDeleting = true;
+    this.profileService.deleteUser(this.profile.userId).subscribe({
+      next: () => {
+        this.closeDeleteModal();
+        this.router.navigate(['/users']);
+      },
+      error: (err) => {
+        console.error('Failed to delete user:', err);
+        this.isDeleting = false;
+        const msg = err?.error || 'Failed to delete user.';
+        alert(msg);
+      }
+    });
   }
 
   logout(): void {
