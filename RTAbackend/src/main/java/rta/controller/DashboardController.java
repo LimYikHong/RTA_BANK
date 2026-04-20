@@ -323,9 +323,9 @@ public class DashboardController {
                 rsaKeyRequestRepository.save(latest.get());
             }
 
-            // Request the sendAuth system to generate a new RSA key pair
-            // and return the public key to us
-            String pem = consumerKeyService.requestNewRsaKey();
+            // Fetch the RSA public key from the sendAuth system
+            // (sendAuth generates its key pair on startup, we just fetch it)
+            String pem = consumerKeyService.fetchRsaPublicKeyPem();
 
             // Save new key request
             LocalDateTime now = LocalDateTime.now();

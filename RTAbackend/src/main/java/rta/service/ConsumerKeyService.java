@@ -45,9 +45,6 @@ public class ConsumerKeyService {
     @Value("${rta.consumer.public-key-path}")
     private String publicKeyPath;
 
-    @Value("${rta.consumer.generate-key-path}")
-    private String generateKeyPath;
-
     @Value("${rta.consumer.api-key}")
     private String apiKey;
 
@@ -87,39 +84,37 @@ public class ConsumerKeyService {
     }
 
     /**
-     * Sends a POST request to the sendAuth system asking it to generate a new
-     * RSA key pair. The sendAuth system generates the key pair, stores the
-     * private key on its side, and returns the public key (PEM) in the response
-     * body.
+     * Fetches the RSA public key from the sendAuth system via GET
+     * /api/internal/public-key. The sendAuth system generates its RSA key pair
+     * on startup — we just need to fetch the public key.
      *
-     * @return the RSA public key PEM string returned by the sendAuth system
+     * @return the RSA public key PEM string from the sendAuth system
      * @throws RuntimeException if the request fails
      */
-    public String requestNewRsaKey() {
+    public String fetchRsaPublicKeyPem() {
         try {
-            String url = consumerBaseUrl + generateKeyPath;
-            log.info("[ConsumerKey] Requesting new RSA key generation from {}", url);
+            String url = consumerBaseUrl + publicKeyPath;
+            log.info("[ConsumerKey] Fetching RSA public key from sendAuth: {}", url);
 
             HttpHeaders headers = new HttpHeaders();
             headers.set("X-API-Key", apiKey);
             headers.setAccept(java.util.List.of(MediaType.TEXT_PLAIN, MediaType.APPLICATION_JSON));
 
             HttpEntity<Void> request = new HttpEntity<>(headers);
-            ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.POST, request, String.class);
+            ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.GET, request, String.class);
 
             if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
                 String pem = response.getBody().trim();
-                // Also update our local cache with the new key
                 PublicKey publicKey = parsePemPublicKey(pem);
                 cachedPublicKey.set(publicKey);
-                log.info("[ConsumerKey] New RSA key received and cached from sendAuth system");
+                log.info("[ConsumerKey] RSA public key fetched and cached from sendAuth system");
                 return pem;
             } else {
                 throw new RuntimeException("SendAuth returned HTTP " + response.getStatusCode());
             }
         } catch (Exception e) {
-            log.error("[ConsumerKey] Failed to request new RSA key from sendAuth: {}", e.getMessage(), e);
-            throw new RuntimeException("Failed to request new RSA key from sendAuth system: " + e.getMessage(), e);
+            log.error("[ConsumerKey] Failed to fetch RSA public key from sendAuth: {}", e.getMessage(), e);
+            throw new RuntimeException("Failed to fetch RSA public key from sendAuth system: " + e.getMessage(), e);
         }
     }
 
