@@ -51,4 +51,29 @@ export class DashboardService {
   getStats(): Observable<DashboardStats> {
     return this.http.get<DashboardStats>(`${this.apiUrl}/stats`);
   }
+
+  getRsaKeyStatus(): Observable<RsaKeyStatus> {
+    return this.http.get<RsaKeyStatus>(`${this.apiUrl}/rsa-key-status`);
+  }
+
+  requestRsaKey(): Observable<RsaKeyResponse> {
+    return this.http.post<RsaKeyResponse>(`${this.apiUrl}/request-rsa-key`, {});
+  }
+}
+
+export interface RsaKeyStatus {
+  hasKey: boolean;
+  requestedAt?: string;
+  expiresAt?: string;
+  daysRemaining: number;
+  daysElapsed?: number;
+  canRequest: boolean;
+  needsRenewal: boolean;
+  expired: boolean;
+}
+
+export interface RsaKeyResponse {
+  success: boolean;
+  message: string;
+  expiresAt?: string;
 }

@@ -67,6 +67,37 @@
             </div>
         </div>
 
+        <!-- ── RSA Key Management (SUPER_ADMIN only) ─────────────────── -->
+        <div class="rsa-key-card" *ngIf="isSuperAdmin">
+            <div class="rsa-key-header">
+                <div class="rsa-key-info">
+                    <h3>RSA Key Management</h3>
+                    <p *ngIf="rsaKeyStatus?.hasKey" class="rsa-key-detail">
+                        Expires: {{ rsaKeyStatus!.expiresAt | date:'medium' }} · 
+                        <span [class.rsa-warn]="rsaKeyStatus!.needsRenewal" [class.rsa-expired]="rsaKeyStatus!.expired">
+                            {{ rsaKeyStatus!.daysRemaining }} days remaining
+                        </span>
+                    </p>
+                    <p *ngIf="rsaKeyStatus && !rsaKeyStatus.hasKey" class="rsa-key-detail">No RSA key configured yet.</p>
+                </div>
+                <div class="rsa-key-actions">
+                    <div class="rsa-alert" *ngIf="rsaAlertMessage">{{ rsaAlertMessage }}</div>
+                    <button class="btn-rsa" 
+                            [disabled]="rsaButtonDisabled" 
+                            [title]="rsaButtonTooltip"
+                            (click)="onRequestRsaKey()">
+                        <span *ngIf="rsaKeyLoading" class="spinner"></span>
+                        {{ rsaButtonLabel }}
+                    </button>
+                </div>
+            </div>
+            <div class="rsa-message" *ngIf="rsaKeyMessage" 
+                 [class.rsa-success]="rsaKeyMessageType === 'success'"
+                 [class.rsa-error]="rsaKeyMessageType === 'error'">
+                {{ rsaKeyMessage }}
+            </div>
+        </div>
+
         <!-- ── Row 1: Transaction Trend (wide) + Transaction Status donut (narrow) ── -->
         <div class="chart-row">
             <div class="chart-card chart-wide">

@@ -169,10 +169,12 @@ export class BatchMaintenanceComponent implements OnInit {
   }
 
   getStatusClass(status: string): string {
-    switch (status) {
+    switch (status?.toUpperCase()) {
+      case 'CREATED': return 'status-ready';
       case 'READY_TO_SEND': return 'status-ready';
-      case 'SENT': return 'status-success';
+      case 'SENT': return 'status-processing';
       case 'PROCESSING': return 'status-processing';
+      case 'PROCESSED': return 'status-success';
       case 'COMPLETED': return 'status-success';
       case 'FAILED': return 'status-failed';
       default: return '';

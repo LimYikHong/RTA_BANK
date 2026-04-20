@@ -129,8 +129,9 @@ export class BatchDetailComponent implements OnInit {
       case 'VALIDATION_FAILED': return 'status-failed';
       case 'VALIDATION_ERROR': return 'status-error';
       case 'RECEIVED': return 'status-received';
-      case 'SUCCESS': return 'status-success';
+      case 'SUCCESS': case 'APPROVED': return 'status-success';
       case 'FAILED': return 'status-failed';
+      case 'PENDING': case 'SENT': return 'status-pending';
       default: return '';
     }
   }

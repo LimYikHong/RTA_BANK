@@ -121,9 +121,10 @@ export class RecurringDetailComponent implements OnInit {
 
   getStatusClass(status: string): string {
     switch (status?.toUpperCase()) {
-      case 'SUCCESS': return 'status-success';
+      case 'SUCCESS': case 'APPROVED': return 'status-success';
       case 'FAILED': return 'status-failed';
       case 'PENDING': return 'status-pending';
+      case 'SENT': return 'status-ready';
       default: return '';
     }
   }

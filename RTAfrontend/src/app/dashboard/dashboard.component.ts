@@ -2,7 +2,8 @@ import { Component, OnInit, AfterViewInit, OnDestroy, ElementRef, ViewChild } fr
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { FormsModule } from '@angular/forms';
-import { DashboardService, DashboardStats } from '../services/dashboard.service';
+import { DashboardService, DashboardStats, RsaKeyStatus } from '../services/dashboard.service';
+import { AuthService } from '../services/auth.service';
 import { TopBarComponent } from '../top-bar/top-bar.component';
 
 @Component({
@@ -23,6 +24,13 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
   lastRefreshed: Date | null = null;
   private refreshInterval: any;
 
+  // RSA Key state
+  isSuperAdmin = false;
+  rsaKeyStatus: RsaKeyStatus | null = null;
+  rsaKeyLoading = false;
+  rsaKeyMessage = '';
+  rsaKeyMessageType: 'success' | 'error' | '' = '';
+
   // Canvas refs for charts
   @ViewChild('trendCanvas')     trendCanvasRef!:    ElementRef<HTMLCanvasElement>;
   @ViewChild('txnStatusCanvas') txnStatusRef!:      ElementRef<HTMLCanvasElement>;
@@ -32,10 +40,14 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
   @ViewChild('recurringCanvas') recurringRef!:      ElementRef<HTMLCanvasElement>;
   @ViewChild('amountCanvas')    amountCanvasRef!:   ElementRef<HTMLCanvasElement>;
 
-  constructor(private dashboardService: DashboardService) {}
+  constructor(private dashboardService: DashboardService, private authService: AuthService) {}
 
   ngOnInit(): void {
+    this.isSuperAdmin = this.authService.isSuperAdmin();
     this.load();
+    if (this.isSuperAdmin) {
+      this.loadRsaKeyStatus();
+    }
     // Auto-refresh every 60 s
     this.refreshInterval = setInterval(() => this.load(), 60_000);
   }
@@ -328,6 +340,62 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
     ctx.closePath();
   }
 
+  // ── RSA Key methods ─────────────────────────────────────────────────────
+
+  loadRsaKeyStatus(): void {
+    this.dashboardService.getRsaKeyStatus().subscribe({
+      next: (status) => { this.rsaKeyStatus = status; },
+      error: () => { this.rsaKeyStatus = null; }
+    });
+  }
+
+  get rsaButtonLabel(): string {
+    if (!this.rsaKeyStatus || !this.rsaKeyStatus.hasKey) return 'Request RSA Key';
+    return 'Renew RSA Key';
+  }
+
+  get rsaButtonDisabled(): boolean {
+    if (this.rsaKeyLoading) return true;
+    if (!this.rsaKeyStatus) return false; // allow first request
+    if (!this.rsaKeyStatus.hasKey) return false; // no key yet
+    return !this.rsaKeyStatus.canRequest; // disabled before day 25 and after day 30
+  }
+
+  get rsaButtonTooltip(): string {
+    if (!this.rsaKeyStatus || !this.rsaKeyStatus.hasKey) return 'Click to request an RSA key from the consumer system';
+    if (this.rsaKeyStatus.expired) return 'RSA key has expired. Please contact system administrator.';
+    if (this.rsaKeyStatus.canRequest) return 'RSA key expiring soon. Click to renew.';
+    return `RSA key valid for ${this.rsaKeyStatus.daysRemaining} more days. Renewal available from day 25.`;
+  }
+
+  get rsaAlertMessage(): string {
+    if (!this.rsaKeyStatus) return '';
+    if (this.rsaKeyStatus.expired) return '⚠ RSA key has expired! Please contact system administrator.';
+    if (this.rsaKeyStatus.needsRenewal) return `⚠ RSA key expires in ${this.rsaKeyStatus.daysRemaining} days. Please renew now.`;
+    return '';
+  }
+
+  onRequestRsaKey(): void {
+    if (this.rsaButtonDisabled) return;
+    this.rsaKeyLoading = true;
+    this.rsaKeyMessage = '';
+    this.rsaKeyMessageType = '';
+
+    this.dashboardService.requestRsaKey().subscribe({
+      next: (res) => {
+        this.rsaKeyLoading = false;
+        this.rsaKeyMessage = res.message;
+        this.rsaKeyMessageType = res.success ? 'success' : 'error';
+        if (res.success) this.loadRsaKeyStatus();
+      },
+      error: (err) => {
+        this.rsaKeyLoading = false;
+        this.rsaKeyMessage = err.error?.message || 'Failed to request RSA key.';
+        this.rsaKeyMessageType = 'error';
+      }
+    });
+  }
+
   // ── Template helpers ───────────────────────────────────────────────────────
 
   objectEntries(obj: Record<string, number> | undefined): [string, number][] {
@@ -337,9 +405,9 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
   getStatusClass(status: string | null): string {
     if (!status) return 'status-received';
     switch (status.toUpperCase()) {
-      case 'SUCCESS': case 'VALIDATED': case 'COMPLETED': return 'status-completed';
+      case 'SUCCESS': case 'VALIDATED': case 'COMPLETED': case 'APPROVED': case 'PROCESSED': return 'status-completed';
       case 'FAILED': return 'status-failed';
-      case 'PENDING': case 'PROCESSING': return 'status-pending';
+      case 'PENDING': case 'PROCESSING': case 'CREATED': case 'SENT': return 'status-pending';
       default: return 'status-received';
     }
   }

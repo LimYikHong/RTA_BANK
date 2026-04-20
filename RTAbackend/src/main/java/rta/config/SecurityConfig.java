@@ -47,6 +47,8 @@ public class SecurityConfig {
                 .requestMatchers("/api/incoming/**").permitAll()
                 // Merchant key endpoints (merchant backend fetches public key)
                 .requestMatchers("/api/merchant-keys/**").permitAll()
+                // Internal channel (API key + IP whitelist secured via InternalApiSecurityFilter)
+                .requestMatchers("/api/internal/**").permitAll()
                 // --- User Profile restrictions (permission-based) ---
                 // Create user: requires USER_CREATE permission
                 .requestMatchers(HttpMethod.POST, "/api/profile/users").hasAuthority("USER_CREATE")
@@ -65,6 +67,9 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.DELETE, "/api/merchants/**").hasAuthority("MERCHANT_DELETE")
                 // View merchants: both roles allowed (GET is authenticated below)
 
+                // RSA Key request: SUPER_ADMIN only
+                .requestMatchers("/api/dashboard/rsa-key-status").hasRole("SUPER_ADMIN")
+                .requestMatchers(HttpMethod.POST, "/api/dashboard/request-rsa-key").hasRole("SUPER_ADMIN")
                 // All other endpoints: any authenticated user (SUPER_ADMIN or ADMIN)
                 .anyRequest().authenticated())
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)

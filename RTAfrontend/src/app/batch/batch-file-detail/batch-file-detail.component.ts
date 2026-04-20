@@ -256,9 +256,10 @@ export class BatchFileDetailComponent implements OnInit {
 
   getTxnStatusClass(status: string): string {
     switch (status?.toUpperCase()) {
-      case 'SUCCESS': return 'status-success';
+      case 'SUCCESS': case 'APPROVED': return 'status-success';
       case 'FAILED': return 'status-failed';
       case 'PENDING': return 'status-ready';
+      case 'SENT': return 'status-processing';
       default: return '';
     }
   }

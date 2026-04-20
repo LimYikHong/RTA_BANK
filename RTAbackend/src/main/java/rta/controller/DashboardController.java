@@ -3,26 +3,35 @@ package rta.controller;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import jakarta.servlet.http.HttpServletRequest;
 import rta.entity.RtaBatch;
 import rta.entity.RtaIncomingBatchFile;
+import rta.entity.SystemRsaKeyRequest;
 import rta.repository.AuditLogRepository;
 import rta.repository.MerchantInfoRepository;
 import rta.repository.ProfileRepository;
 import rta.repository.RtaBatchRepository;
 import rta.repository.RtaIncomingBatchFileRepository;
 import rta.repository.RtaTransactionRepository;
+import rta.repository.SystemRsaKeyRequestRepository;
+import rta.service.AuditLogService;
+import rta.service.ConsumerKeyService;
 
 /**
  * DashboardController – aggregates platform-wide stats for the Dashboard page.
@@ -39,6 +48,9 @@ public class DashboardController {
     private final MerchantInfoRepository merchantInfoRepository;
     private final ProfileRepository profileRepository;
     private final AuditLogRepository auditLogRepository;
+    private final SystemRsaKeyRequestRepository rsaKeyRequestRepository;
+    private final ConsumerKeyService consumerKeyService;
+    private final AuditLogService auditLogService;
 
     public DashboardController(
             RtaBatchRepository batchRepository,
@@ -46,13 +58,19 @@ public class DashboardController {
             RtaTransactionRepository transactionRepository,
             MerchantInfoRepository merchantInfoRepository,
             ProfileRepository profileRepository,
-            AuditLogRepository auditLogRepository) {
+            AuditLogRepository auditLogRepository,
+            SystemRsaKeyRequestRepository rsaKeyRequestRepository,
+            ConsumerKeyService consumerKeyService,
+            AuditLogService auditLogService) {
         this.batchRepository = batchRepository;
         this.incomingBatchFileRepository = incomingBatchFileRepository;
         this.transactionRepository = transactionRepository;
         this.merchantInfoRepository = merchantInfoRepository;
         this.profileRepository = profileRepository;
         this.auditLogRepository = auditLogRepository;
+        this.rsaKeyRequestRepository = rsaKeyRequestRepository;
+        this.consumerKeyService = consumerKeyService;
+        this.auditLogService = auditLogService;
     }
 
     /**
@@ -108,7 +126,7 @@ public class DashboardController {
                         .filter(t -> t.getCreatedAt() != null
                         && !t.getCreatedAt().isBefore(from)
                         && t.getCreatedAt().isBefore(to)
-                        && "SUCCESS".equalsIgnoreCase(t.getStatus()))
+                        && !"FAILED".equalsIgnoreCase(t.getStatus()))
                         .count();
                 long failed = allTxns.stream()
                         .filter(t -> t.getCreatedAt() != null
@@ -218,6 +236,124 @@ public class DashboardController {
             Map<String, Object> error = new LinkedHashMap<>();
             error.put("error", ex.getMessage());
             return ResponseEntity.status(500).body(error);
+        }
+    }
+
+    // ── RSA Key Request ─────────────────────────────────────────────────────
+    /**
+     * GET /api/dashboard/rsa-key-status Returns the current RSA key status for
+     * the 30-day lifecycle. Only SUPER_ADMIN can access.
+     */
+    @GetMapping("/rsa-key-status")
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
+    public ResponseEntity<Map<String, Object>> getRsaKeyStatus() {
+        Map<String, Object> result = new LinkedHashMap<>();
+        Optional<SystemRsaKeyRequest> latest = rsaKeyRequestRepository
+                .findTopByStatusOrderByRequestedAtDesc("ACTIVE");
+
+        if (latest.isEmpty()) {
+            // No key ever requested
+            result.put("hasKey", false);
+            result.put("daysRemaining", 0);
+            result.put("canRequest", true);
+            result.put("needsRenewal", false);
+            result.put("expired", false);
+            return ResponseEntity.ok(result);
+        }
+
+        SystemRsaKeyRequest key = latest.get();
+        long daysElapsed = ChronoUnit.DAYS.between(key.getRequestedAt(), LocalDateTime.now());
+        long daysRemaining = 30 - daysElapsed;
+
+        boolean expired = daysRemaining <= 0;
+        boolean needsRenewal = daysElapsed >= 25 && !expired;
+        // Can request: before day 25 = disabled, day 25-29 = enabled, after day 30 = disabled (must contact admin)
+        boolean canRequest = needsRenewal;
+
+        if (expired) {
+            key.setStatus("EXPIRED");
+            rsaKeyRequestRepository.save(key);
+        }
+
+        result.put("hasKey", true);
+        result.put("requestedAt", key.getRequestedAt().toString());
+        result.put("expiresAt", key.getExpiresAt().toString());
+        result.put("daysRemaining", Math.max(0, daysRemaining));
+        result.put("daysElapsed", daysElapsed);
+        result.put("canRequest", canRequest);
+        result.put("needsRenewal", needsRenewal);
+        result.put("expired", expired);
+        return ResponseEntity.ok(result);
+    }
+
+    /**
+     * POST /api/dashboard/request-rsa-key Requests a new RSA key from the
+     * consumer/auth third party. Only SUPER_ADMIN can access.
+     */
+    @PostMapping("/request-rsa-key")
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
+    public ResponseEntity<Map<String, Object>> requestRsaKey(HttpServletRequest request) {
+        Map<String, Object> result = new LinkedHashMap<>();
+        String userId = request.getUserPrincipal() != null ? request.getUserPrincipal().getName() : "SUPER_ADMIN";
+        String ipAddress = request.getRemoteAddr();
+
+        try {
+            // Check if renewal is allowed
+            Optional<SystemRsaKeyRequest> latest = rsaKeyRequestRepository
+                    .findTopByStatusOrderByRequestedAtDesc("ACTIVE");
+
+            if (latest.isPresent()) {
+                long daysElapsed = ChronoUnit.DAYS.between(latest.get().getRequestedAt(), LocalDateTime.now());
+                if (daysElapsed < 25) {
+                    result.put("success", false);
+                    result.put("message", "RSA key is still valid. Renewal is available from day 25.");
+                    auditLogService.logUserActivity("REQUEST_RSA_KEY", userId, null,
+                            "RSA key request rejected - key still valid (day " + daysElapsed + ")", "REJECTED", ipAddress);
+                    return ResponseEntity.badRequest().body(result);
+                }
+                if (daysElapsed >= 30) {
+                    result.put("success", false);
+                    result.put("message", "RSA key has expired. Please contact system administrator.");
+                    auditLogService.logUserActivity("REQUEST_RSA_KEY", userId, null,
+                            "RSA key request rejected - key expired", "REJECTED", ipAddress);
+                    return ResponseEntity.badRequest().body(result);
+                }
+                // Mark old key as expired
+                latest.get().setStatus("EXPIRED");
+                rsaKeyRequestRepository.save(latest.get());
+            }
+
+            // Request the sendAuth system to generate a new RSA key pair
+            // and return the public key to us
+            String pem = consumerKeyService.requestNewRsaKey();
+
+            // Save new key request
+            LocalDateTime now = LocalDateTime.now();
+            SystemRsaKeyRequest newRequest = SystemRsaKeyRequest.builder()
+                    .requestedBy(userId)
+                    .publicKeyPem(pem)
+                    .status("ACTIVE")
+                    .requestedAt(now)
+                    .expiresAt(now.plusDays(30))
+                    .ipAddress(ipAddress)
+                    .build();
+            rsaKeyRequestRepository.save(newRequest);
+
+            // Audit log
+            auditLogService.logUserActivity("REQUEST_RSA_KEY", userId, String.valueOf(newRequest.getId()),
+                    "RSA key successfully requested from consumer system", "SUCCESS", ipAddress);
+
+            result.put("success", true);
+            result.put("message", "RSA key successfully obtained from consumer system.");
+            result.put("expiresAt", newRequest.getExpiresAt().toString());
+            return ResponseEntity.ok(result);
+
+        } catch (Exception e) {
+            auditLogService.logUserActivity("REQUEST_RSA_KEY", userId, null,
+                    "RSA key request failed: " + e.getMessage(), "FAILED", ipAddress);
+            result.put("success", false);
+            result.put("message", "Failed to obtain RSA key: " + e.getMessage());
+            return ResponseEntity.status(500).body(result);
         }
     }
 }

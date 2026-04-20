@@ -23,7 +23,7 @@ public interface RtaTransactionRepository extends JpaRepository<RtaTransaction, 
 
     int countByBatchBatchIdAndStatus(Long batchId, String status);
 
-    @Query("SELECT COALESCE(SUM(t.amount), 0) FROM RtaTransaction t WHERE t.batch.batchId = :batchId AND t.status = 'SUCCESS'")
+    @Query("SELECT COALESCE(SUM(t.amount), 0) FROM RtaTransaction t WHERE t.batch.batchId = :batchId AND t.status <> 'FAILED'")
     long sumAmountByBatchIdAndStatusSuccess(Long batchId);
 
     // --- Queries by batchFileId (for viewing file details before batch assignment) ---
@@ -35,7 +35,7 @@ public interface RtaTransactionRepository extends JpaRepository<RtaTransaction, 
 
     int countByBatchFileIdAndStatus(Long batchFileId, String status);
 
-    @Query("SELECT COALESCE(SUM(t.amount), 0) FROM RtaTransaction t WHERE t.batchFileId = :batchFileId AND t.status = 'SUCCESS'")
+    @Query("SELECT COALESCE(SUM(t.amount), 0) FROM RtaTransaction t WHERE t.batchFileId = :batchFileId AND t.status <> 'FAILED'")
     long sumAmountByBatchFileIdAndStatusSuccess(@Param("batchFileId") Long batchFileId);
 
     /**
@@ -52,6 +52,22 @@ public interface RtaTransactionRepository extends JpaRepository<RtaTransaction, 
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query(value = "UPDATE rta_transaction SET batch_id = :batchId WHERE batch_file_id = :batchFileId", nativeQuery = true)
     int bulkAssignBatchByFileId(@Param("batchId") Long batchId, @Param("batchFileId") Long batchFileId);
+
+    /**
+     * Bulk-update transaction status for all transactions in a given batch
+     * file. Used to set PENDING → SENT when the batch is sent to authorization.
+     */
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query(value = "UPDATE rta_transaction SET status = :newStatus WHERE batch_file_id = :batchFileId AND status = :oldStatus", nativeQuery = true)
+    int bulkUpdateStatusByBatchFileId(@Param("batchFileId") Long batchFileId,
+            @Param("oldStatus") String oldStatus,
+            @Param("newStatus") String newStatus);
+
+    /**
+     * Find distinct batch_file_id values for transactions in a given batch.
+     */
+    @Query("SELECT DISTINCT t.batchFileId FROM RtaTransaction t WHERE t.batch.batchId = :batchId")
+    List<Long> findDistinctBatchFileIdsByBatchId(@Param("batchId") Long batchId);
 
     // Recurring transaction queries
     @Query("SELECT DISTINCT t.recurringReference, t.merchantId FROM RtaTransaction t WHERE t.recurringReference IS NOT NULL AND t.recurringReference <> ''")
@@ -70,7 +86,7 @@ public interface RtaTransactionRepository extends JpaRepository<RtaTransaction, 
     // =============================================
     @Query(value = "SELECT t.recurringReference AS recurringReference, t.merchantId AS merchantId, "
             + "COUNT(t) AS totalTransactions, "
-            + "SUM(CASE WHEN t.status = 'SUCCESS' THEN 1 ELSE 0 END) AS successCount, "
+            + "SUM(CASE WHEN t.status <> 'FAILED' THEN 1 ELSE 0 END) AS successCount, "
             + "SUM(CASE WHEN t.status = 'FAILED' THEN 1 ELSE 0 END) AS failedCount "
             + "FROM RtaTransaction t "
             + "WHERE t.recurringReference IS NOT NULL AND t.recurringReference <> '' "
@@ -82,7 +98,7 @@ public interface RtaTransactionRepository extends JpaRepository<RtaTransaction, 
 
     @Query(value = "SELECT t.recurringReference AS recurringReference, t.merchantId AS merchantId, "
             + "COUNT(t) AS totalTransactions, "
-            + "SUM(CASE WHEN t.status = 'SUCCESS' THEN 1 ELSE 0 END) AS successCount, "
+            + "SUM(CASE WHEN t.status <> 'FAILED' THEN 1 ELSE 0 END) AS successCount, "
             + "SUM(CASE WHEN t.status = 'FAILED' THEN 1 ELSE 0 END) AS failedCount "
             + "FROM RtaTransaction t "
             + "WHERE t.recurringReference IS NOT NULL AND t.recurringReference <> '' "
@@ -96,7 +112,7 @@ public interface RtaTransactionRepository extends JpaRepository<RtaTransaction, 
 
     @Query(value = "SELECT t.recurringReference AS recurringReference, t.merchantId AS merchantId, "
             + "COUNT(t) AS totalTransactions, "
-            + "SUM(CASE WHEN t.status = 'SUCCESS' THEN 1 ELSE 0 END) AS successCount, "
+            + "SUM(CASE WHEN t.status <> 'FAILED' THEN 1 ELSE 0 END) AS successCount, "
             + "SUM(CASE WHEN t.status = 'FAILED' THEN 1 ELSE 0 END) AS failedCount "
             + "FROM RtaTransaction t "
             + "WHERE t.recurringReference IS NOT NULL AND t.recurringReference <> '' "
@@ -112,7 +128,7 @@ public interface RtaTransactionRepository extends JpaRepository<RtaTransaction, 
 
     @Query(value = "SELECT t.recurringReference AS recurringReference, t.merchantId AS merchantId, "
             + "COUNT(t) AS totalTransactions, "
-            + "SUM(CASE WHEN t.status = 'SUCCESS' THEN 1 ELSE 0 END) AS successCount, "
+            + "SUM(CASE WHEN t.status <> 'FAILED' THEN 1 ELSE 0 END) AS successCount, "
             + "SUM(CASE WHEN t.status = 'FAILED' THEN 1 ELSE 0 END) AS failedCount "
             + "FROM RtaTransaction t "
             + "WHERE t.recurringReference IS NOT NULL AND t.recurringReference <> '' "
@@ -145,11 +161,11 @@ public interface RtaTransactionRepository extends JpaRepository<RtaTransaction, 
     // Authorization batch queries
     // =============================================
     /**
-     * Find all validated (SUCCESS) transactions that have been assigned to a
-     * batch (batch IS NOT NULL) but NOT yet assigned to an authorization batch
-     * (authBatchId IS NULL).
+     * Find all PENDING transactions that have been assigned to a batch (batch
+     * IS NOT NULL) but NOT yet assigned to an authorization batch (authBatchId
+     * IS NULL).
      */
-    @Query("SELECT t FROM RtaTransaction t JOIN RtaIncomingBatchFile f ON f.batchFileId = t.batchFileId WHERE t.status = 'SUCCESS' AND f.batchId IS NOT NULL AND t.authBatchId IS NULL")
+    @Query("SELECT t FROM RtaTransaction t JOIN RtaIncomingBatchFile f ON f.batchFileId = t.batchFileId WHERE t.status = 'PENDING' AND f.batchId IS NOT NULL AND t.authBatchId IS NULL")
     List<RtaTransaction> findUnbatchedValidTransactions();
 
     /**

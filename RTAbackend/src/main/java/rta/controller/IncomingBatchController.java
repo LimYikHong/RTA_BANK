@@ -370,7 +370,7 @@ public class IncomingBatchController {
                                             for (int rowIdx = 0; rowIdx < dataRows.size(); rowIdx++) {
                                                 String[] row = dataRows.get(rowIdx);
                                                 List<String> rowErrors = new ArrayList<>();
-                                                String txnStatus = "SUCCESS";
+                                                String txnStatus = "PENDING";
 
                                                 // Extract field values from the row - Transaction fields
                                                 String customerRef = getFieldValue(row, headerMap, mappings, "customer_reference");
@@ -535,7 +535,7 @@ public class IncomingBatchController {
 
                                                 transactionsToSave.add(txn);
 
-                                                if ("SUCCESS".equals(txnStatus)) {
+                                                if ("PENDING".equals(txnStatus)) {
                                                     successCount++;
                                                     if (amountCents != null) {
                                                         totalAmountCents += amountCents;
@@ -574,7 +574,7 @@ public class IncomingBatchController {
                                         for (int rowIdx = 0; rowIdx < dataRows.size(); rowIdx++) {
                                             String[] row = dataRows.get(rowIdx);
                                             List<String> rowErrors = new ArrayList<>();
-                                            String txnStatus = "SUCCESS";
+                                            String txnStatus = "PENDING";
 
                                             String customerRef = getFieldValue(row, headerMap, mappings, "customer_reference");
                                             String accountNum = getFieldValue(row, headerMap, mappings, "account_num");
@@ -721,7 +721,7 @@ public class IncomingBatchController {
 
                                             transactionsToSave.add(txn);
 
-                                            if ("SUCCESS".equals(txnStatus)) {
+                                            if ("PENDING".equals(txnStatus)) {
                                                 successCount++;
                                                 if (amountCents != null) {
                                                     totalAmountCents += amountCents;
@@ -824,7 +824,7 @@ public class IncomingBatchController {
                                                 for (int rowIdx = 0; rowIdx < dataRows.size(); rowIdx++) {
                                                     String[] row = dataRows.get(rowIdx);
                                                     List<String> rowErrors = new ArrayList<>();
-                                                    String txnStatus = "SUCCESS";
+                                                    String txnStatus = "PENDING";
 
                                                     // Extract field values
                                                     String customerRef = getFieldValue(row, headerMap, mappings, "customer_reference");
@@ -980,7 +980,7 @@ public class IncomingBatchController {
 
                                                     transactionsToSave.add(txn);
 
-                                                    if ("SUCCESS".equals(txnStatus)) {
+                                                    if ("PENDING".equals(txnStatus)) {
                                                         successCount++;
                                                         if (amountCents != null) {
                                                             totalAmountCents += amountCents;
@@ -1036,7 +1036,7 @@ public class IncomingBatchController {
                                         for (int rowIdx = 0; rowIdx < dataRows.size(); rowIdx++) {
                                             String[] row = dataRows.get(rowIdx);
                                             List<String> rowErrors = new ArrayList<>();
-                                            String txnStatus = "SUCCESS";
+                                            String txnStatus = "PENDING";
 
                                             String customerRef = getFieldValue(row, headerMap, mappings, "customer_reference");
                                             String accountNum = getFieldValue(row, headerMap, mappings, "account_num");
@@ -1183,7 +1183,7 @@ public class IncomingBatchController {
 
                                             transactionsToSave.add(txn);
 
-                                            if ("SUCCESS".equals(txnStatus)) {
+                                            if ("PENDING".equals(txnStatus)) {
                                                 successCount++;
                                                 if (amountCents != null) {
                                                     totalAmountCents += amountCents;
@@ -1293,7 +1293,7 @@ public class IncomingBatchController {
                         duplicateTransactions.add("Row " + txn.getBatchSeq() + ": " + txn.getMerchantCustomer() + " / "
                                 + (txn.getAmount() != null ? txn.getAmount() / 100.0 : "N/A") + " / " + txn.getActualBillingDate());
                         // Update counts
-                        if ("SUCCESS".equals(txn.getStatus())) {
+                        if ("PENDING".equals(txn.getStatus())) {
                             successCount--;
                             failCount++;
                         }
@@ -1491,8 +1491,8 @@ public class IncomingBatchController {
 
         RtaBatch batch = batchOpt.get();
         int total = transactionRepository.countByBatchBatchId(batchId);
-        int success = transactionRepository.countByBatchBatchIdAndStatus(batchId, "SUCCESS");
         int fail = transactionRepository.countByBatchBatchIdAndStatus(batchId, "FAILED");
+        int success = total - fail;
         long totalAmountCents = 0;
         try {
             totalAmountCents = transactionRepository.sumAmountByBatchIdAndStatusSuccess(batchId);
@@ -1579,8 +1579,8 @@ public class IncomingBatchController {
 
         RtaIncomingBatchFile incomingFile = fileOpt.get();
         int total = transactionRepository.countByBatchFileId(batchFileId);
-        int success = transactionRepository.countByBatchFileIdAndStatus(batchFileId, "SUCCESS");
         int fail = transactionRepository.countByBatchFileIdAndStatus(batchFileId, "FAILED");
+        int success = total - fail;
         long totalAmountCents = 0;
         try {
             totalAmountCents = transactionRepository.sumAmountByBatchFileIdAndStatusSuccess(batchFileId);
@@ -1802,7 +1802,7 @@ public class IncomingBatchController {
                             for (int rowIdx = 0; rowIdx < dataRows.size(); rowIdx++) {
                                 String[] row = dataRows.get(rowIdx);
                                 List<String> rowErrors = new ArrayList<>();
-                                String txnStatus = "SUCCESS";
+                                String txnStatus = "PENDING";
 
                                 String customerRef = getFieldValue(row, headerMap, mappings, "customer_reference");
                                 String accountNum = getFieldValue(row, headerMap, mappings, "account_num");
@@ -1939,7 +1939,7 @@ public class IncomingBatchController {
 
                                 transactionsToSave.add(txn);
 
-                                if ("SUCCESS".equals(txnStatus)) {
+                                if ("PENDING".equals(txnStatus)) {
                                     successCount++;
                                     if (amountCents != null) {
                                         totalAmountCents += amountCents;
@@ -2059,7 +2059,7 @@ public class IncomingBatchController {
                         for (int rowIdx = 0; rowIdx < dataRows.size(); rowIdx++) {
                             String[] row = dataRows.get(rowIdx);
                             List<String> rowErrors = new ArrayList<>();
-                            String txnStatus = "SUCCESS";
+                            String txnStatus = "PENDING";
 
                             // Extract field values
                             String customerRef = getFieldValue(row, headerMap, mappings, "customer_reference");
@@ -2204,7 +2204,7 @@ public class IncomingBatchController {
 
                             transactionsToSave.add(txn);
 
-                            if ("SUCCESS".equals(txnStatus)) {
+                            if ("PENDING".equals(txnStatus)) {
                                 successCount++;
                                 if (amountCents != null) {
                                     totalAmountCents += amountCents;

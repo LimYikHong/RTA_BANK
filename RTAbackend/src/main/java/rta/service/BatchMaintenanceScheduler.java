@@ -10,11 +10,9 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import rta.entity.RtaAuthorizationBatch;
 import rta.entity.RtaBatch;
 import rta.entity.RtaIncomingBatchFile;
-import rta.entity.RtaTransaction; // still needed for createAuthorizationBatch
-import rta.repository.RtaAuthorizationBatchRepository;
+import rta.entity.RtaTransaction;
 import rta.repository.RtaBatchRepository;
 import rta.repository.RtaIncomingBatchFileRepository;
 import rta.repository.RtaTransactionRepository;
@@ -24,16 +22,22 @@ import rta.repository.RtaTransactionRepository;
  *
  * <p>
  * Phase 1 — Batch assignment: finds incoming files with successCount > 0 that
- * have NOT yet been assigned a batch_id. For each eligible file, creates an
- * {@link RtaBatch} record, assigns the generated batch_id to the incoming file
- * (FK to rta_batch), and links the file's transactions to that batch. Files
- * with 0 successful records are skipped (no batch ID wasted).
+ * have NOT yet been assigned a batch_id. Creates an {@link RtaBatch} with
+ * status {@code CREATED}, assigns the batch_id to each file, and bulk-assigns
+ * batch_id to the file's transactions.</p>
  *
  * <p>
- * Phase 2 — Authorization grouping: groups all validated (SUCCESS) transactions
- * that have NOT been assigned to an authorization batch (auth_batch_id IS
- * NULL). Creates a new {@link RtaAuthorizationBatch} and assigns it to those
- * transactions with status "READY_TO_SEND".
+ * Phase 2 — Encrypt & send: for each {@code CREATED} batch, generates a CSV of
+ * all PENDING transactions, encrypts it with AES-256 (key encrypted with
+ * merchant RSA public key), sends the encrypted file to the
+ * {@code batch-request} Kafka topic, then bulk-updates transaction status to
+ * {@code SENT} and batch status to {@code SENT}.</p>
+ *
+ * <p>
+ * The authorization response arrives asynchronously on the
+ * {@code batch-response} Kafka topic and is handled by
+ * {@link TransactionUpdateService}, which sets each transaction to
+ * {@code APPROVED} or {@code FAILED} and the batch to {@code PROCESSED}.</p>
  */
 @Service
 public class BatchMaintenanceScheduler {
@@ -43,26 +47,29 @@ public class BatchMaintenanceScheduler {
     public static final long INTERVAL_MS = 300_000; // 5 minutes
 
     private final RtaTransactionRepository transactionRepository;
-    private final RtaAuthorizationBatchRepository authBatchRepository;
     private final RtaIncomingBatchFileRepository incomingFileRepository;
     private final RtaBatchRepository batchRepository;
     private final AuditLogService auditLogService;
+    private final BatchFileGenerationService batchFileGenerationService;
+    private final BatchRequestProducer batchRequestProducer;
 
     /**
-     * Epoch millis of the last completed batch run
+     * Epoch millis of the last completed batch run.
      */
     private volatile long lastRunTimeMs = System.currentTimeMillis();
 
     public BatchMaintenanceScheduler(RtaTransactionRepository transactionRepository,
-            RtaAuthorizationBatchRepository authBatchRepository,
             RtaIncomingBatchFileRepository incomingFileRepository,
             RtaBatchRepository batchRepository,
-            AuditLogService auditLogService) {
+            AuditLogService auditLogService,
+            BatchFileGenerationService batchFileGenerationService,
+            BatchRequestProducer batchRequestProducer) {
         this.transactionRepository = transactionRepository;
-        this.authBatchRepository = authBatchRepository;
         this.incomingFileRepository = incomingFileRepository;
         this.batchRepository = batchRepository;
         this.auditLogService = auditLogService;
+        this.batchFileGenerationService = batchFileGenerationService;
+        this.batchRequestProducer = batchRequestProducer;
     }
 
     /**
@@ -73,38 +80,29 @@ public class BatchMaintenanceScheduler {
     }
 
     /**
-     * Runs every 5 minutes (300 000 ms). First assigns batch IDs to eligible
-     * incoming files, then collects unbatched validated transactions and
-     * creates an authorization batch.
+     * Runs every 5 minutes (300 000 ms).
      */
     @Scheduled(fixedRate = 300000)
     @Transactional
     public void runBatchGrouping() {
         log.info("[BatchMaintenance] Scheduled batch grouping started...");
 
-        // -------------------------------------------------------
-        // Phase 1: Assign batch IDs to eligible incoming files
-        // -------------------------------------------------------
+        // Phase 1: Assign batch IDs to eligible incoming files → status CREATED
         assignBatchIds();
 
-        // -------------------------------------------------------
-        // Phase 2: Group unbatched validated transactions into
-        //          authorization batches
-        // -------------------------------------------------------
-        createAuthorizationBatch();
+        // Phase 2: For each CREATED batch, generate encrypted CSV → send via Kafka → status SENT
+        encryptAndSendCreatedBatches();
 
-        // Record completion time AFTER the job finishes so that
-        // getNextRunTimeMs() reflects 5 minutes from job completion,
-        // not from job start (which caused early countdown display)
         this.lastRunTimeMs = System.currentTimeMillis();
         log.info("[BatchMaintenance] Scheduled batch grouping completed.");
     }
 
+    // ─────────────────────────────────────────────────────────────
+    // Phase 1: Assign batch IDs
+    // ─────────────────────────────────────────────────────────────
     /**
-     * Finds all incoming files with successCount > 0 and no batchId, creates a
-     * SINGLE RtaBatch for the entire run, and links all eligible files and
-     * their transactions to that batch. All files uploaded within the time
-     * period are grouped together in one batch run.
+     * Finds all eligible incoming files, creates a SINGLE RtaBatch with status
+     * CREATED, and links files + transactions to that batch.
      */
     private void assignBatchIds() {
         List<RtaIncomingBatchFile> eligibleFiles = incomingFileRepository.findEligibleForBatch();
@@ -116,7 +114,6 @@ public class BatchMaintenanceScheduler {
 
         log.info("[BatchMaintenance] Found {} eligible file(s) for batch assignment.", eligibleFiles.size());
 
-        // Aggregate totals across all eligible files
         int totalCount = 0;
         int totalSuccess = 0;
         int totalFail = 0;
@@ -126,17 +123,15 @@ public class BatchMaintenanceScheduler {
             totalFail += (f.getFailCount() != null ? f.getFailCount() : 0);
         }
 
-        // Build a batch reference: BATCH-yyyyMMddHHmmss
         String batchRef = "BATCH-" + LocalDateTime.now().format(REF_FORMAT);
 
-        // Create ONE RtaBatch record for all files in this run
         RtaBatch batch = new RtaBatch();
         batch.setFileName(batchRef);
         batch.setOriginalFileName(eligibleFiles.size() + " file(s)");
         batch.setMerchantId(eligibleFiles.size() == 1
                 ? eligibleFiles.get(0).getMerchantId()
                 : "MULTIPLE");
-        batch.setStatus("BATCHED");
+        batch.setStatus("CREATED");
         batch.setCreatedBy("SYSTEM");
         batch.setCreatedAt(LocalDateTime.now());
         batch.setTotalCount(totalCount);
@@ -144,78 +139,109 @@ public class BatchMaintenanceScheduler {
         batch.setTotalFailCount(totalFail);
         RtaBatch savedBatch = batchRepository.save(batch);
 
-        // Assign the single batch to every eligible file and bulk-update their transactions
         for (RtaIncomingBatchFile file : eligibleFiles) {
             file.setBatchId(savedBatch.getBatchId());
-            file.setBatchStatus("BATCHED");
+            file.setBatchStatus("CREATED");
             incomingFileRepository.save(file);
 
-            // Bulk-update all transactions for this file in ONE SQL statement
             int updated = transactionRepository.bulkAssignBatchByFileId(
                     savedBatch.getBatchId(), file.getBatchFileId());
 
-            log.info("[BatchMaintenance] File '{}' (merchant: {}, {} records) assigned to batch {} — {} transaction(s) updated",
+            log.info("[BatchMaintenance] File '{}' (merchant: {}) assigned to batch {} — {} txn(s) linked",
                     file.getOriginalFilename(), file.getMerchantId(),
-                    file.getSuccessCount(), savedBatch.getBatchId(), updated);
+                    savedBatch.getBatchId(), updated);
         }
 
-        log.info("[BatchMaintenance] Batch {} created — {} file(s), {} total records ({} success, {} fail)",
+        log.info("[BatchMaintenance] Batch {} CREATED — {} file(s), {} records ({} success, {} fail)",
                 savedBatch.getBatchId(), eligibleFiles.size(), totalCount, totalSuccess, totalFail);
 
-        // Audit log: system activity for run batch
         auditLogService.logSystemActivity("RUN_BATCH",
                 String.valueOf(savedBatch.getBatchId()),
-                "Batch scheduler created batch #" + savedBatch.getBatchId()
-                + " with " + eligibleFiles.size() + " file(s), "
+                "Batch #" + savedBatch.getBatchId() + " created with "
+                + eligibleFiles.size() + " file(s), "
                 + totalCount + " records (" + totalSuccess + " success, " + totalFail + " fail)",
                 "SUCCESS");
     }
 
+    // ─────────────────────────────────────────────────────────────
+    // Phase 2: Encrypt & send CREATED batches via Kafka
+    // ─────────────────────────────────────────────────────────────
     /**
-     * Groups all validated (SUCCESS) transactions that have NOT been assigned
-     * to any authorization batch. Creates a new RtaAuthorizationBatch and
-     * assigns it to those transactions.
+     * For every batch in CREATED status: collect PENDING transactions, generate
+     * an encrypted CSV, send via Kafka, bulk-update transactions to SENT, and
+     * mark batch as SENT.
      */
-    private void createAuthorizationBatch() {
-        List<RtaTransaction> unbatched = transactionRepository.findUnbatchedValidTransactions();
+    private void encryptAndSendCreatedBatches() {
+        List<RtaBatch> createdBatches = batchRepository.findByStatus("CREATED");
 
-        if (unbatched.isEmpty()) {
-            log.info("[BatchMaintenance] No unbatched validated transactions found. Skipping.");
+        if (createdBatches.isEmpty()) {
+            log.info("[BatchMaintenance] No CREATED batches to send. Skipping.");
             return;
         }
 
-        log.info("[BatchMaintenance] Found {} unbatched validated transactions. Creating authorization batch...", unbatched.size());
-
-        // Calculate totals
-        int totalCount = unbatched.size();
-        long totalAmountCents = unbatched.stream()
-                .filter(t -> t.getAmount() != null)
-                .mapToLong(RtaTransaction::getAmount)
-                .sum();
-
-        // Generate unique batch reference: AUTH-yyyyMMddHHmmss
-        String batchRef = "AUTH-" + LocalDateTime.now().format(REF_FORMAT);
-
-        // Create the authorization batch
-        RtaAuthorizationBatch authBatch = new RtaAuthorizationBatch();
-        authBatch.setBatchReference(batchRef);
-        authBatch.setTotalCount(totalCount);
-        authBatch.setSuccessCount(totalCount);  // All are validated SUCCESS
-        authBatch.setFailCount(0);
-        authBatch.setTotalAmountCents(totalAmountCents);
-        authBatch.setBatchStatus("READY_TO_SEND");
-        authBatch.setCreatedAt(LocalDateTime.now());
-        authBatch.setRemark("Auto-grouped " + totalCount + " validated transactions");
-
-        RtaAuthorizationBatch saved = authBatchRepository.save(authBatch);
-
-        // Assign auth_batch_id to all unbatched transactions
-        for (RtaTransaction txn : unbatched) {
-            txn.setAuthBatchId(saved.getAuthBatchId());
+        for (RtaBatch batch : createdBatches) {
+            try {
+                sendBatch(batch);
+            } catch (Exception e) {
+                log.error("[BatchMaintenance] Failed to send batch {}: {}",
+                        batch.getBatchId(), e.getMessage(), e);
+            }
         }
-        transactionRepository.saveAll(unbatched);
+    }
 
-        log.info("[BatchMaintenance] Authorization batch '{}' created with {} transactions, total amount: {} cents",
-                batchRef, totalCount, totalAmountCents);
+    private void sendBatch(RtaBatch batch) {
+        // Get all PENDING transactions for this batch
+        List<RtaTransaction> pendingTxns = transactionRepository
+                .findByBatchBatchIdAndStatus(batch.getBatchId(), "PENDING");
+
+        if (pendingTxns.isEmpty()) {
+            log.info("[BatchMaintenance] Batch {} has no PENDING transactions. Marking SENT with 0 records.",
+                    batch.getBatchId());
+            batch.setStatus("SENT");
+            batch.setLastModifiedAt(LocalDateTime.now());
+            batch.setLastModifiedBy("SYSTEM");
+            batchRepository.save(batch);
+            return;
+        }
+
+        log.info("[BatchMaintenance] Encrypting batch {} ({} PENDING transactions, merchant: {})...",
+                batch.getBatchId(), pendingTxns.size(), batch.getMerchantId());
+
+        // Generate CSV, encrypt with AES-256, encrypt key with RSA
+        BatchFileGenerationService.EncryptedBatchFile encrypted
+                = batchFileGenerationService.generateAndEncrypt(
+                        batch.getBatchId(), batch.getMerchantId(), pendingTxns);
+
+        // Send to Kafka topic: batch-request
+        batchRequestProducer.send(
+                batch.getBatchId(),
+                batch.getMerchantId(),
+                encrypted.getCsvFilename(),
+                pendingTxns.size(),
+                encrypted.getEncryptedFileBytes(),
+                encrypted.getEncryptedAesKeyBase64(),
+                encrypted.getIvBase64());
+
+        // Bulk-update transaction status: PENDING → SENT (using batch_file_id from batch)
+        List<Long> batchFileIds = transactionRepository
+                .findDistinctBatchFileIdsByBatchId(batch.getBatchId());
+        for (Long batchFileId : batchFileIds) {
+            transactionRepository.bulkUpdateStatusByBatchFileId(batchFileId, "PENDING", "SENT");
+        }
+
+        // Update batch status: CREATED → SENT
+        batch.setStatus("SENT");
+        batch.setLastModifiedAt(LocalDateTime.now());
+        batch.setLastModifiedBy("SYSTEM");
+        batchRepository.save(batch);
+
+        log.info("[BatchMaintenance] Batch {} SENT to Kafka — {} transactions, file: {}",
+                batch.getBatchId(), pendingTxns.size(), encrypted.getCsvFilename());
+
+        auditLogService.logSystemActivity("BATCH_SENT",
+                String.valueOf(batch.getBatchId()),
+                "Batch #" + batch.getBatchId() + " encrypted and sent to authorization — "
+                + pendingTxns.size() + " transactions",
+                "SUCCESS");
     }
 }

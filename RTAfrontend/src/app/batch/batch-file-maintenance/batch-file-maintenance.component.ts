@@ -192,6 +192,9 @@ export class BatchFileMaintenanceComponent implements OnInit {
   getBatchStatusClass(status: string): string {
     switch (status?.toUpperCase()) {
       case 'BATCHED': return 'status-success';
+      case 'CREATED': return 'status-ready';
+      case 'SENT': return 'status-processing';
+      case 'PROCESSED': return 'status-success';
       case 'PENDING': return 'status-ready';
       case 'PROCESSING': return 'status-processing';
       case 'FAILED': return 'status-failed';

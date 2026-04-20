@@ -81,7 +81,7 @@ public class RecurringTransactionController {
         if ("RECURRING".equalsIgnoreCase(recurringType)) {
             // Recurring: group by recurringReference + merchantId
             dataJpql = "SELECT t.recurringReference, t.merchantId, COUNT(t), "
-                    + "SUM(CASE WHEN t.status = 'SUCCESS' THEN 1 ELSE 0 END), "
+                    + "SUM(CASE WHEN t.status <> 'FAILED' THEN 1 ELSE 0 END), "
                     + "SUM(CASE WHEN t.status = 'FAILED' THEN 1 ELSE 0 END), "
                     + "MAX(ab.batchStatus), "
                     + "CAST(NULL AS long), "
@@ -93,7 +93,7 @@ public class RecurringTransactionController {
         } else if ("NON_RECURRING".equalsIgnoreCase(recurringType)) {
             // Non-recurring: list each transaction individually by ID
             dataJpql = "SELECT CAST(t.id AS string), t.merchantId, CAST(1 AS long), "
-                    + "SUM(CASE WHEN t.status = 'SUCCESS' THEN 1 ELSE 0 END), "
+                    + "SUM(CASE WHEN t.status <> 'FAILED' THEN 1 ELSE 0 END), "
                     + "SUM(CASE WHEN t.status = 'FAILED' THEN 1 ELSE 0 END), "
                     + "MAX(ab.batchStatus), "
                     + "t.id, "
@@ -114,7 +114,7 @@ public class RecurringTransactionController {
 
             // Recurring grouped rows
             String recurringJpql = "SELECT t.recurringReference, t.merchantId, COUNT(t), "
-                    + "SUM(CASE WHEN t.status = 'SUCCESS' THEN 1 ELSE 0 END), "
+                    + "SUM(CASE WHEN t.status <> 'FAILED' THEN 1 ELSE 0 END), "
                     + "SUM(CASE WHEN t.status = 'FAILED' THEN 1 ELSE 0 END), "
                     + "MAX(ab.batchStatus), "
                     + "CAST(NULL AS long), "
@@ -124,7 +124,7 @@ public class RecurringTransactionController {
 
             // Non-recurring individual rows
             String nonRecurringJpql = "SELECT CAST(t.id AS string), t.merchantId, CAST(1 AS long), "
-                    + "SUM(CASE WHEN t.status = 'SUCCESS' THEN 1 ELSE 0 END), "
+                    + "SUM(CASE WHEN t.status <> 'FAILED' THEN 1 ELSE 0 END), "
                     + "SUM(CASE WHEN t.status = 'FAILED' THEN 1 ELSE 0 END), "
                     + "MAX(ab.batchStatus), "
                     + "t.id, "
@@ -246,12 +246,10 @@ public class RecurringTransactionController {
 
         // Get summary stats
         int totalCount = transactions.size();
-        int successCount = (int) transactions.stream()
-                .filter(t -> "SUCCESS".equals(t.getStatus()))
-                .count();
         int failedCount = (int) transactions.stream()
                 .filter(t -> "FAILED".equals(t.getStatus()))
                 .count();
+        int successCount = totalCount - failedCount;
         long totalAmount = transactions.stream()
                 .filter(t -> t.getAmount() != null)
                 .mapToLong(RtaTransaction::getAmount)
