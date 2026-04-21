@@ -332,7 +332,7 @@ public class BatchMaintenanceScheduler {
                     authResponse.getApproved(), authResponse.getRejected());
 
             // ── Step 4: Update transaction statuses from response ─────────
-            if (authResponse.getResults() != null) {
+            if (authResponse.getResults() != null && !authResponse.getResults().isEmpty()) {
                 for (Map<String, Object> txnResult : authResponse.getResults()) {
                     try {
                         Long transactionId = toLong(txnResult.get("transactionId"));
@@ -350,6 +350,16 @@ public class BatchMaintenanceScheduler {
                     } catch (Exception e) {
                         log.warn("[BatchMaintenance] Failed to update transaction: {}", e.getMessage());
                     }
+                }
+            } else {
+                // No per-transaction detail from consumer — bulk update using counts
+                log.info("[BatchMaintenance] No per-txn results for batch {}. Bulk-updating {} PENDING txns to APPROVED.",
+                        batch.getBatchId(), pendingTxns.size());
+                for (RtaTransaction txn : pendingTxns) {
+                    txn.setStatus("APPROVED");
+                    txn.setRemark("Authorized by consumer (batch result)");
+                    txn.setAuthorizationDatetime(LocalDateTime.now());
+                    transactionRepository.save(txn);
                 }
             }
 

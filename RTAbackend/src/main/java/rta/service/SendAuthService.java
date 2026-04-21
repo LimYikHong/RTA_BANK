@@ -219,6 +219,21 @@ public class SendAuthService {
         }
     }
 
+    /**
+     * Try multiple possible column names (snake_case, camelCase) from a parsed
+     * CSV row.
+     */
+    private String getField(Map<String, Object> row, String... keysAndDefault) {
+        String defaultVal = keysAndDefault[keysAndDefault.length - 1];
+        for (int i = 0; i < keysAndDefault.length - 1; i++) {
+            Object val = row.get(keysAndDefault[i]);
+            if (val != null && !val.toString().isEmpty()) {
+                return val.toString();
+            }
+        }
+        return defaultVal;
+    }
+
     private int toInt(Object val) {
         if (val == null) {
             return 0;
@@ -278,10 +293,10 @@ public class SendAuthService {
             for (int j = 0; j < headers.length && j < values.length; j++) {
                 row.put(headers[j].trim(), values[j].trim());
             }
-            // Map consumer fields to what BatchMaintenanceScheduler expects
-            String txnIdStr = (String) row.getOrDefault("transactionId", "0");
-            String authResult = (String) row.getOrDefault("authResult", "");
-            String reason = (String) row.getOrDefault("decisionReason", "");
+            // Map consumer fields — try both camelCase and snake_case column names
+            String txnIdStr = getField(row, "transaction_id", "transactionId", "0");
+            String authResult = getField(row, "auth_result", "authResult", "");
+            String reason = getField(row, "decision_reason", "decisionReason", "");
 
             Map<String, Object> txnResult = new java.util.LinkedHashMap<>();
             txnResult.put("transactionId", txnIdStr);
