@@ -19,6 +19,7 @@ import { MerchantMaintenanceComponent } from './merchant/merchant-maintenance/me
 import { RecurringListComponent } from './recurring/recurring-list/recurring-list.component';
 import { RecurringDetailComponent } from './recurring/recurring-detail/recurring-detail.component';
 import { AuditLogComponent } from './audit-log/audit-log.component';
+import { CheckAuthResultComponent } from './batch/check-auth-result/check-auth-result.component';
 import { authGuard } from './services/auth.guard';
 import { superAdminGuard, permissionGuard } from './services/role.guard';
 
@@ -32,6 +33,7 @@ export const routes: Routes = [
   { path: 'batch-file-detail/:batchFileId', component: BatchFileDetailComponent, canActivate: [authGuard] },
   { path: 'batch-maintenance', component: BatchMaintenanceComponent, canActivate: [authGuard] },
   { path: 'batch-maintenance-detail/:authBatchId', component: BatchMaintenanceDetailComponent, canActivate: [authGuard] },
+  { path: 'check-auth-result', component: CheckAuthResultComponent, canActivate: [authGuard] },
   { path: 'profile', component: ViewUserComponent, canActivate: [authGuard] },
   { path: 'users', component: UserManagementComponent, canActivate: [authGuard] },
   { path: 'view-user/:userId', component: ViewUserComponent, canActivate: [authGuard] },

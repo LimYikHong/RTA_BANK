@@ -1513,7 +1513,7 @@ public class IncomingBatchController {
         Map<String, Object> summary = new LinkedHashMap<>();
         summary.put("batchId", batchId);
         summary.put("fileName", batch.getOriginalFileName());
-        summary.put("merchantId", batch.getMerchantId());
+        summary.put("merchantIds", batch.getMerchantIds());
         summary.put("status", batch.getStatus());
         summary.put("totalRecords", total);
         summary.put("successCount", success);

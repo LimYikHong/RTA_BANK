@@ -9,6 +9,7 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 
 import rta.entity.RtaTransaction;
 
@@ -49,6 +50,7 @@ public interface RtaTransactionRepository extends JpaRepository<RtaTransaction, 
      * Bulk-assign a batch to all transactions belonging to a given batch file
      * in a single UPDATE statement instead of loading and saving each row.
      */
+    @Transactional
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query(value = "UPDATE rta_transaction SET batch_id = :batchId WHERE batch_file_id = :batchFileId", nativeQuery = true)
     int bulkAssignBatchByFileId(@Param("batchId") Long batchId, @Param("batchFileId") Long batchFileId);
@@ -57,6 +59,7 @@ public interface RtaTransactionRepository extends JpaRepository<RtaTransaction, 
      * Bulk-update transaction status for all transactions in a given batch
      * file. Used to set PENDING → SENT when the batch is sent to authorization.
      */
+    @Transactional
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query(value = "UPDATE rta_transaction SET status = :newStatus WHERE batch_file_id = :batchFileId AND status = :oldStatus", nativeQuery = true)
     int bulkUpdateStatusByBatchFileId(@Param("batchFileId") Long batchFileId,

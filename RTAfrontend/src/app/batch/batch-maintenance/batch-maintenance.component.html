@@ -16,6 +16,7 @@
       <li routerLink="/incoming-batch" routerLinkActive="active"><b>Incoming Batch File</b></li>
       <li routerLink="/batch-file-maintenance" routerLinkActive="active"><b>Batch File Maintenance</b></li>
       <li routerLink="/batch-maintenance" routerLinkActive="active"><b>Batch Maintenance</b></li>
+      <li routerLink="/check-auth-result" routerLinkActive="active"><b>Check Auth Result</b></li>
       <li routerLink="/recurring-list" routerLinkActive="active"><b>Track Transaction</b></li>
        
       <li routerLink="/users" routerLinkActive="active"><b>User Management</b></li>
@@ -54,6 +55,7 @@
             <th class="th-sort" (click)="sortBy('totalCount')" [attr.data-sort]="sortKey==='totalCount' ? sortDir : ''">Total Transactions</th>
             <th class="th-sort" (click)="sortBy('totalAmountCents')" [attr.data-sort]="sortKey==='totalAmountCents' ? sortDir : ''">Total Amount</th>
             <th class="th-sort" (click)="sortBy('batchStatus')" [attr.data-sort]="sortKey==='batchStatus' ? sortDir : ''">Status</th>
+            <th class="th-sort" (click)="sortBy('sendAuthStatus')" [attr.data-sort]="sortKey==='sendAuthStatus' ? sortDir : ''">Send Auth</th>
             <th class="th-sort" (click)="sortBy('createdAt')" [attr.data-sort]="sortKey==='createdAt' ? sortDir : ''">Created At</th>
             <th class="th-sort" (click)="sortBy('remark')" [attr.data-sort]="sortKey==='remark' ? sortDir : ''">Remark</th>
             <th>Actions</th>
@@ -71,14 +73,25 @@
                 {{ item.batchStatus }}
               </span>
             </td>
+            <td>
+              <span class="status-badge" [ngClass]="getSendAuthStatusClass(item.sendAuthStatus)">
+                {{ item.sendAuthStatus }}
+              </span>
+            </td>
             <td class="date-cell">{{ item.createdAt | date:'yyyy-MM-dd HH:mm:ss' }}</td>
             <td class="remark-cell">{{ item.remark }}</td>
             <td class="action-cell">
               <button class="btn-action btn-view" (click)="viewDetail(item.authBatchId)" title="View"></button>
+              <button *ngIf="item.sendAuthStatus === 'SEND_FAILED'"
+                      class="btn-action btn-retry"
+                      (click)="retrySendAuth(item)"
+                      [disabled]="item.retrying"
+                      title="Retry Send Auth">
+              </button>
             </td>
           </tr>
           <tr *ngIf="totalElements === 0">
-            <td colspan="9" class="no-data-cell">
+            <td colspan="10" class="no-data-cell">
               <div class="no-data">
                 <p>No authorization batches found.</p>
               </div>

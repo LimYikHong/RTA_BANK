@@ -1,16 +1,5 @@
 package rta.service;
 
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Service;
-import rta.entity.RtaBatchEncryptionKey;
-import rta.entity.RtaTransaction;
-import rta.repository.RtaBatchEncryptionKeyRepository;
-
-import javax.crypto.Cipher;
-import javax.crypto.KeyGenerator;
-import javax.crypto.SecretKey;
-import javax.crypto.spec.IvParameterSpec;
 import java.io.ByteArrayOutputStream;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
@@ -21,6 +10,19 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Base64;
 import java.util.List;
+
+import javax.crypto.Cipher;
+import javax.crypto.KeyGenerator;
+import javax.crypto.SecretKey;
+import javax.crypto.spec.IvParameterSpec;
+
+import org.springframework.stereotype.Service;
+
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import rta.entity.RtaBatchEncryptionKey;
+import rta.entity.RtaTransaction;
+import rta.repository.RtaBatchEncryptionKeyRepository;
 
 /**
  * Generates a CSV file from validated (PENDING) transactions, encrypts it with
@@ -101,9 +103,11 @@ public class BatchFileGenerationService {
             String ivBase64 = Base64.getEncoder().encodeToString(iv);
 
             // 8. Persist encryption key record
+            // Use actual merchant from first transaction (batch merchantId may be "MULTIPLE")
+            String actualMerchantId = transactions.isEmpty() ? merchantId : transactions.get(0).getMerchantId();
             RtaBatchEncryptionKey keyRecord = RtaBatchEncryptionKey.builder()
                     .batchId(batchId)
-                    .merchantId(merchantId)
+                    .merchantId(actualMerchantId)
                     .aesKeyBase64(aesKeyBase64)
                     .ivBase64(ivBase64)
                     .encryptedAesKeyBase64(encryptedAesKeyBase64)
@@ -124,15 +128,16 @@ public class BatchFileGenerationService {
     }
 
     /**
-     * Build CSV content from transaction records. Header: transaction_id,
-     * merchant_id, merchant_customer, masked_pan, amount_cents, currency,
+     * Build CSV content from transaction records. Header must match consumer's
+     * OpenCSV @CsvBindByName fields: transaction_id, merchant_id,
+     * merchant_customer, masked_pan, amount_cents, currency,
      * actual_billing_date, recurring_reference
      */
     private byte[] generateCsv(List<RtaTransaction> transactions) {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         PrintWriter pw = new PrintWriter(new OutputStreamWriter(baos, StandardCharsets.UTF_8));
 
-        // Header
+        // Header — must match consumer's TransactionCsvRow @CsvBindByName exactly
         pw.println("transaction_id,merchant_id,merchant_customer,masked_pan,amount_cents,currency,actual_billing_date,recurring_reference");
 
         // Data rows

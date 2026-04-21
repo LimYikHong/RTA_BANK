@@ -16,9 +16,11 @@ interface AuthBatchItem {
   failCount: number;
   totalAmountCents: number;
   batchStatus: string;
+  sendAuthStatus: string;
   createdAt: string;
   lastModifiedAt: string;
   remark: string;
+  retrying?: boolean;
 }
 
 interface PagedResponse {
@@ -177,8 +179,37 @@ export class BatchMaintenanceComponent implements OnInit {
       case 'PROCESSED': return 'status-success';
       case 'COMPLETED': return 'status-success';
       case 'FAILED': return 'status-failed';
+      case 'SEND_FAILED': return 'status-failed';
+      case 'RETRYING': return 'status-processing';
       default: return '';
     }
+  }
+
+  getSendAuthStatusClass(status: string): string {
+    switch (status?.toUpperCase()) {
+      case 'CREATED': return 'status-ready';
+      case 'SENT': return 'status-processing';
+      case 'PROCESSED': return 'status-success';
+      case 'SEND_FAILED': return 'status-failed';
+      default: return '';
+    }
+  }
+
+  retrySendAuth(item: AuthBatchItem): void {
+    if (item.retrying) return;
+    item.retrying = true;
+
+    this.http.post<any>(`${this.apiUrl}/retry/${item.authBatchId}`, {}).subscribe({
+      next: (res) => {
+        item.retrying = false;
+        this.loadPage(); // Refresh to show updated status
+      },
+      error: (err) => {
+        item.retrying = false;
+        console.error('Retry failed:', err);
+        alert('Retry failed: ' + (err.error?.error || err.message));
+      }
+    });
   }
 
   logout(): void {

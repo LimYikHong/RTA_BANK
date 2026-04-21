@@ -19,6 +19,6 @@ public interface RtaIncomingBatchFileRepository extends JpaRepository<RtaIncomin
      * 'COMPLETED' (all transaction records have been saved) - successCount > 0
      * (at least one valid record) - deletedAt is NULL (not soft-deleted)
      */
-    @Query("SELECT f FROM RtaIncomingBatchFile f WHERE (f.batchStatus IS NULL OR f.batchStatus = 'PENDING') AND f.insertionStatus = 'COMPLETED' AND f.successCount > 0 AND f.deletedAt IS NULL")
+    @Query("SELECT f FROM RtaIncomingBatchFile f WHERE f.batchId IS NULL AND (f.batchStatus IS NULL OR f.batchStatus = 'PENDING') AND f.insertionStatus = 'COMPLETED' AND f.successCount > 0 AND f.deletedAt IS NULL")
     List<RtaIncomingBatchFile> findEligibleForBatch();
 }

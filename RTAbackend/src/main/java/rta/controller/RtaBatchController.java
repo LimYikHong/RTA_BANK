@@ -58,11 +58,7 @@ public class RtaBatchController {
      * batches are returned.
      */
     @GetMapping
-    public List<RtaBatch> getAllBatches(
-            @RequestParam(value = "merchantId", required = false) String merchantId) {
-        if (merchantId != null && !merchantId.isBlank()) {
-            return batchRepository.findByMerchantIdAndDeletedAtIsNullOrderByCreatedAtDesc(merchantId);
-        }
+    public List<RtaBatch> getAllBatches() {
         return batchRepository.findAllActive();
     }
 
@@ -109,7 +105,7 @@ public class RtaBatchController {
             RtaBatch batch = new RtaBatch();
             batch.setOriginalFileName(originalFileName);
             batch.setFileName(fileName);
-            batch.setMerchantId(merchantId);
+            batch.setMerchantIds("[\"" + merchantId + "\"]");
             batch.setCreatedAt(LocalDateTime.now());
             batch.setCreatedBy(merchantId);
             batch.setStatus("UPLOADED");
@@ -139,7 +135,7 @@ public class RtaBatchController {
 
                 RtaTransaction tx = new RtaTransaction();
                 tx.setBatch(batch);
-                tx.setMerchantId(batch.getMerchantId());
+                tx.setMerchantId(batch.getMerchantIds() != null ? batch.getMerchantIds().replaceAll("[\\[\\]\"]", "").split(",")[0] : "");
                 tx.setAmount(Long.parseLong(parts[0].trim()));
                 tx.setCurrency(parts[1].trim());
                 tx.setStatus("PENDING");
@@ -181,7 +177,7 @@ public class RtaBatchController {
 
                 RtaTransaction tx = new RtaTransaction();
                 tx.setBatch(batch);
-                tx.setMerchantId(batch.getMerchantId());
+                tx.setMerchantId(batch.getMerchantIds() != null ? batch.getMerchantIds().replaceAll("[\\[\\]\"]", "").split(",")[0] : "");
                 tx.setAmount((long) amtCell.getNumericCellValue());
                 tx.setCurrency(curCell.getStringCellValue().trim());
                 tx.setStatus("PENDING");
@@ -208,8 +204,8 @@ public class RtaBatchController {
     @PutMapping("/{id}")
     public ResponseEntity<RtaBatch> updateBatch(@PathVariable Long id, @RequestBody RtaBatch batchDetails) {
         return batchRepository.findById(id).map(batch -> {
-            if (batchDetails.getMerchantId() != null) {
-                batch.setMerchantId(batchDetails.getMerchantId());
+            if (batchDetails.getMerchantIds() != null) {
+                batch.setMerchantIds(batchDetails.getMerchantIds());
             }
             if (batchDetails.getStatus() != null) {
                 batch.setStatus(batchDetails.getStatus());

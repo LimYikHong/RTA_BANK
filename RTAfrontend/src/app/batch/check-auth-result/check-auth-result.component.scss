@@ -1,0 +1,101 @@
+// All shared styles (data-table, table-container, pagination, status-badge,
+// summary-section, summary-cards, progress-section, batch-info, etc.)
+// are in _global-components.scss
+
+.section-hint {
+  color: #64748b;
+  font-size: 14px;
+  margin-bottom: 12px;
+}
+
+.clickable-row {
+  cursor: pointer;
+  &:hover {
+    background-color: #f1f5f9 !important;
+  }
+}
+
+.monospace {
+  font-family: 'Courier New', monospace;
+  font-weight: 600;
+}
+
+.count-cell {
+  text-align: center;
+  font-weight: 600;
+}
+
+.amount-cell {
+  text-align: right;
+  font-family: 'Courier New', monospace;
+  font-weight: 600;
+}
+
+.date-cell {
+  white-space: nowrap;
+  font-size: 13px;
+  color: #64748b;
+}
+
+.remark-cell {
+  max-width: 250px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: #64748b;
+  font-size: 13px;
+}
+
+.success-text {
+  color: #059669;
+}
+
+.failed-text {
+  color: #dc2626;
+}
+
+.no-data-cell {
+  text-align: center;
+  padding: 40px !important;
+  color: #94a3b8;
+}
+
+.btn-sm {
+  padding: 6px 14px;
+  font-size: 13px;
+  border-radius: 6px;
+}
+
+.btn-primary {
+  background: #3b82f6;
+  color: #fff;
+  border: none;
+  cursor: pointer;
+  font-weight: 600;
+  transition: background 0.2s;
+
+  &:hover {
+    background: #2563eb;
+  }
+}
+
+// Status badges
+.status-success {
+  background: #d1fae5 !important;
+  color: #065f46 !important;
+}
+
+.status-failed {
+  background: #fee2e2 !important;
+  color: #991b1b !important;
+}
+
+.status-ready {
+  background: #dbeafe !important;
+  color: #1d4ed8 !important;
+}
+
+.status-processing {
+  background: #fef3c7 !important;
+  color: #92400e !important;
+}

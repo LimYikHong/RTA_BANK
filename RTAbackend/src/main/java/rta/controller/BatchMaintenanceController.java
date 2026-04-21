@@ -17,8 +17,10 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import rta.entity.RtaAuthorizationBatch;
+import rta.entity.RtaBatch;
 import rta.entity.RtaTransaction;
 import rta.repository.RtaAuthorizationBatchRepository;
+import rta.repository.RtaBatchRepository;
 import rta.repository.RtaIncomingBatchFileRepository;
 import rta.repository.RtaTransactionRepository;
 import rta.service.BatchMaintenanceScheduler;
@@ -33,15 +35,18 @@ import rta.service.BatchMaintenanceScheduler;
 public class BatchMaintenanceController {
 
     private final RtaAuthorizationBatchRepository authBatchRepository;
+    private final RtaBatchRepository batchRepository;
     private final RtaTransactionRepository transactionRepository;
     private final RtaIncomingBatchFileRepository incomingFileRepository;
     private final BatchMaintenanceScheduler batchScheduler;
 
     public BatchMaintenanceController(RtaAuthorizationBatchRepository authBatchRepository,
+            RtaBatchRepository batchRepository,
             RtaTransactionRepository transactionRepository,
             RtaIncomingBatchFileRepository incomingFileRepository,
             BatchMaintenanceScheduler batchScheduler) {
         this.authBatchRepository = authBatchRepository;
+        this.batchRepository = batchRepository;
         this.transactionRepository = transactionRepository;
         this.incomingFileRepository = incomingFileRepository;
         this.batchScheduler = batchScheduler;
@@ -72,6 +77,10 @@ public class BatchMaintenanceController {
             item.put("createdAt", batch.getCreatedAt());
             item.put("lastModifiedAt", batch.getLastModifiedAt());
             item.put("remark", batch.getRemark());
+            // Look up the corresponding RtaBatch to get send auth status
+            java.util.Optional<RtaBatch> rtaBatchOpt = batchRepository.findByFileName(batch.getBatchReference());
+            item.put("sendAuthStatus", rtaBatchOpt.map(RtaBatch::getStatus).orElse("UNKNOWN"));
+
             // Count how many files contributed to this batch (find via transactions)
             List<Long> fileIds = transactionRepository.findDistinctBatchFileIdsByAuthBatchId(batch.getAuthBatchId());
             item.put("fileCount", fileIds.size());
@@ -140,6 +149,8 @@ public class BatchMaintenanceController {
                 txnMap.put("currency", txn.getCurrency());
                 txnMap.put("actualBillingDate", txn.getActualBillingDate());
                 txnMap.put("status", txn.getStatus());
+                txnMap.put("remark", txn.getRemark());
+                txnMap.put("authorizationDatetime", txn.getAuthorizationDatetime());
                 txnMap.put("createdAt", txn.getCreatedAt());
                 txnList.add(txnMap);
             }
@@ -160,6 +171,28 @@ public class BatchMaintenanceController {
         response.put("intervalMs", BatchMaintenanceScheduler.INTERVAL_MS);
         response.put("serverTimeMs", System.currentTimeMillis());
         return ResponseEntity.ok(response);
+    }
+
+    /**
+     * POST /api/batch-maintenance/retry/{authBatchId} Retry sending
+     * authorization for a failed batch.
+     */
+    @PostMapping("/retry/{authBatchId}")
+    public ResponseEntity<Map<String, Object>> retrySendAuth(@PathVariable Long authBatchId) {
+        try {
+            String result = batchScheduler.retrySendAuth(authBatchId);
+            Map<String, Object> response = new LinkedHashMap<>();
+            if ("SUCCESS".equals(result)) {
+                response.put("message", "Send auth retry completed successfully");
+                return ResponseEntity.ok(response);
+            } else {
+                response.put("error", result);
+                return ResponseEntity.badRequest().body(response);
+            }
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError()
+                    .body(Map.of("error", "Retry failed: " + e.getMessage()));
+        }
     }
 
     /**

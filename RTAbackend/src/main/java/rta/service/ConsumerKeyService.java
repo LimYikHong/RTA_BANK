@@ -17,8 +17,6 @@ import org.apache.hc.client5.http.impl.io.PoolingHttpClientConnectionManagerBuil
 import org.apache.hc.client5.http.ssl.NoopHostnameVerifier;
 import org.apache.hc.client5.http.ssl.SSLConnectionSocketFactoryBuilder;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.context.event.ApplicationReadyEvent;
-import org.springframework.context.event.EventListener;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
@@ -56,11 +54,11 @@ public class ConsumerKeyService {
         this.restTemplate = buildTrustAllRestTemplate();
     }
 
-    @EventListener(ApplicationReadyEvent.class)
-    public void onApplicationReady() {
-        fetchAndCachePublicKey();
-    }
-
+    // Removed auto-fetch on startup — key will be fetched lazily on first use
+    // @EventListener(ApplicationReadyEvent.class)
+    // public void onApplicationReady() {
+    //     fetchAndCachePublicKey();
+    // }
     /**
      * Returns the cached consumer RSA public key. Re-fetches if not yet cached.
      */

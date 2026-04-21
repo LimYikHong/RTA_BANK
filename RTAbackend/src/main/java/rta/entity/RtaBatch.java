@@ -1,8 +1,16 @@
 package rta.entity;
 
-import jakarta.persistence.*;
-import lombok.*;
 import java.time.LocalDateTime;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Entity
 @Table(name = "rta_batch")
@@ -22,8 +30,8 @@ public class RtaBatch {
     @Column(name = "original_file_name")
     private String originalFileName;
 
-    @Column(name = "merchant_id", nullable = false)
-    private String merchantId;
+    @Column(name = "merchant_ids", columnDefinition = "TEXT")
+    private String merchantIds;
 
     @Column(name = "total_count")
     private Integer totalCount;

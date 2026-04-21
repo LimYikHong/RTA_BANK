@@ -1,6 +1,7 @@
 package rta.repository;
 
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -11,9 +12,7 @@ public interface RtaBatchRepository extends JpaRepository<RtaBatch, Long> {
 
     List<RtaBatch> findByStatus(String status);
 
-    List<RtaBatch> findByMerchantIdOrderByCreatedAtDesc(String merchantId);
-
-    List<RtaBatch> findByMerchantIdAndDeletedAtIsNullOrderByCreatedAtDesc(String merchantId);
+    Optional<RtaBatch> findByFileName(String fileName);
 
     @Query("SELECT b FROM RtaBatch b WHERE b.deletedAt IS NULL")
     List<RtaBatch> findAllActive();
