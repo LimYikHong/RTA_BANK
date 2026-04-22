@@ -44,6 +44,9 @@ public class RtaReport {
     @Column(name = "output_file_uri")
     private String outputFileUri;
 
+    @Column(name = "raw_output_file_uri")
+    private String rawOutputFileUri;
+
     @Column(name = "total_records")
     private Integer totalRecords;
 

@@ -178,4 +178,25 @@ public class ReportController {
             ));
         }
     }
+
+    /**
+     * POST /api/reports/{reportId}/resend — Retry sending a batch result to the
+     * merchant.
+     */
+    @PostMapping("/{reportId}/resend")
+    public ResponseEntity<?> resendReport(@PathVariable Long reportId) {
+        try {
+            reportGenerationService.retrySend(reportId);
+            return ResponseEntity.ok(Map.of(
+                    "message", "Batch result resent successfully",
+                    "reportId", reportId
+            ));
+        } catch (Exception e) {
+            log.error("Resend failed for reportId={}: {}", reportId, e.getMessage(), e);
+            return ResponseEntity.internalServerError().body(Map.of(
+                    "error", "Resend failed",
+                    "detail", e.getMessage()
+            ));
+        }
+    }
 }

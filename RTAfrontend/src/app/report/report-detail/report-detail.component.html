@@ -1,19 +1,19 @@
     <div class="page-header">
-      <button class="back-btn" (click)="back()">&lt; Back to Reports</button>
-      <h1>📊 Report Detail</h1>
+      <button class="back-btn" (click)="back()">&lt; Back to Batch File Result</button>
+      <h1>📊 Batch File Result Detail</h1>
       <div class="header-actions" *ngIf="report">
         <button class="btn btn-download" (click)="downloadOutput()">⬇️ Download Output File</button>
         <button class="btn btn-print" (click)="printReport()">🖨️ Print</button>
       </div>
     </div>
 
-    <div class="loading-text" *ngIf="isLoading">Loading report...</div>
+    <div class="loading-text" *ngIf="isLoading">Loading batch file result...</div>
 
     <!-- Report Summary Card -->
     <div class="report-card" *ngIf="!isLoading && report">
       <div class="summary-grid">
         <div class="summary-item">
-          <label>Report Name</label>
+          <label>Result Name</label>
           <span class="value-highlight">{{ report.reportName }}</span>
         </div>
         <div class="summary-item">
@@ -68,6 +68,6 @@
 
     <!-- Rendered HTML Report -->
     <div class="report-preview" *ngIf="reportHtml">
-      <h2>Report Preview</h2>
+      <h2>Result Summary Preview</h2>
       <div class="report-iframe" [innerHTML]="reportHtml"></div>
     </div>

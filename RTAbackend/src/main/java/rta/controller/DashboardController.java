@@ -25,6 +25,7 @@ import rta.entity.RtaIncomingBatchFile;
 import rta.entity.SystemRsaKeyRequest;
 import rta.repository.AuditLogRepository;
 import rta.repository.MerchantInfoRepository;
+import rta.repository.MerchantKeyRepository;
 import rta.repository.ProfileRepository;
 import rta.repository.RtaBatchRepository;
 import rta.repository.RtaIncomingBatchFileRepository;
@@ -51,6 +52,7 @@ public class DashboardController {
     private final SystemRsaKeyRequestRepository rsaKeyRequestRepository;
     private final ConsumerKeyService consumerKeyService;
     private final AuditLogService auditLogService;
+    private final MerchantKeyRepository merchantKeyRepository;
 
     public DashboardController(
             RtaBatchRepository batchRepository,
@@ -61,7 +63,8 @@ public class DashboardController {
             AuditLogRepository auditLogRepository,
             SystemRsaKeyRequestRepository rsaKeyRequestRepository,
             ConsumerKeyService consumerKeyService,
-            AuditLogService auditLogService) {
+            AuditLogService auditLogService,
+            MerchantKeyRepository merchantKeyRepository) {
         this.batchRepository = batchRepository;
         this.incomingBatchFileRepository = incomingBatchFileRepository;
         this.transactionRepository = transactionRepository;
@@ -71,6 +74,7 @@ public class DashboardController {
         this.rsaKeyRequestRepository = rsaKeyRequestRepository;
         this.consumerKeyService = consumerKeyService;
         this.auditLogService = auditLogService;
+        this.merchantKeyRepository = merchantKeyRepository;
     }
 
     /**
@@ -355,5 +359,68 @@ public class DashboardController {
             result.put("message", "Failed to obtain RSA key: " + e.getMessage());
             return ResponseEntity.status(500).body(result);
         }
+    }
+
+    // ── Merchant Key Overview ───────────────────────────────────────────────
+    /**
+     * GET /api/dashboard/merchant-key-overview Returns a list of all active
+     * merchants with their RSA key status. Used by the dashboard to show which
+     * merchants need key rotation or new keys.
+     */
+    @GetMapping("/merchant-key-overview")
+    public ResponseEntity<List<Map<String, Object>>> getMerchantKeyOverview() {
+        List<Map<String, Object>> overview = new ArrayList<>();
+
+        // Get all active merchants
+        var allMerchants = merchantInfoRepository.findAll()
+                .stream().filter(m -> m.getDeletedAt() == null).toList();
+
+        for (var merchant : allMerchants) {
+            Map<String, Object> entry = new LinkedHashMap<>();
+            entry.put("merchantId", merchant.getMerchantId());
+            entry.put("merchantName", merchant.getName());
+
+            // Find latest active key for this merchant
+            Optional<rta.entity.MerchantKey> activeKey = merchantKeyRepository
+                    .findFirstByMerchantIdAndStatusOrderByVersionNoDesc(merchant.getMerchantId(), "ACTIVE");
+
+            if (activeKey.isPresent()) {
+                rta.entity.MerchantKey key = activeKey.get();
+                long daysElapsed = ChronoUnit.DAYS.between(key.getActivatedAt(), LocalDateTime.now());
+                long daysRemaining = key.getExpiresAt() != null
+                        ? ChronoUnit.DAYS.between(LocalDateTime.now(), key.getExpiresAt())
+                        : 730 - daysElapsed; // default 2 years
+
+                boolean expired = daysRemaining <= 0;
+                boolean needsRotation = daysElapsed >= 25 && !expired;
+                boolean canRotate = daysElapsed >= 25 && daysElapsed < 30;
+
+                entry.put("hasKey", true);
+                entry.put("keyVersion", key.getVersionNo());
+                entry.put("keyStatus", expired ? "EXPIRED" : key.getStatus());
+                entry.put("activatedAt", key.getActivatedAt() != null ? key.getActivatedAt().toString() : null);
+                entry.put("expiresAt", key.getExpiresAt() != null ? key.getExpiresAt().toString() : null);
+                entry.put("daysElapsed", daysElapsed);
+                entry.put("daysRemaining", Math.max(0, daysRemaining));
+                entry.put("needsRotation", needsRotation);
+                entry.put("canRotate", canRotate);
+                entry.put("expired", expired);
+            } else {
+                entry.put("hasKey", false);
+                entry.put("keyVersion", 0);
+                entry.put("keyStatus", "NO_KEY");
+                entry.put("activatedAt", null);
+                entry.put("expiresAt", null);
+                entry.put("daysElapsed", 0);
+                entry.put("daysRemaining", 0);
+                entry.put("needsRotation", false);
+                entry.put("canRotate", false);
+                entry.put("expired", false);
+            }
+
+            overview.add(entry);
+        }
+
+        return ResponseEntity.ok(overview);
     }
 }

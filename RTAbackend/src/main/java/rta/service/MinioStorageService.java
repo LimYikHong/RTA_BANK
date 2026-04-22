@@ -24,6 +24,9 @@ public class MinioStorageService {
     @Value("${minio.bucket}")
     private String bucketName;
 
+    @Value("${minio.result-bucket:rta-result}")
+    private String resultBucketName;
+
     @Value("${minio.endpoint}")
     private String endpoint;
 
@@ -32,17 +35,22 @@ public class MinioStorageService {
     }
 
     /**
-     * Initialize the bucket on startup if it doesn't exist.
+     * Initialize buckets on startup if they don't exist.
      */
     @PostConstruct
     public void init() {
+        ensureBucket(bucketName);
+        ensureBucket(resultBucketName);
+    }
+
+    private void ensureBucket(String bucket) {
         try {
-            boolean exists = minioClient.bucketExists(BucketExistsArgs.builder().bucket(bucketName).build());
+            boolean exists = minioClient.bucketExists(BucketExistsArgs.builder().bucket(bucket).build());
             if (!exists) {
-                minioClient.makeBucket(MakeBucketArgs.builder().bucket(bucketName).build());
+                minioClient.makeBucket(MakeBucketArgs.builder().bucket(bucket).build());
             }
         } catch (Exception e) {
-            throw new RuntimeException("Failed to initialize MinIO bucket: " + bucketName, e);
+            throw new RuntimeException("Failed to initialize MinIO bucket: " + bucket, e);
         }
     }
 
@@ -78,15 +86,22 @@ public class MinioStorageService {
      * @return The full MinIO URI
      */
     public String uploadFile(String objectName, byte[] content, String contentType) {
+        return uploadFileToBucket(bucketName, objectName, content, contentType);
+    }
+
+    /**
+     * Upload file content (byte array) to a specific bucket.
+     */
+    public String uploadFileToBucket(String bucket, String objectName, byte[] content, String contentType) {
         try {
             minioClient.putObject(
                     PutObjectArgs.builder()
-                            .bucket(bucketName)
+                            .bucket(bucket)
                             .object(objectName)
                             .stream(new ByteArrayInputStream(content), content.length, -1)
                             .contentType(contentType)
                             .build());
-            return getStorageUri(objectName);
+            return "minio://" + bucket + "/" + objectName;
         } catch (Exception e) {
             throw new RuntimeException("Failed to upload file to MinIO: " + objectName, e);
         }
@@ -123,14 +138,21 @@ public class MinioStorageService {
      * @return InputStream of the file content
      */
     public InputStream downloadFile(String objectName) {
+        return downloadFileFromBucket(bucketName, objectName);
+    }
+
+    /**
+     * Download a file from a specific bucket.
+     */
+    public InputStream downloadFileFromBucket(String bucket, String objectName) {
         try {
             return minioClient.getObject(
                     GetObjectArgs.builder()
-                            .bucket(bucketName)
+                            .bucket(bucket)
                             .object(objectName)
                             .build());
         } catch (Exception e) {
-            throw new RuntimeException("Failed to download file from MinIO: " + objectName, e);
+            throw new RuntimeException("Failed to download file from MinIO: " + bucket + "/" + objectName, e);
         }
     }
 
@@ -145,6 +167,17 @@ public class MinioStorageService {
             return is.readAllBytes();
         } catch (Exception e) {
             throw new RuntimeException("Failed to download file from MinIO: " + objectName, e);
+        }
+    }
+
+    /**
+     * Download file content as byte array from a specific bucket.
+     */
+    public byte[] downloadFileAsBytesFromBucket(String bucket, String objectName) {
+        try (InputStream is = downloadFileFromBucket(bucket, objectName)) {
+            return is.readAllBytes();
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to download file from MinIO: " + bucket + "/" + objectName, e);
         }
     }
 
@@ -264,5 +297,12 @@ public class MinioStorageService {
      */
     public String getBucketName() {
         return bucketName;
+    }
+
+    /**
+     * Get the result bucket name.
+     */
+    public String getResultBucketName() {
+        return resultBucketName;
     }
 }

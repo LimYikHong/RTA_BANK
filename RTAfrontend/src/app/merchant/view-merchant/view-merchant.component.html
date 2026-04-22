@@ -200,10 +200,10 @@
         </div>
       </div>
 
-      <!-- RSA Key Management -->
+      <!-- Merchant RSA Public Key -->
       <div class="form-section">
-        <h3>🔐 RSA Key Management</h3>
-        <p class="section-desc">Each merchant has their own RSA key pair for encrypting batch file transfers.</p>
+        <h3>🔐 Merchant RSA Public Key</h3>
+        <p class="section-desc">Request the merchant's RSA public key to encrypt return batch files before delivery.</p>
         <div class="rsa-key-info" *ngIf="rsaKeyLoading">Loading key status...</div>
         <div class="rsa-key-info" *ngIf="!rsaKeyLoading && rsaKeyStatus">
           <div class="form-row">
@@ -223,18 +223,40 @@
               <label class="detail-label">Activated At</label>
               <div class="detail-value">{{ rsaKeyStatus.activatedAt ? (rsaKeyStatus.activatedAt | date:'medium') : 'N/A' }}</div>
             </div>
-            <div class="detail-group">
-              <label class="detail-label">Expires At</label>
-              <div class="detail-value">{{ rsaKeyStatus.expiresAt ? (rsaKeyStatus.expiresAt | date:'medium') : 'N/A' }}</div>
+          <div class="detail-group">
+            <label class="detail-label">Expires At</label>
+            <div class="detail-value">{{ rsaKeyStatus.expiresAt ? (rsaKeyStatus.expiresAt | date:'medium') : 'N/A' }}</div>
+          </div>
+        </div>
+        <div class="form-row" *ngIf="rsaKeyStatus">
+          <div class="detail-group">
+            <label class="detail-label">Days Elapsed</label>
+            <div class="detail-value">
+              <span [style.color]="rsaKeyDaysElapsed >= 30 ? '#dc2626' : rsaKeyDaysElapsed >= 25 ? '#d97706' : '#16a34a'">{{ rsaKeyDaysElapsed }} days</span>
+            </div>
+          </div>
+          <div class="detail-group">
+            <label class="detail-label">Rotation Window</label>
+            <div class="detail-value">
+              <span *ngIf="rsaKeyDaysElapsed < 25" style="color:#64748b;">Available from day 25</span>
+              <span *ngIf="rsaKeyDaysElapsed >= 25 && rsaKeyDaysElapsed < 30" style="color:#d97706; font-weight:600;">⚠ Rotation available now</span>
+              <span *ngIf="rsaKeyDaysElapsed >= 30" style="color:#dc2626; font-weight:600;">❌ Expired — request new key</span>
             </div>
           </div>
         </div>
+        </div>
         <div class="rsa-key-info" *ngIf="!rsaKeyLoading && !rsaKeyStatus">
-          <p class="no-key-msg">No RSA key pair has been generated for this merchant yet.</p>
+          <p class="no-key-msg">No RSA public key received from this merchant yet.</p>
         </div>
         <div class="rsa-actions">
           <button class="btn btn-rsa" (click)="generateRsaKey()" [disabled]="rsaKeyGenerating">
-            {{ rsaKeyGenerating ? 'Generating...' : (rsaKeyStatus ? '🔄 Rotate RSA Key' : '🔑 Generate RSA Key') }}
+            {{ rsaKeyGenerating ? 'Requesting...' : (rsaKeyStatus ? '🔄 Request New Key' : '🔑 Request Key from Merchant') }}
+          </button>
+          <button class="btn btn-rsa btn-rotate" *ngIf="rsaKeyStatus" (click)="rotateRsaKey()" 
+                  [disabled]="rsaKeyRotating || !canRotateKey"
+                  [title]="rotateButtonTooltip"
+                  [class.btn-disabled]="!canRotateKey">
+            {{ rsaKeyRotating ? 'Rotating...' : '🔁 Rotate RSA Key' }}
           </button>
         </div>
       </div>

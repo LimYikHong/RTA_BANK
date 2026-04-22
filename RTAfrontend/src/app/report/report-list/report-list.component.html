@@ -1,28 +1,23 @@
     <div class="page-header">
-      <h1>📊 Reports</h1>
-      <div class="header-actions">
-        <button class="btn btn-generate" (click)="generateReports()" [disabled]="isGenerating">
-          {{ isGenerating ? 'Generating...' : '⚡ Generate Reports' }}
-        </button>
-      </div>
+      <h1>📊 Batch File Result</h1>
     </div>
 
     <!-- Search -->
     <div class="search-bar">
-      <input type="text" [(ngModel)]="searchQuery" placeholder="Search by report name or merchant ID..."
+      <input type="text" [(ngModel)]="searchQuery" placeholder="Search by batch result name or merchant ID..."
              (keyup.enter)="onSearch()" class="search-input" />
       <button class="btn btn-search" (click)="onSearch()">Search</button>
     </div>
 
     <!-- Loading -->
-    <div class="loading-text" *ngIf="isLoading">Loading reports...</div>
+    <div class="loading-text" *ngIf="isLoading">Loading batch file results...</div>
 
     <!-- Report Table -->
     <div class="table-container" *ngIf="!isLoading">
       <table class="data-table">
         <thead>
           <tr>
-            <th>Report Name</th>
+            <th>Result Name</th>
             <th>Merchant</th>
             <th>Format</th>
             <th>Total</th>
@@ -37,7 +32,7 @@
         </thead>
         <tbody>
           <tr *ngIf="reports.length === 0">
-            <td colspan="11" class="no-data-cell">No reports found. Click "Generate Reports" to create reports from processed batches.</td>
+            <td colspan="11" class="no-data-cell">No batch file results found. Results are auto-generated when batches are processed.</td>
           </tr>
           <tr *ngFor="let report of reports" (click)="viewReport(report.reportId)" class="clickable-row">
             <td class="report-name">{{ report.reportName }}</td>
@@ -51,8 +46,11 @@
             <td><span class="status-badge" [ngClass]="getSendStatusClass(report.sendStatus)">{{ report.sendStatus }}</span></td>
             <td class="date-cell">{{ report.createdAt | date:'yyyy-MM-dd HH:mm:ss' }}</td>
             <td class="action-cell">
-              <button class="btn-icon" title="View Report" (click)="downloadReport(report.reportId, $event)">📄</button>
+              <button class="btn-icon" title="View Result" (click)="downloadReport(report.reportId, $event)">📄</button>
               <button class="btn-icon" title="Download Output" (click)="downloadOutput(report.reportId, $event)">⬇️</button>
+              <button class="btn-icon" title="Retry Send" (click)="retrySend(report, $event)"
+                      *ngIf="report.sendStatus === 'FAILED' || report.sendStatus === 'PENDING'"
+                      [disabled]="report._retrying">🔄</button>
             </td>
           </tr>
         </tbody>
@@ -62,6 +60,6 @@
     <!-- Pagination -->
     <div class="pagination" *ngIf="totalPages > 1">
       <button (click)="goToPage(currentPage - 1)" [disabled]="currentPage === 0">&laquo; Prev</button>
-      <span class="page-info">Page {{ currentPage + 1 }} of {{ totalPages }} ({{ totalElements }} reports)</span>
+      <span class="page-info">Page {{ currentPage + 1 }} of {{ totalPages }} ({{ totalElements }} results)</span>
       <button (click)="goToPage(currentPage + 1)" [disabled]="currentPage >= totalPages - 1">Next &raquo;</button>
     </div>

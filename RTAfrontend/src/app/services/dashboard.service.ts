@@ -59,6 +59,10 @@ export class DashboardService {
   requestRsaKey(): Observable<RsaKeyResponse> {
     return this.http.post<RsaKeyResponse>(`${this.apiUrl}/request-rsa-key`, {});
   }
+
+  getMerchantKeyOverview(): Observable<MerchantKeyOverview[]> {
+    return this.http.get<MerchantKeyOverview[]>(`${this.apiUrl}/merchant-key-overview`);
+  }
 }
 
 export interface RsaKeyStatus {
@@ -76,4 +80,19 @@ export interface RsaKeyResponse {
   success: boolean;
   message: string;
   expiresAt?: string;
+}
+
+export interface MerchantKeyOverview {
+  merchantId: string;
+  merchantName: string;
+  hasKey: boolean;
+  keyVersion: number;
+  keyStatus: string;
+  activatedAt: string | null;
+  expiresAt: string | null;
+  daysElapsed: number;
+  daysRemaining: number;
+  needsRotation: boolean;
+  canRotate: boolean;
+  expired: boolean;
 }

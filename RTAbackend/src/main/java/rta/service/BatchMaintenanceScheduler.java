@@ -57,6 +57,7 @@ public class BatchMaintenanceScheduler {
     private final TransactionTemplate transactionTemplate;
     private final TransactionBulkInsertService bulkInsertService;
     private final ReturnBatchSendService returnBatchSendService;
+    private final ReportGenerationService reportGenerationService;
 
     /**
      * Epoch millis of the last completed batch run.
@@ -74,7 +75,8 @@ public class BatchMaintenanceScheduler {
             MinioStorageService minioStorageService,
             PlatformTransactionManager transactionManager,
             TransactionBulkInsertService bulkInsertService,
-            ReturnBatchSendService returnBatchSendService) {
+            ReturnBatchSendService returnBatchSendService,
+            ReportGenerationService reportGenerationService) {
         this.transactionRepository = transactionRepository;
         this.incomingFileRepository = incomingFileRepository;
         this.batchRepository = batchRepository;
@@ -87,6 +89,7 @@ public class BatchMaintenanceScheduler {
         this.transactionTemplate = new TransactionTemplate(transactionManager);
         this.bulkInsertService = bulkInsertService;
         this.returnBatchSendService = returnBatchSendService;
+        this.reportGenerationService = reportGenerationService;
     }
 
     /**
@@ -462,6 +465,16 @@ public class BatchMaintenanceScheduler {
             } catch (Exception reportEx) {
                 log.error("[BatchMaintenance] Error sending report for batch {}: {}",
                         batch.getBatchId(), reportEx.getMessage(), reportEx);
+            }
+
+            // ── Step 8: Auto-generate batch file results ──
+            try {
+                var results = reportGenerationService.generateReportsForProcessedBatches();
+                log.info("[BatchMaintenance] Auto-generated {} batch file result(s) for batch {}",
+                        results.size(), batch.getBatchId());
+            } catch (Exception resultEx) {
+                log.error("[BatchMaintenance] Error auto-generating batch file results for batch {}: {}",
+                        batch.getBatchId(), resultEx.getMessage(), resultEx);
             }
 
             long totalElapsedMs = System.currentTimeMillis() - batchStartMs;

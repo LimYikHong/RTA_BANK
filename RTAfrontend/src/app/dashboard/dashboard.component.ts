@@ -2,7 +2,7 @@ import { Component, OnInit, AfterViewInit, OnDestroy, ElementRef, ViewChild } fr
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { FormsModule } from '@angular/forms';
-import { DashboardService, DashboardStats, RsaKeyStatus } from '../services/dashboard.service';
+import { DashboardService, DashboardStats, RsaKeyStatus, MerchantKeyOverview } from '../services/dashboard.service';
 import { AuthService } from '../services/auth.service';
 @Component({
   selector: 'app-dashboard',
@@ -25,6 +25,10 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
   rsaKeyMessage = '';
   rsaKeyMessageType: 'success' | 'error' | '' = '';
 
+  // Merchant Key Overview
+  merchantKeys: MerchantKeyOverview[] = [];
+  merchantKeysLoading = false;
+
   // Canvas refs for charts
   @ViewChild('trendCanvas')     trendCanvasRef!:    ElementRef<HTMLCanvasElement>;
   @ViewChild('txnStatusCanvas') txnStatusRef!:      ElementRef<HTMLCanvasElement>;
@@ -42,6 +46,7 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
     if (this.isSuperAdmin) {
       this.loadRsaKeyStatus();
     }
+    this.loadMerchantKeyOverview();
     // Auto-refresh every 60 s
     this.refreshInterval = setInterval(() => this.load(), 60_000);
   }
@@ -341,6 +346,38 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
       next: (status) => { this.rsaKeyStatus = status; },
       error: () => { this.rsaKeyStatus = null; }
     });
+  }
+
+  loadMerchantKeyOverview(): void {
+    this.merchantKeysLoading = true;
+    this.dashboardService.getMerchantKeyOverview().subscribe({
+      next: (keys) => {
+        this.merchantKeys = keys;
+        this.merchantKeysLoading = false;
+      },
+      error: () => {
+        this.merchantKeys = [];
+        this.merchantKeysLoading = false;
+      }
+    });
+  }
+
+  getMerchantKeyStatusClass(mk: MerchantKeyOverview): string {
+    if (!mk.hasKey) return 'mk-no-key';
+    if (mk.expired) return 'mk-expired';
+    if (mk.needsRotation) return 'mk-warning';
+    return 'mk-active';
+  }
+
+  getMerchantKeyStatusLabel(mk: MerchantKeyOverview): string {
+    if (!mk.hasKey) return 'No Key';
+    if (mk.expired) return 'Expired';
+    if (mk.needsRotation) return 'Needs Rotation';
+    return 'Active';
+  }
+
+  get merchantKeysNeedingAction(): MerchantKeyOverview[] {
+    return this.merchantKeys.filter(mk => !mk.hasKey || mk.expired || mk.needsRotation);
   }
 
   get rsaButtonLabel(): string {

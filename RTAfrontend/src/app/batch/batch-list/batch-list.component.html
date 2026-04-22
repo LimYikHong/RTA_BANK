@@ -72,3 +72,48 @@
         </div>
       </div>
     </div>
+
+<!-- Error Modal -->
+<div class="modal-overlay" *ngIf="showErrorModal" (click)="closeErrorModal()">
+  <div class="modal-content" (click)="$event.stopPropagation()">
+    <div class="modal-header modal-header-error">
+      <h3>{{ errorTitle }}</h3>
+      <button class="modal-close" (click)="closeErrorModal()">&times;</button>
+    </div>
+    <div class="modal-body">
+      <p class="error-message-text" style="white-space: pre-line;">{{ errorMessage }}</p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-primary" (click)="closeErrorModal()">OK</button>
+    </div>
+  </div>
+</div>
+
+<!-- Merchant Selection Modal -->
+<div class="modal-overlay" *ngIf="showMerchantModal" (click)="closeMerchantModal()">
+  <div class="modal-content" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h3>Select Merchant</h3>
+      <button class="modal-close" (click)="closeMerchantModal()">&times;</button>
+    </div>
+    <div class="modal-body">
+      <p class="modal-description">Please select the merchant this batch file is being uploaded for:</p>
+      <div class="form-group">
+        <label for="merchantSelect">Merchant</label>
+        <select id="merchantSelect" class="form-select" [(ngModel)]="selectedMerchantId">
+          <option value="" disabled>-- Select a Merchant --</option>
+          <option *ngFor="let m of merchants" [value]="m.merchantId">
+            {{ m.merchantId }} - {{ m.name }}
+          </option>
+        </select>
+      </div>
+      <div *ngIf="selectedFile" class="file-info">
+        <span class="file-label">File:</span> {{ selectedFile.name }}
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" (click)="closeMerchantModal()">Cancel</button>
+      <button class="btn btn-primary" (click)="confirmUpload()" [disabled]="!selectedMerchantId">Confirm Upload</button>
+    </div>
+  </div>
+</div>

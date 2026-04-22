@@ -225,6 +225,9 @@
 
 .rsa-actions {
   margin-top: 10px;
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
 }
 
 .btn-rsa {
@@ -244,5 +247,17 @@
   &:disabled {
     opacity: 0.6;
     cursor: not-allowed;
+  }
+}
+
+.btn-rotate {
+  background: #d97706;
+
+  &:hover:not(:disabled) {
+    background: #b45309;
+  }
+
+  &.btn-disabled {
+    background: #94a3b8;
   }
 }

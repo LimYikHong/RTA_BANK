@@ -25,6 +25,7 @@ export interface RtaReport {
   sentAt: string | null;
   createdAt: string;
   createdBy: string;
+  _retrying?: boolean;
 }
 
 export interface ReportPage {
@@ -64,6 +65,10 @@ export class ReportService {
 
   generateReports(): Observable<any> {
     return this.http.post(`${this.apiUrl}/generate`, {});
+  }
+
+  resendReport(reportId: number): Observable<any> {
+    return this.http.post(`${this.apiUrl}/${reportId}/resend`, {});
   }
 
   generateReportForBatchFile(batchFileId: number, triggeredBy = 'USER'): Observable<RtaReport> {

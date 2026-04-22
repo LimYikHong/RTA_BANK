@@ -24,4 +24,10 @@ public interface MerchantKeyRepository extends JpaRepository<MerchantKey, Long> 
      * Find the latest active key for a merchant.
      */
     Optional<MerchantKey> findFirstByMerchantIdAndStatusOrderByVersionNoDesc(String merchantId, String status);
+
+    /**
+     * Find the latest key (any status) for each merchant — used for key
+     * overview.
+     */
+    List<MerchantKey> findByStatusOrderByMerchantIdAsc(String status);
 }

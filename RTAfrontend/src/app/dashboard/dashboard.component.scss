@@ -303,3 +303,133 @@
   color: #991b1b;
   border: 1px solid #fecaca;
 }
+
+// ── Merchant Key Management ───────────────────────────────────────
+.mk-overview-card {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 20px 24px;
+  margin-bottom: 24px;
+}
+
+.mk-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+
+  h3 {
+    font-size: 15px;
+    font-weight: 700;
+    color: #1e293b;
+    margin: 0;
+  }
+}
+
+.mk-badge {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 12px;
+}
+
+.mk-badge-alert {
+  background: #fef3c7;
+  color: #92400e;
+  border: 1px solid #fde68a;
+}
+
+.mk-loading, .mk-empty {
+  color: #64748b;
+  font-size: 13px;
+  padding: 12px 0;
+}
+
+.mk-table-wrapper {
+  overflow-x: auto;
+}
+
+.mk-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+
+  th {
+    background: #f8fafc;
+    color: #475569;
+    font-weight: 600;
+    text-align: left;
+    padding: 10px 12px;
+    border-bottom: 2px solid #e2e8f0;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  td {
+    padding: 10px 12px;
+    border-bottom: 1px solid #f1f5f9;
+    color: #334155;
+  }
+
+  tbody tr:hover {
+    background: #f8fafc;
+  }
+}
+
+.mk-link {
+  color: #2563eb;
+  text-decoration: none;
+  font-weight: 600;
+
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
+.mk-status-badge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 600;
+
+  &.mk-active {
+    background: #f0fdf4;
+    color: #166534;
+  }
+
+  &.mk-warning {
+    background: #fef3c7;
+    color: #92400e;
+  }
+
+  &.mk-expired {
+    background: #fef2f2;
+    color: #991b1b;
+  }
+
+  &.mk-no-key {
+    background: #f1f5f9;
+    color: #64748b;
+  }
+}
+
+.mk-action-hint {
+  color: #64748b;
+  font-size: 12px;
+  font-style: italic;
+}
+
+.mk-action-btn {
+  color: #2563eb;
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 12px;
+  cursor: pointer;
+
+  &:hover {
+    text-decoration: underline;
+  }
+}

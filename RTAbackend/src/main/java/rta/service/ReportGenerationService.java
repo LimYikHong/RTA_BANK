@@ -52,7 +52,8 @@ public class ReportGenerationService {
 
     private static final String RSA_SIGNATURE_ALGORITHM = "SHA256withRSA";
     private static final String REPORT_DIR = "reports";
-    private static final String OUTPUT_DIR = "output-files";
+    private static final String OUTPUT_DIR_ENCRYPTED = "result-encrypted";
+    private static final String OUTPUT_DIR_RAW = "result-unencrypted";
     private static final DateTimeFormatter DT_FORMAT = DateTimeFormatter.ofPattern("yyyyMMddHHmmss");
     private static final DateTimeFormatter DISPLAY_DT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
@@ -179,36 +180,60 @@ public class ReportGenerationService {
         // 5. Encrypt output file and store in MinIO
         String reportTimestamp = LocalDateTime.now().format(DT_FORMAT);
         String reportName = merchantId + "_" + reportTimestamp;
-        String outputObjectName = OUTPUT_DIR + "/" + reportName + outputExtension + ".enc";
+        String outputObjectName = OUTPUT_DIR_ENCRYPTED + "/" + reportName + outputExtension + ".enc";
 
         byte[] encryptedOutput;
+        boolean isEncrypted = false;
         try {
             encryptedOutput = fileEncryptionService.encryptFile(merchantId, outputFileBytes);
+            isEncrypted = true;
+            auditLogService.logSystemActivity("ENCRYPT_BATCH_RESULT",
+                    merchantId,
+                    "Encrypted batch result file '" + reportName + outputExtension
+                    + "' (" + outputFileBytes.length + " bytes → " + encryptedOutput.length
+                    + " bytes) using merchant RSA key for merchant " + merchantId,
+                    "SUCCESS");
         } catch (Exception e) {
             log.warn("[ReportGen] No RSA key for merchant={}, storing output unencrypted: {}", merchantId, e.getMessage());
             encryptedOutput = outputFileBytes;
-            outputObjectName = OUTPUT_DIR + "/" + reportName + outputExtension;
+            outputObjectName = OUTPUT_DIR_ENCRYPTED + "/" + reportName + outputExtension;
+            auditLogService.logSystemActivity("ENCRYPT_BATCH_RESULT",
+                    merchantId,
+                    "Failed to encrypt batch result for merchant " + merchantId
+                    + ": " + e.getMessage() + ". File stored unencrypted.",
+                    "FAILED");
         }
 
-        String outputUri = minioStorageService.uploadFile(outputObjectName, encryptedOutput,
+        String resultBucket = minioStorageService.getResultBucketName();
+
+        String outputUri = minioStorageService.uploadFileToBucket(resultBucket, outputObjectName, encryptedOutput,
+                "application/octet-stream");
+
+        // Store the raw (unencrypted) output file for admin portal viewing
+        String rawObjectName = OUTPUT_DIR_RAW + "/" + reportName + outputExtension;
+        String rawOutputUri = minioStorageService.uploadFileToBucket(resultBucket, rawObjectName, outputFileBytes,
                 "application/octet-stream");
 
         // 6. Apply digital signature
         String digitalSignature = signData(outputFileBytes);
 
-        // 7. Generate PDF summary report
+        // 7. Generate HTML summary report
         byte[] pdfBytes = generatePdfReport(merchantId, batchFile, transactions,
                 totalRecords, successCount, failCount, approvedCount, declinedCount, totalAmountCents);
-        String pdfObjectName = REPORT_DIR + "/" + reportName + "_report.pdf";
 
-        // Encrypt PDF too
+        // Store unencrypted report for admin portal viewing
+        String rawReportObjectName = REPORT_DIR + "/unencrypted/" + reportName + "_report.html";
+        String rawReportUri = minioStorageService.uploadFileToBucket(resultBucket, rawReportObjectName, pdfBytes, "text/html");
+
+        // Store encrypted report for merchant delivery
+        String pdfObjectName = REPORT_DIR + "/encrypted/" + reportName + "_report.html";
         byte[] encryptedPdf;
         try {
             encryptedPdf = fileEncryptionService.encryptFile(merchantId, pdfBytes);
         } catch (Exception e) {
             encryptedPdf = pdfBytes;
         }
-        String pdfUri = minioStorageService.uploadFile(pdfObjectName, encryptedPdf, "application/pdf");
+        String pdfUri = minioStorageService.uploadFileToBucket(resultBucket, pdfObjectName, encryptedPdf, "text/html");
 
         // 8. Save report record
         RtaReport report = RtaReport.builder()
@@ -218,8 +243,9 @@ public class ReportGenerationService {
                 .reportName(reportName)
                 .reportType("SUMMARY")
                 .fileFormat(outputFormat)
-                .storageUri(pdfUri)
+                .storageUri(rawReportUri)
                 .outputFileUri(outputUri)
+                .rawOutputFileUri(rawOutputUri)
                 .totalRecords(totalRecords)
                 .successCount(successCount)
                 .failCount(failCount)
@@ -451,7 +477,7 @@ public class ReportGenerationService {
                 <html lang="en">
                 <head>
                   <meta charset="UTF-8">
-                  <title>Batch Processing Report — %s</title>
+                  <title>Batch File Result — %s</title>
                   <style>
                     body { font-family: 'Segoe UI', Arial, sans-serif; margin: 40px; color: #333; }
                     .header { text-align: center; margin-bottom: 30px; border-bottom: 3px solid #1a73e8; padding-bottom: 20px; }
@@ -486,7 +512,7 @@ public class ReportGenerationService {
                 </head>
                 <body>
                   <div class="header">
-                    <h1>📊 Batch Processing Report</h1>
+                    <h1>📊 Batch File Result</h1>
                     <p>Generated: %s</p>
                   </div>
                 
@@ -533,8 +559,8 @@ public class ReportGenerationService {
                   </div>
                 
                   <div class="footer">
-                    <p>RTA Bank — Batch Processing Report | Confidential</p>
-                    <p>This report was automatically generated by the RTA Bank system.</p>
+                    <p>RTA Bank — Batch File Result | Confidential</p>
+                    <p>This result was automatically generated by the RTA Bank system.</p>
                   </div>
                 </body>
                 </html>
@@ -578,13 +604,29 @@ public class ReportGenerationService {
         }
 
         MerchantKey merchantKey = keyOpt.get();
-        log.info("[ReportGen] Sending encrypted report to merchant {} using RSA key v{}",
+        log.info("[ReportGen] Sending encrypted batch result to merchant {} using RSA key v{}",
                 merchantId, merchantKey.getVersionNo());
 
-        // The encrypted output file is already stored in MinIO.
-        // In a real system, this would POST to the merchant's callback URL.
-        // For now, we mark it as sent since the merchant can download from the report module.
-        log.info("[ReportGen] Report {} stored and available for merchant {} to download.",
+        // The encrypted output file is already stored in MinIO at outputFileUri.
+        // The unencrypted version is at rawOutputFileUri (for admin portal viewing).
+        // The merchant can download the encrypted file from the Batch File Result module.
+        // ReturnBatchSendService handles the actual HTTP POST to merchant system (Step 6+7 in scheduler).
+        String sendDetails = String.format(
+                "Batch Result '%s' ready for merchant %s | "
+                + "Encrypted output: %s | Unencrypted output: %s | "
+                + "Report (HTML): %s | RSA key version: %d | "
+                + "Total records: %d | Success: %d | Failed: %d",
+                report.getReportName(), merchantId,
+                report.getOutputFileUri(), report.getRawOutputFileUri(),
+                report.getStorageUri(), merchantKey.getVersionNo(),
+                report.getTotalRecords(), report.getSuccessCount(), report.getFailCount());
+
+        auditLogService.logSystemActivity("SEND_BATCH_RESULT",
+                merchantId,
+                sendDetails,
+                "SUCCESS");
+
+        log.info("[ReportGen] Batch result {} stored and audit-logged for merchant {}.",
                 report.getReportName(), merchantId);
     }
 
@@ -649,13 +691,15 @@ public class ReportGenerationService {
     }
 
     private String getAuthorizationStatus(RtaTransaction txn) {
+        // If validation failed, the record was never sent for authorization
+        if ("FAIL".equals(getValidationStatus(txn))) {
+            return "N/A";
+        }
         String status = txn.getStatus() != null ? txn.getStatus().toUpperCase() : "";
         return switch (status) {
             case "APPROVED" ->
                 "APPROVED";
             case "DECLINED" ->
-                "DECLINED";
-            case "FAILED" ->
                 "DECLINED";
             default ->
                 "PENDING";
@@ -707,25 +751,80 @@ public class ReportGenerationService {
             throw new IllegalStateException("Report has no stored file");
         }
 
-        // Extract object name from URI (minio://bucket/object → object)
+        // Extract bucket and object name from URI (minio://bucket/object → bucket, object)
         String objectName = extractObjectName(uri);
-        return minioStorageService.downloadFileAsBytes(objectName);
+        String bucket = extractBucketName(uri);
+        return minioStorageService.downloadFileAsBytesFromBucket(bucket, objectName);
     }
 
     /**
-     * Download output file (CSV/XLSX) from MinIO.
+     * Download output file (unencrypted CSV/XLSX) from MinIO for portal
+     * viewing. Falls back to encrypted output if raw is not available.
      */
     public byte[] downloadOutputFile(Long reportId) {
         RtaReport report = reportRepository.findById(reportId)
                 .orElseThrow(() -> new IllegalArgumentException("Report not found: " + reportId));
 
-        String uri = report.getOutputFileUri();
+        // Prefer the raw (unencrypted) output file for viewing
+        String uri = report.getRawOutputFileUri();
+        if (uri == null || uri.isEmpty()) {
+            // Fallback to encrypted output
+            uri = report.getOutputFileUri();
+        }
         if (uri == null || uri.isEmpty()) {
             throw new IllegalStateException("Report has no output file");
         }
 
         String objectName = extractObjectName(uri);
-        return minioStorageService.downloadFileAsBytes(objectName);
+        String bucket = extractBucketName(uri);
+        return minioStorageService.downloadFileAsBytesFromBucket(bucket, objectName);
+    }
+
+    /**
+     * Retry sending a batch result to the merchant.
+     */
+    public void retrySend(Long reportId) {
+        RtaReport report = reportRepository.findById(reportId)
+                .orElseThrow(() -> new IllegalArgumentException("Report not found: " + reportId));
+
+        // Download the raw output file
+        String rawUri = report.getRawOutputFileUri();
+        if (rawUri == null || rawUri.isEmpty()) {
+            throw new IllegalStateException("No raw output file available for resend");
+        }
+        byte[] outputFileBytes = minioStorageService.downloadFileAsBytesFromBucket(
+                extractBucketName(rawUri), extractObjectName(rawUri));
+
+        // Download the summary report
+        String storageUri = report.getStorageUri();
+        byte[] pdfBytes = new byte[0];
+        if (storageUri != null && !storageUri.isEmpty()) {
+            pdfBytes = minioStorageService.downloadFileAsBytesFromBucket(
+                    extractBucketName(storageUri), extractObjectName(storageUri));
+        }
+
+        try {
+            sendReportToMerchant(report.getMerchantId(), report, outputFileBytes, pdfBytes);
+            report.setSendStatus("SENT");
+            report.setSentAt(LocalDateTime.now());
+            reportRepository.save(report);
+            log.info("[ReportGen] Retry send successful for reportId={}", reportId);
+        } catch (Exception e) {
+            report.setSendStatus("FAILED");
+            reportRepository.save(report);
+            throw new RuntimeException("Retry send failed: " + e.getMessage(), e);
+        }
+    }
+
+    private String extractBucketName(String uri) {
+        if (uri.startsWith("minio://")) {
+            String afterScheme = uri.substring("minio://".length());
+            int slashIdx = afterScheme.indexOf('/');
+            if (slashIdx >= 0) {
+                return afterScheme.substring(0, slashIdx);
+            }
+        }
+        return minioStorageService.getResultBucketName();
     }
 
     private String extractObjectName(String uri) {

@@ -6,11 +6,7 @@
     <div *ngIf="!selectedBatch">
       <div *ngIf="isLoadingBatches" class="loading-text">Loading processed batches...</div>
 
-      <div *ngIf="!isLoadingBatches && batches.length === 0" class="no-data">
-        <p>No processed authorization batches found.</p>
-      </div>
-
-      <div class="table-container" *ngIf="!isLoadingBatches && batches.length > 0">
+      <div class="table-container" *ngIf="!isLoadingBatches">
         <p class="section-hint">Select a batch to view its authorization results:</p>
         <table class="data-table">
           <thead>
@@ -28,6 +24,11 @@
             </tr>
           </thead>
           <tbody>
+            <tr *ngIf="batches.length === 0">
+              <td colspan="10" class="no-data-cell">
+                <div class="no-data"><p>No processed authorization batches found.</p></div>
+              </td>
+            </tr>
             <tr *ngFor="let b of batches" class="clickable-row">
               <td>{{ b.authBatchId }}</td>
               <td class="monospace">{{ b.batchReference }}</td>

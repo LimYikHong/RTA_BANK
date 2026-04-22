@@ -90,17 +90,21 @@ export class ReportListComponent implements OnInit {
   }
 
   generateReports(): void {
-    if (this.isGenerating) return;
-    this.isGenerating = true;
-    this.reportService.generateReports().subscribe({
-      next: (res) => {
-        alert(`Report generation completed. ${res.reportsGenerated} report(s) generated.`);
-        this.isGenerating = false;
-        this.loadReports();
+    // Batch results are now auto-generated — kept for backward compatibility
+  }
+
+  retrySend(report: any, event: Event): void {
+    event.stopPropagation();
+    if (report._retrying) return;
+    report._retrying = true;
+    this.reportService.resendReport(report.reportId).subscribe({
+      next: () => {
+        report.sendStatus = 'SENT';
+        report._retrying = false;
       },
-      error: (err) => {
-        alert('Report generation failed: ' + (err.error?.detail || err.message));
-        this.isGenerating = false;
+      error: (err: any) => {
+        alert('Retry send failed: ' + (err.error?.detail || err.message));
+        report._retrying = false;
       }
     });
   }

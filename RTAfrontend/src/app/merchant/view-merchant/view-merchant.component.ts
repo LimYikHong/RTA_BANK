@@ -63,6 +63,8 @@ export class ViewMerchantComponent implements OnInit {
   rsaKeyStatus: any = null;
   rsaKeyLoading = false;
   rsaKeyGenerating = false;
+  rsaKeyRotating = false;
+  rsaKeyDaysElapsed = 0;
 
   constructor(
     private profileService: ProfileService,
@@ -195,10 +197,18 @@ export class ViewMerchantComponent implements OnInit {
     this.reportService.getRsaKeyStatus(this.merchantId).subscribe({
       next: (status: any) => {
         this.rsaKeyStatus = status;
+        if (status?.activatedAt) {
+          const activated = new Date(status.activatedAt);
+          const now = new Date();
+          this.rsaKeyDaysElapsed = Math.floor((now.getTime() - activated.getTime()) / (1000 * 60 * 60 * 24));
+        } else {
+          this.rsaKeyDaysElapsed = 0;
+        }
         this.rsaKeyLoading = false;
       },
       error: () => {
         this.rsaKeyStatus = null;
+        this.rsaKeyDaysElapsed = 0;
         this.rsaKeyLoading = false;
       }
     });
@@ -206,17 +216,45 @@ export class ViewMerchantComponent implements OnInit {
 
   generateRsaKey(): void {
     if (this.rsaKeyGenerating) return;
-    if (!confirm('Generate a new RSA key pair for this merchant? Any existing key will be rotated.')) return;
+    if (!confirm('Request the RSA public key from this merchant? This will be used to encrypt return batch files.')) return;
     this.rsaKeyGenerating = true;
     this.reportService.requestRsaKey(this.merchantId).subscribe({
       next: () => {
-        alert('RSA key pair generated successfully!');
+        alert('Merchant RSA public key received successfully!');
         this.rsaKeyGenerating = false;
         this.loadRsaKeyStatus();
       },
       error: (err: any) => {
-        alert('Failed to generate RSA key: ' + (err.error?.detail || err.message));
+        alert('Failed to request RSA key from merchant: ' + (err.error?.detail || err.message));
         this.rsaKeyGenerating = false;
+      }
+    });
+  }
+
+  get canRotateKey(): boolean {
+    return this.rsaKeyStatus && this.rsaKeyDaysElapsed >= 25 && this.rsaKeyDaysElapsed < 30;
+  }
+
+  get rotateButtonTooltip(): string {
+    if (!this.rsaKeyStatus) return 'No key to rotate';
+    if (this.rsaKeyDaysElapsed < 25) return `Key rotation available from day 25 (currently day ${this.rsaKeyDaysElapsed})`;
+    if (this.rsaKeyDaysElapsed >= 30) return 'Key expired. Please request a new key.';
+    return `Key rotation available (day ${this.rsaKeyDaysElapsed}/30). Click to rotate.`;
+  }
+
+  rotateRsaKey(): void {
+    if (this.rsaKeyRotating || !this.canRotateKey) return;
+    if (!confirm('Rotate the RSA key for this merchant? The old key will be marked as ROTATED and a new key pair will be generated.')) return;
+    this.rsaKeyRotating = true;
+    this.reportService.requestRsaKey(this.merchantId).subscribe({
+      next: () => {
+        alert('RSA key rotated successfully!');
+        this.rsaKeyRotating = false;
+        this.loadRsaKeyStatus();
+      },
+      error: (err: any) => {
+        alert('Failed to rotate RSA key: ' + (err.error?.error || err.message));
+        this.rsaKeyRotating = false;
       }
     });
   }
