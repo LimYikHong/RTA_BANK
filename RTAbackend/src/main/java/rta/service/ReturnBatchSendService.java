@@ -4,9 +4,11 @@ import java.io.ByteArrayOutputStream;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.nio.charset.StandardCharsets;
+import java.security.KeyFactory;
 import java.security.PublicKey;
 import java.security.SecureRandom;
 import java.security.cert.X509Certificate;
+import java.security.spec.X509EncodedKeySpec;
 import java.util.Base64;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -42,8 +44,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.annotation.PostConstruct;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
+import rta.entity.MerchantKey;
 import rta.entity.RtaBatch;
 import rta.entity.RtaTransaction;
+import rta.repository.MerchantKeyRepository;
 
 /**
  * Sends encrypted return batch files and report summaries back to the
@@ -83,6 +87,7 @@ public class ReturnBatchSendService {
     private final InternalKeyPairService keyPairService;
     private final ObjectMapper objectMapper;
     private final AuditLogService auditLogService;
+    private final MerchantKeyRepository merchantKeyRepository;
 
     private RestTemplate restTemplate;
 
@@ -96,11 +101,13 @@ public class ReturnBatchSendService {
     public ReturnBatchSendService(ConsumerKeyService consumerKeyService,
             InternalKeyPairService keyPairService,
             ObjectMapper objectMapper,
-            AuditLogService auditLogService) {
+            AuditLogService auditLogService,
+            MerchantKeyRepository merchantKeyRepository) {
         this.consumerKeyService = consumerKeyService;
         this.keyPairService = keyPairService;
         this.objectMapper = objectMapper;
         this.auditLogService = auditLogService;
+        this.merchantKeyRepository = merchantKeyRepository;
     }
 
     @PostConstruct
@@ -131,8 +138,32 @@ public class ReturnBatchSendService {
                 batch.getBatchId(), merchantId, transactions.size());
 
         try {
-            // 1. Fetch/use cached RSA public key from the consumer system
-            PublicKey consumerPublicKey = consumerKeyService.getConsumerPublicKey();
+            // 1. Fetch merchant-specific OUTBOUND RSA public key for encryption
+            PublicKey encryptionKey = null;
+            String keySource = "consumer";
+            try {
+                java.util.Optional<MerchantKey> merchantKeyOpt = merchantKeyRepository
+                        .findFirstByMerchantIdAndStatusAndKeyPurposeOrderByVersionNoDesc(
+                                merchantId, "ACTIVE", "OUTBOUND");
+                if (merchantKeyOpt.isPresent() && merchantKeyOpt.get().getPublicKeyPem() != null) {
+                    String pem = merchantKeyOpt.get().getPublicKeyPem()
+                            .replace("-----BEGIN PUBLIC KEY-----", "")
+                            .replace("-----END PUBLIC KEY-----", "")
+                            .replaceAll("\\s", "");
+                    byte[] decoded = Base64.getDecoder().decode(pem);
+                    encryptionKey = KeyFactory.getInstance("RSA")
+                            .generatePublic(new X509EncodedKeySpec(decoded));
+                    keySource = "merchant(" + merchantId + ")";
+                    log.info("[ReturnBatch] Using merchant OUTBOUND RSA key for merchant={}", merchantId);
+                }
+            } catch (Exception keyEx) {
+                log.warn("[ReturnBatch] Failed to load merchant OUTBOUND key for {}: {}, falling back to consumer key",
+                        merchantId, keyEx.getMessage());
+            }
+            if (encryptionKey == null) {
+                encryptionKey = consumerKeyService.getConsumerPublicKey();
+                log.info("[ReturnBatch] Falling back to consumer RSA key for merchant={}", merchantId);
+            }
 
             // 2. Generate return CSV with updated statuses
             byte[] csvBytes = generateReturnCsv(transactions);
@@ -151,9 +182,9 @@ public class ReturnBatchSendService {
             aesCipher.init(Cipher.ENCRYPT_MODE, aesKey, new IvParameterSpec(iv));
             byte[] encryptedFile = aesCipher.doFinal(csvBytes);
 
-            // 4. Encrypt AES key with consumer's RSA public key
+            // 4. Encrypt AES key with merchant/consumer RSA public key
             Cipher rsaCipher = Cipher.getInstance(RSA_ALGORITHM);
-            rsaCipher.init(Cipher.ENCRYPT_MODE, consumerPublicKey);
+            rsaCipher.init(Cipher.ENCRYPT_MODE, encryptionKey);
             byte[] encryptedAesKey = rsaCipher.doFinal(aesKey.getEncoded());
 
             String encryptedAesKeyBase64 = Base64.getEncoder().encodeToString(encryptedAesKey);
@@ -165,10 +196,10 @@ public class ReturnBatchSendService {
             auditLogService.logSystemActivity("ENCRYPT_RETURN_BATCH",
                     merchantId,
                     String.format("Encrypted return batch for batchId=%d | File: %s | "
-                            + "Original: %d bytes → Encrypted: %d bytes | AES key encrypted with consumer RSA | "
+                            + "Original: %d bytes → Encrypted: %d bytes | AES key encrypted with %s RSA | "
                             + "Transaction count: %d",
                             batch.getBatchId(), csvFilename, csvBytes.length,
-                            encryptedFile.length, transactions.size()),
+                            encryptedFile.length, keySource, transactions.size()),
                     "SUCCESS");
 
             // 5. Send to consumer system with retries
@@ -328,8 +359,32 @@ public class ReturnBatchSendService {
             String reportJson = objectMapper.writeValueAsString(report);
             byte[] reportBytes = reportJson.getBytes(StandardCharsets.UTF_8);
 
-            // 2. Fetch consumer's RSA public key
-            PublicKey consumerPublicKey = consumerKeyService.getConsumerPublicKey();
+            // 2. Fetch merchant-specific OUTBOUND RSA public key (fallback to consumer key)
+            PublicKey reportEncryptionKey = null;
+            String reportKeySource = "consumer";
+            try {
+                java.util.Optional<MerchantKey> merchantKeyOpt = merchantKeyRepository
+                        .findFirstByMerchantIdAndStatusAndKeyPurposeOrderByVersionNoDesc(
+                                merchantId, "ACTIVE", "OUTBOUND");
+                if (merchantKeyOpt.isPresent() && merchantKeyOpt.get().getPublicKeyPem() != null) {
+                    String pem = merchantKeyOpt.get().getPublicKeyPem()
+                            .replace("-----BEGIN PUBLIC KEY-----", "")
+                            .replace("-----END PUBLIC KEY-----", "")
+                            .replaceAll("\\s", "");
+                    byte[] decoded = Base64.getDecoder().decode(pem);
+                    reportEncryptionKey = KeyFactory.getInstance("RSA")
+                            .generatePublic(new X509EncodedKeySpec(decoded));
+                    reportKeySource = "merchant(" + merchantId + ")";
+                    log.info("[ReturnBatch] Using merchant OUTBOUND RSA key for report, merchant={}", merchantId);
+                }
+            } catch (Exception keyEx) {
+                log.warn("[ReturnBatch] Failed to load merchant OUTBOUND key for report {}: {}, falling back to consumer key",
+                        merchantId, keyEx.getMessage());
+            }
+            if (reportEncryptionKey == null) {
+                reportEncryptionKey = consumerKeyService.getConsumerPublicKey();
+                log.info("[ReturnBatch] Falling back to consumer RSA key for report, merchant={}", merchantId);
+            }
 
             // 3. Encrypt report JSON with AES-256-CBC
             KeyGenerator keyGen = KeyGenerator.getInstance("AES");
@@ -343,9 +398,9 @@ public class ReturnBatchSendService {
             aesCipher.init(Cipher.ENCRYPT_MODE, aesKey, new IvParameterSpec(iv));
             byte[] encryptedReport = aesCipher.doFinal(reportBytes);
 
-            // 4. Encrypt AES key with consumer's RSA public key
+            // 4. Encrypt AES key with merchant/consumer RSA public key
             Cipher rsaCipher = Cipher.getInstance(RSA_ALGORITHM);
-            rsaCipher.init(Cipher.ENCRYPT_MODE, consumerPublicKey);
+            rsaCipher.init(Cipher.ENCRYPT_MODE, reportEncryptionKey);
             byte[] encryptedAesKey = rsaCipher.doFinal(aesKey.getEncoded());
 
             String encryptedContentBase64 = Base64.getEncoder().encodeToString(encryptedReport);
@@ -358,8 +413,8 @@ public class ReturnBatchSendService {
             auditLogService.logSystemActivity("ENCRYPT_REPORT_SUMMARY",
                     merchantId,
                     String.format("Encrypted report summary for batchId=%d | "
-                            + "Original: %d bytes → Encrypted: %d bytes | AES key encrypted with consumer RSA",
-                            batch.getBatchId(), reportBytes.length, encryptedReport.length),
+                            + "Original: %d bytes → Encrypted: %d bytes | AES key encrypted with %s RSA",
+                            batch.getBatchId(), reportBytes.length, encryptedReport.length, reportKeySource),
                     "SUCCESS");
 
             // 5. Send encrypted report to consumer

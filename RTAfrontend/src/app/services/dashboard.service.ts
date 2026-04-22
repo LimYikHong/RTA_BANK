@@ -41,7 +41,7 @@ export interface DashboardStats {
   authStatusBreakdown: Record<string, number>;
   dailyAmountTrend: AmountPoint[];
   recentActivity: RecentActivity[];
-  avgProcessingTimeMinutes: number;
+  avgProcessingTimeSeconds: number;
   processedBatchCount: number;
 }
 

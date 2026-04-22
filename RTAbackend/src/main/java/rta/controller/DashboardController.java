@@ -20,10 +20,12 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import jakarta.servlet.http.HttpServletRequest;
+import rta.entity.RtaAuthorizationBatch;
 import rta.entity.RtaBatch;
 import rta.entity.RtaIncomingBatchFile;
 import rta.entity.SystemRsaKeyRequest;
 import rta.repository.AuditLogRepository;
+import rta.repository.RtaAuthorizationBatchRepository;
 import rta.repository.MerchantInfoRepository;
 import rta.repository.MerchantKeyRepository;
 import rta.repository.ProfileRepository;
@@ -53,6 +55,7 @@ public class DashboardController {
     private final ConsumerKeyService consumerKeyService;
     private final AuditLogService auditLogService;
     private final MerchantKeyRepository merchantKeyRepository;
+    private final RtaAuthorizationBatchRepository authBatchRepository;
 
     public DashboardController(
             RtaBatchRepository batchRepository,
@@ -64,7 +67,8 @@ public class DashboardController {
             SystemRsaKeyRequestRepository rsaKeyRequestRepository,
             ConsumerKeyService consumerKeyService,
             AuditLogService auditLogService,
-            MerchantKeyRepository merchantKeyRepository) {
+            MerchantKeyRepository merchantKeyRepository,
+            RtaAuthorizationBatchRepository authBatchRepository) {
         this.batchRepository = batchRepository;
         this.incomingBatchFileRepository = incomingBatchFileRepository;
         this.transactionRepository = transactionRepository;
@@ -75,6 +79,7 @@ public class DashboardController {
         this.consumerKeyService = consumerKeyService;
         this.auditLogService = auditLogService;
         this.merchantKeyRepository = merchantKeyRepository;
+        this.authBatchRepository = authBatchRepository;
     }
 
     /**
@@ -201,21 +206,21 @@ public class DashboardController {
             authStatusMap.put("DECLINED", declinedCount);
             stats.put("authStatusBreakdown", authStatusMap);
 
-            // ── Average processing time (receive file → return batch, in minutes) ─
-            double avgProcessingMinutes = 0;
-            List<RtaBatch> processedBatches = allBatches.stream()
-                    .filter(b -> "PROCESSED".equalsIgnoreCase(b.getStatus())
-                    && b.getCreatedAt() != null
-                    && b.getLastModifiedAt() != null)
+            // ── Average processing time (one process time per auth batch, in seconds) ─
+            double avgProcessingSeconds = 0;
+            List<RtaAuthorizationBatch> processedAuthBatches = authBatchRepository.findAll().stream()
+                    .filter(ab -> "PROCESSED".equalsIgnoreCase(ab.getBatchStatus())
+                    && ab.getCreatedAt() != null
+                    && ab.getLastModifiedAt() != null)
                     .collect(Collectors.toList());
-            if (!processedBatches.isEmpty()) {
-                double totalMinutes = processedBatches.stream()
-                        .mapToDouble(b -> ChronoUnit.SECONDS.between(b.getCreatedAt(), b.getLastModifiedAt()) / 60.0)
+            if (!processedAuthBatches.isEmpty()) {
+                double totalSeconds = processedAuthBatches.stream()
+                        .mapToDouble(ab -> ChronoUnit.MILLIS.between(ab.getCreatedAt(), ab.getLastModifiedAt()) / 1000.0)
                         .sum();
-                avgProcessingMinutes = totalMinutes / processedBatches.size();
+                avgProcessingSeconds = totalSeconds / processedAuthBatches.size();
             }
-            stats.put("avgProcessingTimeMinutes", Math.round(avgProcessingMinutes * 100.0) / 100.0);
-            stats.put("processedBatchCount", processedBatches.size());
+            stats.put("avgProcessingTimeSeconds", Math.round(avgProcessingSeconds * 100.0) / 100.0);
+            stats.put("processedBatchCount", processedAuthBatches.size());
 
             // ── Daily transaction amount trend (last 7 days) ────────────────────
             List<Map<String, Object>> amountTrend = new ArrayList<>();

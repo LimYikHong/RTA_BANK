@@ -469,11 +469,13 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
 
   get formattedAvgProcessingTime(): string {
     if (!this.stats) return '—';
-    const mins = this.stats.avgProcessingTimeMinutes;
-    if (mins < 1) return '< 1 min';
-    if (mins < 60) return `${Math.round(mins)} min`;
+    const secs = this.stats.avgProcessingTimeSeconds;
+    if (secs < 60) return `${Math.round(secs * 100) / 100}s`;
+    const mins = Math.floor(secs / 60);
+    const remSec = Math.round(secs % 60);
+    if (mins < 60) return remSec > 0 ? `${mins}m ${remSec}s` : `${mins}m`;
     const hrs = Math.floor(mins / 60);
-    const rem = Math.round(mins % 60);
-    return rem > 0 ? `${hrs}h ${rem}m` : `${hrs}h`;
+    const remMin = mins % 60;
+    return remMin > 0 ? `${hrs}h ${remMin}m` : `${hrs}h`;
   }
 }
