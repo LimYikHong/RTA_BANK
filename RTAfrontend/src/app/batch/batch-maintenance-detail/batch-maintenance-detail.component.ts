@@ -4,8 +4,6 @@ import { RouterModule, Router, ActivatedRoute } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 import { AuthService } from '../../services/auth.service';
-import { TopBarComponent } from '../../top-bar/top-bar.component';
-
 interface BatchDetailData {
   authBatchId: number;
   batchReference: string;
@@ -48,14 +46,11 @@ interface TransactionRecord {
 @Component({
   selector: 'app-batch-maintenance-detail',
   standalone: true,
-  imports: [CommonModule, RouterModule, FormsModule, TopBarComponent],
+  imports: [CommonModule, RouterModule, FormsModule],
   templateUrl: './batch-maintenance-detail.component.html',
   styleUrl: './batch-maintenance-detail.component.scss'
 })
 export class BatchMaintenanceDetailComponent implements OnInit {
-  drawerOpen = true;
-  toggleDrawer() { this.drawerOpen = !this.drawerOpen; }
-
   private apiUrl = 'https://localhost:8086/api/batch-maintenance';
 
   authBatchId!: number;

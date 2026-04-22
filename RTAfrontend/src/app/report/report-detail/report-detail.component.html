@@ -1,0 +1,73 @@
+    <div class="page-header">
+      <button class="back-btn" (click)="back()">&lt; Back to Reports</button>
+      <h1>📊 Report Detail</h1>
+      <div class="header-actions" *ngIf="report">
+        <button class="btn btn-download" (click)="downloadOutput()">⬇️ Download Output File</button>
+        <button class="btn btn-print" (click)="printReport()">🖨️ Print</button>
+      </div>
+    </div>
+
+    <div class="loading-text" *ngIf="isLoading">Loading report...</div>
+
+    <!-- Report Summary Card -->
+    <div class="report-card" *ngIf="!isLoading && report">
+      <div class="summary-grid">
+        <div class="summary-item">
+          <label>Report Name</label>
+          <span class="value-highlight">{{ report.reportName }}</span>
+        </div>
+        <div class="summary-item">
+          <label>Merchant ID</label>
+          <span>{{ report.merchantId }}</span>
+        </div>
+        <div class="summary-item">
+          <label>File Format</label>
+          <span class="format-badge">{{ report.fileFormat }}</span>
+        </div>
+        <div class="summary-item">
+          <label>Created At</label>
+          <span>{{ report.createdAt | date:'medium' }}</span>
+        </div>
+        <div class="summary-item">
+          <label>Status</label>
+          <span class="status-badge status-info">{{ report.status }}</span>
+        </div>
+        <div class="summary-item">
+          <label>Send Status</label>
+          <span class="status-badge" [class.status-success]="report.sendStatus === 'SENT'"
+                [class.status-warning]="report.sendStatus === 'PENDING'"
+                [class.status-danger]="report.sendStatus === 'FAILED'">{{ report.sendStatus }}</span>
+        </div>
+      </div>
+
+      <div class="stats-cards">
+        <div class="stat-card total">
+          <div class="stat-number">{{ report.totalRecords }}</div>
+          <div class="stat-label">Total Records</div>
+        </div>
+        <div class="stat-card approved">
+          <div class="stat-number">{{ report.approvedCount }}</div>
+          <div class="stat-label">Approved</div>
+        </div>
+        <div class="stat-card declined">
+          <div class="stat-number">{{ report.declinedCount + report.failCount }}</div>
+          <div class="stat-label">Declined / Failed</div>
+        </div>
+        <div class="stat-card amount">
+          <div class="stat-number">{{ formatAmount(report.totalAmount) }}</div>
+          <div class="stat-label">Total Amount Processed</div>
+        </div>
+      </div>
+
+      <!-- Digital Signature -->
+      <div class="signature-section" *ngIf="report.digitalSignature">
+        <label>Digital Signature</label>
+        <code class="signature-value">{{ report.digitalSignature | slice:0:60 }}...</code>
+      </div>
+    </div>
+
+    <!-- Rendered HTML Report -->
+    <div class="report-preview" *ngIf="reportHtml">
+      <h2>Report Preview</h2>
+      <div class="report-iframe" [innerHTML]="reportHtml"></div>
+    </div>

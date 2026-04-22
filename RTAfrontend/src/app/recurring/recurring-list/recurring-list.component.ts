@@ -3,8 +3,6 @@ import { CommonModule } from '@angular/common';
 import { RouterModule, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { TopBarComponent } from '../../top-bar/top-bar.component';
-
 interface RecurringItem {
   recurringReference: string;
   merchantId: string;
@@ -27,14 +25,11 @@ interface PagedResponse {
 @Component({
   selector: 'app-recurring-list',
   standalone: true,
-  imports: [CommonModule, RouterModule, FormsModule, TopBarComponent],
+  imports: [CommonModule, RouterModule, FormsModule],
   templateUrl: './recurring-list.component.html',
   styleUrl: './recurring-list.component.scss'
 })
 export class RecurringListComponent implements OnInit {
-  drawerOpen = true;
-  toggleDrawer() { this.drawerOpen = !this.drawerOpen; }
-
   private apiUrl = 'https://localhost:8086/api/recurring';
 
   pagedItems: RecurringItem[] = [];

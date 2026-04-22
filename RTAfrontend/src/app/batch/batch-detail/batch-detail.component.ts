@@ -3,8 +3,6 @@ import { CommonModule } from '@angular/common';
 import { RouterModule, Router, ActivatedRoute } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
 import { AuthService } from '../../services/auth.service';
-import { TopBarComponent } from '../../top-bar/top-bar.component';
-
 interface BatchSummary {
   batchFileId: number;
   batchId: number | null;
@@ -41,14 +39,11 @@ interface TransactionRecord {
 @Component({
   selector: 'app-batch-detail',
   standalone: true,
-  imports: [CommonModule, RouterModule, TopBarComponent],
+  imports: [CommonModule, RouterModule],
   templateUrl: './batch-detail.component.html',
   styleUrl: './batch-detail.component.scss'
 })
 export class BatchDetailComponent implements OnInit {
-  drawerOpen = true;
-  toggleDrawer() { this.drawerOpen = !this.drawerOpen; }
-
   private apiUrl = 'https://localhost:8086/api/incoming';
 
   batchFileId!: number;

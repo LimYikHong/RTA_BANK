@@ -4,7 +4,6 @@ import { RouterModule, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 import { AuthService } from '../../services/auth.service';
-import { TopBarComponent } from '../../top-bar/top-bar.component';
 import { BatchTimerService } from '../../services/batch-timer.service';
 
 interface IncomingBatchFile {
@@ -32,14 +31,11 @@ interface IncomingBatchFile {
 @Component({
   selector: 'app-incoming-batch',
   standalone: true,
-  imports: [CommonModule, RouterModule, FormsModule, TopBarComponent],
+  imports: [CommonModule, RouterModule, FormsModule],
   templateUrl: './incoming-batch.component.html',
   styleUrl: './incoming-batch.component.scss'
 })
 export class IncomingBatchComponent implements OnInit {
-  drawerOpen = true;
-  toggleDrawer() { this.drawerOpen = !this.drawerOpen; }
-
   private apiUrl = 'https://localhost:8086/api/incoming';
 
   incomingFiles: IncomingBatchFile[] = [];

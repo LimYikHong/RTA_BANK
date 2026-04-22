@@ -3,8 +3,6 @@ package rta.service;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
-import java.util.Map;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
@@ -57,6 +55,8 @@ public class BatchMaintenanceScheduler {
     private final SendAuthService sendAuthService;
     private final MinioStorageService minioStorageService;
     private final TransactionTemplate transactionTemplate;
+    private final TransactionBulkInsertService bulkInsertService;
+    private final ReturnBatchSendService returnBatchSendService;
 
     /**
      * Epoch millis of the last completed batch run.
@@ -72,7 +72,9 @@ public class BatchMaintenanceScheduler {
             BatchRequestProducer batchRequestProducer,
             SendAuthService sendAuthService,
             MinioStorageService minioStorageService,
-            PlatformTransactionManager transactionManager) {
+            PlatformTransactionManager transactionManager,
+            TransactionBulkInsertService bulkInsertService,
+            ReturnBatchSendService returnBatchSendService) {
         this.transactionRepository = transactionRepository;
         this.incomingFileRepository = incomingFileRepository;
         this.batchRepository = batchRepository;
@@ -83,6 +85,8 @@ public class BatchMaintenanceScheduler {
         this.sendAuthService = sendAuthService;
         this.minioStorageService = minioStorageService;
         this.transactionTemplate = new TransactionTemplate(transactionManager);
+        this.bulkInsertService = bulkInsertService;
+        this.returnBatchSendService = returnBatchSendService;
     }
 
     /**
@@ -209,11 +213,11 @@ public class BatchMaintenanceScheduler {
         authBatch.setRemark(eligibleFiles.size() + " file(s), awaiting authorization");
         RtaAuthorizationBatch savedAuthBatch = authBatchRepository.save(authBatch);
 
-        // Link all transactions to the auth batch
-        for (RtaTransaction txn : transactionRepository.findByBatchBatchId(savedBatch.getBatchId())) {
-            txn.setAuthBatchId(savedAuthBatch.getAuthBatchId());
-            transactionRepository.save(txn);
-        }
+        // Link all transactions to the auth batch (single UPDATE instead of row-by-row)
+        int linkedCount = transactionRepository.bulkAssignAuthBatchId(
+                savedAuthBatch.getAuthBatchId(), savedBatch.getBatchId());
+        log.info("[BatchMaintenance] Linked {} transactions to AuthBatch #{}",
+                linkedCount, savedAuthBatch.getAuthBatchId());
 
         log.info("[BatchMaintenance] Batch {} CREATED — {} file(s), {} records ({} success, {} fail). AuthBatch #{}",
                 savedBatch.getBatchId(), eligibleFiles.size(), totalCount, totalSuccess, totalFail,
@@ -287,10 +291,12 @@ public class BatchMaintenanceScheduler {
         log.info("[BatchMaintenance] CSV generated and encrypted for batch {} in {}ms: {}",
                 batch.getBatchId(), csvElapsedMs, encrypted.getCsvFilename());
 
+        double csvElapsedSec = csvElapsedMs / 1000.0;
         auditLogService.logSystemActivity("GENERATE_CSV",
                 String.valueOf(batch.getBatchId()),
                 "CSV '" + encrypted.getCsvFilename() + "' generated and encrypted for batch #"
-                + batch.getBatchId() + " — " + pendingTxns.size() + " transactions, took " + csvElapsedMs + "ms",
+                + batch.getBatchId() + " — " + pendingTxns.size() + " transactions. "
+                + "Time: " + String.format("%.3f", csvElapsedSec) + "s",
                 "SUCCESS");
 
         // ── Step 2: Store CSV in MinIO ────────────────────────────────────
@@ -332,36 +338,28 @@ public class BatchMaintenanceScheduler {
                     authResponse.getApproved(), authResponse.getRejected());
 
             // ── Step 4: Update transaction statuses from response ─────────
+            long updateAuthStartMs = System.currentTimeMillis();
             if (authResponse.getResults() != null && !authResponse.getResults().isEmpty()) {
-                for (Map<String, Object> txnResult : authResponse.getResults()) {
-                    try {
-                        Long transactionId = toLong(txnResult.get("transactionId"));
-                        String status = (String) txnResult.get("status");
-                        String remark = (String) txnResult.get("remark");
-
-                        Optional<RtaTransaction> optTxn = transactionRepository.findById(transactionId);
-                        if (optTxn.isPresent()) {
-                            RtaTransaction txn = optTxn.get();
-                            txn.setStatus(status);
-                            txn.setRemark(remark);
-                            txn.setAuthorizationDatetime(LocalDateTime.now());
-                            transactionRepository.save(txn);
-                        }
-                    } catch (Exception e) {
-                        log.warn("[BatchMaintenance] Failed to update transaction: {}", e.getMessage());
-                    }
-                }
+                // JDBC batch update — all per-transaction results in bulk
+                bulkInsertService.bulkUpdateAuthStatus(authResponse.getResults());
             } else {
-                // No per-transaction detail from consumer — bulk update using counts
+                // No per-transaction detail — single UPDATE for all PENDING txns
                 log.info("[BatchMaintenance] No per-txn results for batch {}. Bulk-updating {} PENDING txns to APPROVED.",
                         batch.getBatchId(), pendingTxns.size());
-                for (RtaTransaction txn : pendingTxns) {
-                    txn.setStatus("APPROVED");
-                    txn.setRemark("Authorized by consumer (batch result)");
-                    txn.setAuthorizationDatetime(LocalDateTime.now());
-                    transactionRepository.save(txn);
-                }
+                transactionRepository.bulkUpdateAuthStatusByBatchId(
+                        batch.getBatchId(), "APPROVED",
+                        "Authorized by consumer (batch result)",
+                        LocalDateTime.now());
             }
+
+            long updateAuthElapsedMs = System.currentTimeMillis() - updateAuthStartMs;
+            double updateAuthSec = updateAuthElapsedMs / 1000.0;
+            auditLogService.logSystemActivity("UPDATE_AUTH_STATUS",
+                    String.valueOf(batch.getBatchId()),
+                    "Updated transaction auth statuses for batch #" + batch.getBatchId()
+                    + " — " + authResponse.getApproved() + " approved, " + authResponse.getRejected() + " rejected. "
+                    + "Time: " + String.format("%.3f", updateAuthSec) + "s",
+                    "SUCCESS");
 
             // ── Step 5: Update existing RtaAuthorizationBatch with auth results ──
             long totalAmountCents = transactionRepository.sumAmountByBatchIdAndStatusSuccess(batch.getBatchId());
@@ -391,14 +389,91 @@ public class BatchMaintenanceScheduler {
             batch.setLastModifiedBy("SYSTEM");
             batchRepository.save(batch);
 
+            // Also mark all incoming batch files in this batch as PROCESSED
+            List<RtaIncomingBatchFile> batchFiles = incomingFileRepository.findByBatchId(batch.getBatchId());
+            for (RtaIncomingBatchFile bf : batchFiles) {
+                bf.setBatchStatus("PROCESSED");
+                bf.setLastModifiedAt(LocalDateTime.now());
+                bf.setLastModifiedBy("SYSTEM");
+                incomingFileRepository.save(bf);
+            }
+
+            // ── Step 6: Send return batch file back to consumer (encrypted) ──
+            try {
+                List<RtaTransaction> processedTxns = transactionRepository
+                        .findByBatchBatchId(batch.getBatchId());
+                String primaryMerchant = processedTxns.isEmpty() ? batch.getMerchantIds()
+                        : processedTxns.get(0).getMerchantId();
+
+                ReturnBatchSendService.ReturnBatchResponse returnResponse
+                        = returnBatchSendService.sendReturnBatch(
+                                batch, primaryMerchant, processedTxns,
+                                batch.getOriginalFileName(),
+                                authResponse.getApproved() + " approved, "
+                                + authResponse.getRejected() + " rejected");
+
+                if (returnResponse.isSuccess()) {
+                    log.info("[BatchMaintenance] Return batch sent for batch {}", batch.getBatchId());
+                    auditLogService.logSystemActivity("SEND_RETURN_BATCH",
+                            String.valueOf(batch.getBatchId()),
+                            "Return batch file sent to consumer for batch #" + batch.getBatchId(),
+                            "SUCCESS");
+                } else {
+                    log.warn("[BatchMaintenance] Failed to send return batch for batch {}: {}",
+                            batch.getBatchId(), returnResponse.getErrorMessage());
+                    auditLogService.logSystemActivity("SEND_RETURN_BATCH",
+                            String.valueOf(batch.getBatchId()),
+                            "Failed to send return batch: " + returnResponse.getErrorMessage(),
+                            "FAILED");
+                }
+            } catch (Exception returnEx) {
+                log.error("[BatchMaintenance] Error sending return batch for batch {}: {}",
+                        batch.getBatchId(), returnEx.getMessage(), returnEx);
+            }
+
+            // ── Step 7: Send report summary to consumer (encrypted) ──
+            try {
+                List<RtaTransaction> allTxns = transactionRepository
+                        .findByBatchBatchId(batch.getBatchId());
+                String primaryMerchant = allTxns.isEmpty() ? batch.getMerchantIds()
+                        : allTxns.get(0).getMerchantId();
+
+                int failedCount = allTxns.size() - authResponse.getApproved() - authResponse.getRejected();
+                ReturnBatchSendService.ReportResponse reportResponse
+                        = returnBatchSendService.sendReportSummary(
+                                batch, primaryMerchant,
+                                authResponse.getApproved(), authResponse.getRejected(),
+                                Math.max(failedCount, 0), allTxns);
+
+                if (reportResponse.isSuccess()) {
+                    log.info("[BatchMaintenance] Report summary sent for batch {}", batch.getBatchId());
+                    auditLogService.logSystemActivity("SEND_REPORT",
+                            String.valueOf(batch.getBatchId()),
+                            "Report summary sent to consumer for batch #" + batch.getBatchId(),
+                            "SUCCESS");
+                } else {
+                    log.warn("[BatchMaintenance] Failed to send report for batch {}: {}",
+                            batch.getBatchId(), reportResponse.getErrorMessage());
+                    auditLogService.logSystemActivity("SEND_REPORT",
+                            String.valueOf(batch.getBatchId()),
+                            "Failed to send report: " + reportResponse.getErrorMessage(),
+                            "FAILED");
+                }
+            } catch (Exception reportEx) {
+                log.error("[BatchMaintenance] Error sending report for batch {}: {}",
+                        batch.getBatchId(), reportEx.getMessage(), reportEx);
+            }
+
             long totalElapsedMs = System.currentTimeMillis() - batchStartMs;
 
+            double sendElapsedSec = sendElapsedMs / 1000.0;
+            double totalElapsedSec = totalElapsedMs / 1000.0;
             auditLogService.logSystemActivity("SEND_AUTH",
                     String.valueOf(batch.getBatchId()),
                     "Batch #" + batch.getBatchId() + " sent to consumer and authorized — "
                     + authResponse.getApproved() + " approved, " + authResponse.getRejected() + " rejected. "
-                    + "CSV generation: " + csvElapsedMs + "ms, Send+Auth: " + sendElapsedMs + "ms, "
-                    + "Total: " + totalElapsedMs + "ms",
+                    + "CSV: " + String.format("%.3f", csvElapsedSec) + "s, Send+Auth: " + String.format("%.3f", sendElapsedSec) + "s, "
+                    + "Update: " + String.format("%.3f", updateAuthSec) + "s, Total: " + String.format("%.3f", totalElapsedSec) + "s",
                     "SUCCESS");
 
         } else {

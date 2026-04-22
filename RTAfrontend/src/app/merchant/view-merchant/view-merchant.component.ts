@@ -3,8 +3,8 @@ import { CommonModule } from '@angular/common';
 import { RouterModule, Router, ActivatedRoute } from '@angular/router';
 import { ProfileService } from '../../services/profile.service';
 import { AuthService } from '../../services/auth.service';
-import { TopBarComponent } from '../../top-bar/top-bar.component';
 import { HttpClient } from '@angular/common/http';
+import { ReportService } from '../../services/report.service';
 
 export interface MerchantViewData {
   merchantId: string;
@@ -34,14 +34,11 @@ export interface ViewFieldMapping {
 @Component({
   selector: 'app-view-merchant',
   standalone: true,
-  imports: [CommonModule, RouterModule, TopBarComponent],
+  imports: [CommonModule, RouterModule],
   templateUrl: './view-merchant.component.html',
   styleUrl: './view-merchant.component.scss'
 })
 export class ViewMerchantComponent implements OnInit {
-  drawerOpen = true;
-  toggleDrawer() { this.drawerOpen = !this.drawerOpen; }
-
   merchant: MerchantViewData = {
     merchantId: '',
     name: '',
@@ -62,12 +59,18 @@ export class ViewMerchantComponent implements OnInit {
 
   private fileProfileApiUrl = 'https://localhost:8086/api/file-profiles';
 
+  // RSA Key management
+  rsaKeyStatus: any = null;
+  rsaKeyLoading = false;
+  rsaKeyGenerating = false;
+
   constructor(
     private profileService: ProfileService,
     private authService: AuthService,
     private router: Router,
     private route: ActivatedRoute,
-    private http: HttpClient
+    private http: HttpClient,
+    private reportService: ReportService
   ) {}
 
   ngOnInit(): void {
@@ -96,6 +99,7 @@ export class ViewMerchantComponent implements OnInit {
           createBy: data.createBy || ''
         };
         this.loadFileProfile();
+        this.loadRsaKeyStatus();
       },
       error: () => {
         alert('Failed to load merchant data.');
@@ -184,6 +188,37 @@ export class ViewMerchantComponent implements OnInit {
       case ';': return 'Semicolon ( ; )';
       default: return delimiter || '-';
     }
+  }
+
+  loadRsaKeyStatus(): void {
+    this.rsaKeyLoading = true;
+    this.reportService.getRsaKeyStatus(this.merchantId).subscribe({
+      next: (status: any) => {
+        this.rsaKeyStatus = status;
+        this.rsaKeyLoading = false;
+      },
+      error: () => {
+        this.rsaKeyStatus = null;
+        this.rsaKeyLoading = false;
+      }
+    });
+  }
+
+  generateRsaKey(): void {
+    if (this.rsaKeyGenerating) return;
+    if (!confirm('Generate a new RSA key pair for this merchant? Any existing key will be rotated.')) return;
+    this.rsaKeyGenerating = true;
+    this.reportService.requestRsaKey(this.merchantId).subscribe({
+      next: () => {
+        alert('RSA key pair generated successfully!');
+        this.rsaKeyGenerating = false;
+        this.loadRsaKeyStatus();
+      },
+      error: (err: any) => {
+        alert('Failed to generate RSA key: ' + (err.error?.detail || err.message));
+        this.rsaKeyGenerating = false;
+      }
+    });
   }
 
   back(): void {

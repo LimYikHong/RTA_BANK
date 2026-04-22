@@ -21,4 +21,11 @@ public interface RtaIncomingBatchFileRepository extends JpaRepository<RtaIncomin
      */
     @Query("SELECT f FROM RtaIncomingBatchFile f WHERE f.batchId IS NULL AND (f.batchStatus IS NULL OR f.batchStatus = 'PENDING') AND f.insertionStatus = 'COMPLETED' AND f.successCount > 0 AND f.deletedAt IS NULL")
     List<RtaIncomingBatchFile> findEligibleForBatch();
+
+    /**
+     * Find batch files by batchStatus (e.g. 'PROCESSED') that have not been
+     * soft-deleted.
+     */
+    @Query("SELECT f FROM RtaIncomingBatchFile f WHERE f.batchStatus = :batchStatus AND f.deletedAt IS NULL")
+    List<RtaIncomingBatchFile> findByBatchStatus(@org.springframework.data.repository.query.Param("batchStatus") String batchStatus);
 }

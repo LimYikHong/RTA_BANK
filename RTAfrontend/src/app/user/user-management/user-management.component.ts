@@ -4,20 +4,16 @@ import { RouterModule, Router, NavigationEnd } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { ProfileService, UserListItem } from '../../services/profile.service';
 import { AuthService } from '../../services/auth.service';
-import { TopBarComponent } from '../../top-bar/top-bar.component';
 import { Subscription, filter } from 'rxjs';
 
 @Component({
   selector: 'app-user-management',
   standalone: true,
-  imports: [CommonModule, RouterModule, FormsModule, TopBarComponent],
+  imports: [CommonModule, RouterModule, FormsModule],
   templateUrl: './user-management.component.html',
   styleUrl: './user-management.component.scss'
 })
 export class UserManagementComponent implements OnInit, OnDestroy {
-  drawerOpen = true;
-  toggleDrawer() { this.drawerOpen = !this.drawerOpen; }
-
   users: UserListItem[] = [];
   filteredUsers: UserListItem[] = [];
   searchKeyword: string = '';

@@ -4,21 +4,17 @@ import { RouterModule, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { ProfileService, MerchantInfoPayload, FieldMappingPayload } from '../../services/profile.service';
 import { AuthService } from '../../services/auth.service';
-import { TopBarComponent } from '../../top-bar/top-bar.component';
 import { Subject } from 'rxjs';
 import { debounceTime, distinctUntilChanged, switchMap } from 'rxjs/operators';
 
 @Component({
   selector: 'app-add-merchant',
   standalone: true,
-  imports: [CommonModule, RouterModule, FormsModule, TopBarComponent],
+  imports: [CommonModule, RouterModule, FormsModule],
   templateUrl: './add-merchant.component.html',
   styleUrl: './add-merchant.component.scss'
 })
 export class AddMerchantComponent implements OnInit {
-  drawerOpen = true;
-  toggleDrawer() { this.drawerOpen = !this.drawerOpen; }
-
   merchant: MerchantInfoPayload = {
     merchantId: '',
     name: '',

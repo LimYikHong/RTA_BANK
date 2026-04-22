@@ -4,7 +4,6 @@ import { RouterModule, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { AuthService } from '../../services/auth.service';
-import { TopBarComponent } from '../../top-bar/top-bar.component';
 import { BatchTimerService } from '../../services/batch-timer.service';
 
 interface AuthBatchItem {
@@ -34,14 +33,11 @@ interface PagedResponse {
 @Component({
   selector: 'app-batch-maintenance',
   standalone: true,
-  imports: [CommonModule, RouterModule, FormsModule, TopBarComponent],
+  imports: [CommonModule, RouterModule, FormsModule],
   templateUrl: './batch-maintenance.component.html',
   styleUrl: './batch-maintenance.component.scss'
 })
 export class BatchMaintenanceComponent implements OnInit {
-  drawerOpen = true;
-  toggleDrawer() { this.drawerOpen = !this.drawerOpen; }
-
   private apiUrl = 'https://localhost:8086/api/batch-maintenance';
 
   pagedItems: AuthBatchItem[] = [];

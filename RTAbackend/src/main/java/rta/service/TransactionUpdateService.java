@@ -1,18 +1,22 @@
 package rta.service;
 
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import rta.entity.RtaBatch;
-import rta.entity.RtaTransaction;
 import rta.event.BatchResponseEvent;
 import rta.repository.RtaBatchRepository;
 import rta.repository.RtaTransactionRepository;
-
-import java.time.LocalDateTime;
-import java.util.Optional;
 
 /**
  * Listens on the {@code batch-response} Kafka topic for authorization results
@@ -30,6 +34,7 @@ public class TransactionUpdateService {
     private final RtaTransactionRepository transactionRepository;
     private final RtaBatchRepository batchRepository;
     private final AuditLogService auditLogService;
+    private final TransactionBulkInsertService bulkInsertService;
 
     @KafkaListener(topics = "${rta.kafka.topic.batch-response}",
             groupId = "transaction-update-service",
@@ -48,19 +53,14 @@ public class TransactionUpdateService {
         int approved = 0;
         int failed = 0;
 
-        // Update each transaction individually
+        // Build bulk update list and count
+        List<Map<String, Object>> txnUpdateList = new ArrayList<>();
         for (BatchResponseEvent.TransactionResult result : event.getResults()) {
-            Optional<RtaTransaction> optTxn = transactionRepository.findById(result.getTransactionId());
-            if (optTxn.isEmpty()) {
-                log.warn("[TxnUpdateService] Transaction {} not found, skipping", result.getTransactionId());
-                continue;
-            }
-
-            RtaTransaction txn = optTxn.get();
-            txn.setStatus(result.getStatus());
-            txn.setRemark(result.getRemark());
-            txn.setAuthorizationDatetime(LocalDateTime.now());
-            transactionRepository.save(txn);
+            Map<String, Object> row = new LinkedHashMap<>();
+            row.put("transactionId", result.getTransactionId());
+            row.put("status", result.getStatus());
+            row.put("remark", result.getRemark());
+            txnUpdateList.add(row);
 
             if ("APPROVED".equals(result.getStatus())) {
                 approved++;
@@ -68,6 +68,9 @@ public class TransactionUpdateService {
                 failed++;
             }
         }
+
+        // JDBC batch update — all at once
+        bulkInsertService.bulkUpdateAuthStatus(txnUpdateList);
 
         log.info("[TxnUpdateService] Batch {} transactions updated: {} approved, {} failed",
                 event.getBatchId(), approved, failed);

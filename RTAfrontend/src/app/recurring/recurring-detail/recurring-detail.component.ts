@@ -2,8 +2,6 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule, Router, ActivatedRoute } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
-import { TopBarComponent } from '../../top-bar/top-bar.component';
-
 interface TransactionItem {
   transactionId: number;
   batchSeq: number;
@@ -36,14 +34,11 @@ interface RecurringDetail {
 @Component({
   selector: 'app-recurring-detail',
   standalone: true,
-  imports: [CommonModule, RouterModule, TopBarComponent],
+  imports: [CommonModule, RouterModule],
   templateUrl: './recurring-detail.component.html',
   styleUrl: './recurring-detail.component.scss'
 })
 export class RecurringDetailComponent implements OnInit {
-  drawerOpen = true;
-  toggleDrawer() { this.drawerOpen = !this.drawerOpen; }
-
   private apiUrl = 'https://localhost:8086/api/recurring';
 
   recurringReference: string = '';

@@ -4,19 +4,14 @@ import { RouterModule } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { AuditLogService, AuditLogEntry } from '../services/audit-log.service';
 import { AuthService } from '../services/auth.service';
-import { TopBarComponent } from '../top-bar/top-bar.component';
-
 @Component({
   selector: 'app-audit-log',
   standalone: true,
-  imports: [CommonModule, RouterModule, FormsModule, TopBarComponent],
+  imports: [CommonModule, RouterModule, FormsModule],
   templateUrl: './audit-log.component.html',
   styleUrl: './audit-log.component.scss'
 })
 export class AuditLogComponent implements OnInit {
-  drawerOpen = true;
-  toggleDrawer() { this.drawerOpen = !this.drawerOpen; }
-
   // ---- User Activity Log ----
   userLogs: AuditLogEntry[] = [];
   filteredUserLogs: AuditLogEntry[] = [];

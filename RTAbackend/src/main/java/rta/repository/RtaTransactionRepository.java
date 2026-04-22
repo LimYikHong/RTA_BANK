@@ -1,5 +1,6 @@
 package rta.repository;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 import org.springframework.data.domain.Page;
@@ -194,4 +195,27 @@ public interface RtaTransactionRepository extends JpaRepository<RtaTransaction, 
      */
     @Query("SELECT DISTINCT t.batchFileId FROM RtaTransaction t WHERE t.authBatchId = :authBatchId")
     List<Long> findDistinctBatchFileIdsByAuthBatchId(@Param("authBatchId") Long authBatchId);
+
+    /**
+     * Bulk-assign auth_batch_id to all transactions in a given batch (single
+     * UPDATE).
+     */
+    @Transactional
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query(value = "UPDATE rta_transaction SET auth_batch_id = :authBatchId WHERE batch_id = :batchId", nativeQuery = true)
+    int bulkAssignAuthBatchId(@Param("authBatchId") Long authBatchId, @Param("batchId") Long batchId);
+
+    /**
+     * Bulk-update status, remark, authorization_datetime for all PENDING
+     * transactions in a batch (single UPDATE). Used when consumer returns no
+     * per-transaction detail.
+     */
+    @Transactional
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query(value = "UPDATE rta_transaction SET status = :newStatus, remark = :remark, authorization_datetime = :authDatetime "
+            + "WHERE batch_id = :batchId AND status = 'PENDING'", nativeQuery = true)
+    int bulkUpdateAuthStatusByBatchId(@Param("batchId") Long batchId,
+            @Param("newStatus") String newStatus,
+            @Param("remark") String remark,
+            @Param("authDatetime") LocalDateTime authDatetime);
 }

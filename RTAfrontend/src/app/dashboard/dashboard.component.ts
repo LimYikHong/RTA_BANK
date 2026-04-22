@@ -4,20 +4,14 @@ import { RouterModule } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { DashboardService, DashboardStats, RsaKeyStatus } from '../services/dashboard.service';
 import { AuthService } from '../services/auth.service';
-import { TopBarComponent } from '../top-bar/top-bar.component';
-
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, RouterModule, FormsModule, TopBarComponent],
+  imports: [CommonModule, RouterModule, FormsModule],
   templateUrl: './dashboard.component.html',
   styleUrl: './dashboard.component.scss'
 })
 export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
-
-  drawerOpen = true;
-  toggleDrawer() { this.drawerOpen = !this.drawerOpen; }
-
   stats: DashboardStats | null = null;
   loading = true;
   error = false;

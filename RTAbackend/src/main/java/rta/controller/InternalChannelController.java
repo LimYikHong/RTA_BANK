@@ -31,12 +31,12 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import rta.entity.RtaBatch;
 import rta.entity.RtaBatchEncryptionKey;
-import rta.entity.RtaTransaction;
 import rta.event.BatchResponseEvent;
 import rta.repository.RtaBatchEncryptionKeyRepository;
 import rta.repository.RtaBatchRepository;
 import rta.repository.RtaTransactionRepository;
 import rta.service.InternalKeyPairService;
+import rta.service.TransactionBulkInsertService;
 
 /**
  * Internal API channel — secured by API key + IP whitelist (via
@@ -62,6 +62,7 @@ public class InternalChannelController {
     private final RtaBatchEncryptionKeyRepository encryptionKeyRepository;
     private final RtaBatchRepository batchRepository;
     private final RtaTransactionRepository transactionRepository;
+    private final TransactionBulkInsertService bulkInsertService;
 
     private static final String RSA_ALGORITHM = "RSA/ECB/OAEPWithSHA-256AndMGF1Padding";
     private static final String AES_ALGORITHM = "AES/CBC/PKCS5Padding";
@@ -171,8 +172,8 @@ public class InternalChannelController {
                         : "Declined: insufficient funds";
 
                 if (isApproved) {
-                    approved++; 
-                }else {
+                    approved++;
+                } else {
                     rejected++;
                 }
 
@@ -186,19 +187,16 @@ public class InternalChannelController {
             log.info("[InternalChannel] Batch {} processed: {} approved, {} rejected out of {} total",
                     batchId, approved, rejected, results.size());
 
-            // 4. Update transaction statuses individually
+            // 4. Bulk-update transaction statuses using JDBC batch
+            List<Map<String, Object>> txnUpdateList = new ArrayList<>();
             for (BatchResponseEvent.TransactionResult txnResult : results) {
-                Optional<RtaTransaction> txnOpt = transactionRepository.findById(txnResult.getTransactionId());
-                if (txnOpt.isPresent()) {
-                    RtaTransaction txn = txnOpt.get();
-                    txn.setStatus(txnResult.getStatus());
-                    txn.setRemark(txnResult.getRemark());
-                    txn.setAuthorizationDatetime(LocalDateTime.now());
-                    transactionRepository.save(txn);
-                } else {
-                    log.warn("[InternalChannel] Transaction {} not found, skipping", txnResult.getTransactionId());
-                }
+                Map<String, Object> row = new LinkedHashMap<>();
+                row.put("transactionId", txnResult.getTransactionId());
+                row.put("status", txnResult.getStatus());
+                row.put("remark", txnResult.getRemark());
+                txnUpdateList.add(row);
             }
+            bulkInsertService.bulkUpdateAuthStatus(txnUpdateList);
 
             // 5. Update batch status → PROCESSED
             Optional<RtaBatch> batchOpt = batchRepository.findById(batchId);

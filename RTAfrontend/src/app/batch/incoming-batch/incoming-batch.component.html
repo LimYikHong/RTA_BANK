@@ -1,32 +1,3 @@
-<div class="page-container" [class.drawer-open]="drawerOpen">
-  <!-- Open sidebar button (top-left, visible when closed) -->
-  <button class="sidebar-open-btn" (click)="toggleDrawer()">
-    <span></span><span></span><span></span>
-  </button>
-
-  <!-- Sidebar -->
-  <aside class="sidebar" [class.open]="drawerOpen">
-    <button class="sidebar-toggle" (click)="toggleDrawer()">
-      <span></span><span></span><span></span>
-    </button>
-    <h2>RTA</h2>
-    <ul>
-      <li routerLink="/dashboard" routerLinkActive="active"><b>Dashboard</b></li>
-      <li routerLink="/batch-list" routerLinkActive="active"><b>Upload Batch File</b></li>
-      <li routerLink="/incoming-batch" routerLinkActive="active"><b>Incoming Batch File</b></li>
-      <li routerLink="/batch-file-maintenance" routerLinkActive="active"><b>Batch File Maintenance</b></li>
-      <li routerLink="/batch-maintenance" routerLinkActive="active"><b>Batch Maintenance</b></li>
-      <li routerLink="/check-auth-result" routerLinkActive="active"><b>Check Auth Result</b></li>
-      <li routerLink="/recurring-list" routerLinkActive="active"><b>Track Transaction</b></li>
-      <li routerLink="/users" routerLinkActive="active"><b>User Management</b></li>
-      <li routerLink="/merchant-maintenance" routerLinkActive="active"><b>Merchant Maintenance</b></li>
-      <li routerLink="/audit-log" routerLinkActive="active"><b>Audit Log</b></li>
-    </ul>
-  </aside>
-
-  <!-- Main Content -->
-  <main class="main-content">
-    <app-top-bar></app-top-bar>
     <div class="page-header">
       <h1>Incoming Batch Files</h1>
     </div>
@@ -127,21 +98,3 @@
         </div>
       </div>
     </div>
-  </main>
-</div>
-
-<!-- Error Modal -->
-<div class="modal-overlay" *ngIf="showErrorModal" (click)="closeErrorModal()">
-  <div class="modal-content" (click)="$event.stopPropagation()">
-    <div class="modal-header">
-      <h3>{{ errorTitle }}</h3>
-      <button class="modal-close" (click)="closeErrorModal()">&times;</button>
-    </div>
-    <div class="modal-body">
-      <p>{{ errorMessage }}</p>
-    </div>
-    <div class="modal-footer">
-      <button class="btn btn-primary" (click)="closeErrorModal()">Close</button>
-    </div>
-  </div>
-</div>

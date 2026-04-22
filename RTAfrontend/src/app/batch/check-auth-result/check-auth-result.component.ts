@@ -4,8 +4,6 @@ import { RouterModule, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { AuthService } from '../../services/auth.service';
-import { TopBarComponent } from '../../top-bar/top-bar.component';
-
 interface AuthBatchSummary {
   authBatchId: number;
   batchReference: string;
@@ -61,14 +59,11 @@ interface PagedResponse {
 @Component({
   selector: 'app-check-auth-result',
   standalone: true,
-  imports: [CommonModule, RouterModule, FormsModule, TopBarComponent],
+  imports: [CommonModule, RouterModule, FormsModule],
   templateUrl: './check-auth-result.component.html',
   styleUrl: './check-auth-result.component.scss'
 })
 export class CheckAuthResultComponent implements OnInit {
-  drawerOpen = true;
-  toggleDrawer() { this.drawerOpen = !this.drawerOpen; }
-
   private apiUrl = 'https://localhost:8086/api/batch-maintenance';
 
   // --- Batch list (only PROCESSED batches) ---

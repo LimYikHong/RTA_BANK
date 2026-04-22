@@ -4,19 +4,14 @@ import { RouterModule, Router, ActivatedRoute } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { ProfileService, UserProfile } from '../../services/profile.service';
 import { AuthService } from '../../services/auth.service';
-import { TopBarComponent } from '../../top-bar/top-bar.component';
-
 @Component({
   selector: 'app-view-user',
   standalone: true,
-  imports: [CommonModule, RouterModule, FormsModule, TopBarComponent],
+  imports: [CommonModule, RouterModule, FormsModule],
   templateUrl: './view-user.component.html',
   styleUrl: './view-user.component.scss'
 })
 export class ViewUserComponent implements OnInit {
-  drawerOpen = true;
-  toggleDrawer() { this.drawerOpen = !this.drawerOpen; }
-
   profile: UserProfile | null = null;
   userRole: string = '';
   isLoading = true;

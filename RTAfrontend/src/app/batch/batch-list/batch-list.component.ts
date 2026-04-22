@@ -5,8 +5,6 @@ import { RouterModule, Router } from '@angular/router';
 import { PortalService, UploadHistoryItem } from '../../services/portal.service';
 import { ProfileService, UserProfile } from '../../services/profile.service';
 import { AuthService } from '../../services/auth.service';
-import { TopBarComponent } from '../../top-bar/top-bar.component';
-
 interface MerchantOption {
   merchantId: string;
   name: string;
@@ -22,14 +20,11 @@ interface MerchantOption {
 @Component({
   selector: 'app-batch-list',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule, TopBarComponent],
+  imports: [CommonModule, FormsModule, RouterModule],
   templateUrl: './batch-list.component.html',
   styleUrl: './batch-list.component.scss'
 })
 export class BatchListComponent implements OnInit, OnDestroy {
-  drawerOpen = true;
-  toggleDrawer() { this.drawerOpen = !this.drawerOpen; }
-
   files: UploadHistoryItem[] = [];
 
   // Auto-polling: refresh every 1s while any file is still in-progress

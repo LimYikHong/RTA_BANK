@@ -4,8 +4,6 @@ import { RouterModule, Router, ActivatedRoute } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 import { AuthService } from '../../services/auth.service';
-import { TopBarComponent } from '../../top-bar/top-bar.component';
-
 interface BatchFileDetail {
   batchFileId: number;
   batchId: number | null;
@@ -61,14 +59,11 @@ interface TransactionRecord {
 @Component({
   selector: 'app-batch-file-detail',
   standalone: true,
-  imports: [CommonModule, RouterModule, FormsModule, TopBarComponent],
+  imports: [CommonModule, RouterModule, FormsModule],
   templateUrl: './batch-file-detail.component.html',
   styleUrl: './batch-file-detail.component.scss'
 })
 export class BatchFileDetailComponent implements OnInit {
-  drawerOpen = true;
-  toggleDrawer() { this.drawerOpen = !this.drawerOpen; }
-
   private apiUrl = 'https://localhost:8086/api/batch-file-maintenance';
 
   batchFileId!: number;

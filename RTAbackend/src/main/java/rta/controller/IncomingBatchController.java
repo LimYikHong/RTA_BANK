@@ -51,6 +51,7 @@ import rta.service.AuditLogService;
 import rta.service.FileDecryptionService;
 import rta.service.FileProfileService;
 import rta.service.MinioStorageService;
+import rta.service.TransactionBulkInsertService;
 
 /**
  * IncomingBatchController - HTTPS endpoint for merchant-side applications to
@@ -72,6 +73,7 @@ public class IncomingBatchController {
     private final MinioStorageService minioStorageService;
     private final FileDecryptionService fileDecryptionService;
     private final AuditLogService auditLogService;
+    private final TransactionBulkInsertService bulkInsertService;
 
     private static final String UPLOAD_DIR = "incoming-uploads";
 
@@ -84,7 +86,8 @@ public class IncomingBatchController {
             FileProfileService fileProfileService,
             MinioStorageService minioStorageService,
             FileDecryptionService fileDecryptionService,
-            AuditLogService auditLogService) {
+            AuditLogService auditLogService,
+            TransactionBulkInsertService bulkInsertService) {
         this.batchRepository = batchRepository;
         this.uploadedFileHashRepository = uploadedFileHashRepository;
         this.incomingFileRepository = incomingFileRepository;
@@ -95,6 +98,7 @@ public class IncomingBatchController {
         this.minioStorageService = minioStorageService;
         this.fileDecryptionService = fileDecryptionService;
         this.auditLogService = auditLogService;
+        this.bulkInsertService = bulkInsertService;
     }
 
     /**
@@ -258,6 +262,7 @@ public class IncomingBatchController {
             byte[] fileContent = encrypted ? rawFileBytes : minioStorageService.downloadFileAsBytes(objectName);
 
             // Validate file format against merchant's file profile and insert transaction records
+            long validationStartMs = System.currentTimeMillis();
             List<String> validationErrors = new ArrayList<>();
             String validationStatus = "RECEIVED";
             String validationRemark = null;
@@ -1254,7 +1259,10 @@ public class IncomingBatchController {
                     || "INVALID_FILE_CONTENT".equals(validationStatus)
                     || successCount == 0;
 
+            long validationElapsedMs = System.currentTimeMillis() - validationStartMs;
+
             // Only save incoming batch file + transactions if validation passed (at least some records valid)
+            long insertionStartMs = System.currentTimeMillis();
             Long savedBatchFileId = null;
             int duplicateCount = 0;
             List<String> duplicateTransactions = new ArrayList<>();
@@ -1280,24 +1288,14 @@ public class IncomingBatchController {
                 RtaIncomingBatchFile savedFile = incomingFileRepository.save(incomingFile);
                 savedBatchFileId = savedFile.getBatchFileId();
 
-                // 3. Save transaction records (NO batch assigned, linked to batchFileId only)
-                // Handle duplicate transaction constraint violations
-                for (RtaTransaction txn : transactionsToSave) {
-                    txn.setBatchFileId(savedFile.getBatchFileId());
-                    // batch is left NULL — will be assigned when "run batch" executes
-                    try {
-                        transactionRepository.save(txn);
-                    } catch (org.springframework.dao.DataIntegrityViolationException e) {
-                        // Duplicate transaction detected
-                        duplicateCount++;
-                        duplicateTransactions.add("Row " + txn.getBatchSeq() + ": " + txn.getMerchantCustomer() + " / "
-                                + (txn.getAmount() != null ? txn.getAmount() / 100.0 : "N/A") + " / " + txn.getActualBillingDate());
-                        // Update counts
-                        if ("PENDING".equals(txn.getStatus())) {
-                            successCount--;
-                            failCount++;
-                        }
-                    }
+                // 3. Bulk-insert transaction records using JDBC batching (10-20x faster than row-by-row)
+                TransactionBulkInsertService.BulkInsertResult insertResult
+                        = bulkInsertService.bulkInsert(transactionsToSave, savedFile.getBatchFileId());
+                duplicateCount = insertResult.getDuplicateCount();
+                duplicateTransactions.addAll(insertResult.getDuplicateDetails());
+                if (duplicateCount > 0) {
+                    successCount -= duplicateCount;
+                    failCount += duplicateCount;
                 }
 
                 // Update incoming file if there were duplicates
@@ -1361,15 +1359,33 @@ public class IncomingBatchController {
                 response.put("validationErrors", validationErrors);
             }
 
+            long insertionElapsedMs = System.currentTimeMillis() - insertionStartMs;
+            double validationSec = validationElapsedMs / 1000.0;
+            double insertionSec = insertionElapsedMs / 1000.0;
+
             // --- Audit logging ---
             // Log user upload activity
             auditLogService.logUserActivity("UPLOAD_FILE", createdBy, renamedFilename,
                     "User '" + createdBy + "' uploaded file '" + originalFilename + "' for merchant '" + merchantId + "' — Status: " + validationStatus,
                     validationStatus, null);
+            // Log validation timing
+            auditLogService.logSystemActivity("VALIDATION", merchantId,
+                    "Validated file '" + originalFilename + "' for merchant '" + merchantId + "' — "
+                    + totalRecordCount + " records, " + successCount + " passed, " + failCount + " failed. "
+                    + "Time: " + String.format("%.3f", validationSec) + "s",
+                    validationStatus);
+            // Log insertion timing
+            if (!isCompleteFailure) {
+                auditLogService.logSystemActivity("INSERTION_DATA", merchantId,
+                        "Inserted " + successCount + " transaction(s) from file '" + originalFilename + "' for merchant '" + merchantId + "'. "
+                        + "Time: " + String.format("%.3f", insertionSec) + "s",
+                        "SUCCESS");
+            }
             // Log system incoming-batch activity
             auditLogService.logSystemActivity("INCOMING_BATCH", merchantId,
                     "Received batch file '" + originalFilename + "' from merchant '" + merchantId + "' — "
-                    + totalRecordCount + " records, status: " + validationStatus,
+                    + totalRecordCount + " records, status: " + validationStatus
+                    + ". Validation: " + String.format("%.3f", validationSec) + "s, Insertion: " + String.format("%.3f", insertionSec) + "s",
                     validationStatus);
             // Log decrypt status if encrypted
             if (encrypted) {
@@ -2251,7 +2267,7 @@ public class IncomingBatchController {
             for (RtaTransaction txn : transactionsToSave) {
                 txn.setBatchFileId(batchFileId);
             }
-            transactionRepository.saveAll(transactionsToSave);
+            bulkInsertService.bulkInsert(transactionsToSave, batchFileId);
 
             incomingFile.setInsertionStatus("COMPLETED");
             incomingFileRepository.save(incomingFile);

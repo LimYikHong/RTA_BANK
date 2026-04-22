@@ -4,20 +4,16 @@ import { RouterModule, Router, ActivatedRoute } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { ProfileService, MerchantInfoPayload, FieldMappingPayload } from '../../services/profile.service';
 import { AuthService } from '../../services/auth.service';
-import { TopBarComponent } from '../../top-bar/top-bar.component';
 import { HttpClient } from '@angular/common/http';
 
 @Component({
   selector: 'app-edit-merchant',
   standalone: true,
-  imports: [CommonModule, RouterModule, FormsModule, TopBarComponent],
+  imports: [CommonModule, RouterModule, FormsModule],
   templateUrl: './edit-merchant.component.html',
   styleUrl: './edit-merchant.component.scss'
 })
 export class EditMerchantComponent implements OnInit {
-  drawerOpen = true;
-  toggleDrawer() { this.drawerOpen = !this.drawerOpen; }
-
   merchant: MerchantInfoPayload = {
     merchantId: '',
     name: '',

@@ -4,7 +4,6 @@ import { RouterModule, Router, NavigationEnd } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { ProfileService } from '../../services/profile.service';
 import { AuthService } from '../../services/auth.service';
-import { TopBarComponent } from '../../top-bar/top-bar.component';
 import { HttpClient } from '@angular/common/http';
 import { Subscription, filter, catchError, of } from 'rxjs';
 
@@ -25,14 +24,11 @@ export interface MerchantListItem {
 @Component({
   selector: 'app-merchant-maintenance',
   standalone: true,
-  imports: [CommonModule, RouterModule, FormsModule, TopBarComponent],
+  imports: [CommonModule, RouterModule, FormsModule],
   templateUrl: './merchant-maintenance.component.html',
   styleUrl: './merchant-maintenance.component.scss'
 })
 export class MerchantMaintenanceComponent implements OnInit, OnDestroy {
-  drawerOpen = true;
-  toggleDrawer() { this.drawerOpen = !this.drawerOpen; }
-
   merchants: MerchantListItem[] = [];
   filteredMerchants: MerchantListItem[] = [];
   searchKeyword: string = '';
