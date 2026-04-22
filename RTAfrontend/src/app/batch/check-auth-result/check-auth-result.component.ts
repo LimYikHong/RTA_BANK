@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ElementRef, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
@@ -89,12 +89,32 @@ export class CheckAuthResultComponent implements OnInit {
 
   // --- Filter ---
   statusFilter: string = '';
+  merchantIdInput = '';
+  merchantSelectedId = '';
+  showMerchantDropdown = false;
+  merchantIds: string[] = [];
+  filteredMerchantIds: string[] = [];
+  txnDateFrom = '';
+  txnDateTo = '';
+  txnSearched = false;
+  dateFrom = '';
+  dateTo = '';
+  batchSearched = false;
 
   constructor(
     private http: HttpClient,
     private router: Router,
-    private authService: AuthService
+    private authService: AuthService,
+    private elRef: ElementRef
   ) {}
+
+  @HostListener('document:click', ['$event'])
+  onDocumentClick(event: Event): void {
+    const combobox = this.elRef.nativeElement.querySelector('.merchant-combobox');
+    if (combobox && !combobox.contains(event.target)) {
+      this.showMerchantDropdown = false;
+    }
+  }
 
   ngOnInit(): void {
     this.loadBatches();
@@ -104,6 +124,9 @@ export class CheckAuthResultComponent implements OnInit {
 
   loadBatches(): void {
     this.isLoadingBatches = true;
+    this.batchSearched = false;
+    this.dateFrom = '';
+    this.dateTo = '';
     const params = new HttpParams()
       .set('page', (this.currentPage - 1).toString())
       .set('size', this.pageSize.toString());
@@ -127,17 +150,45 @@ export class CheckAuthResultComponent implements OnInit {
     });
   }
 
+  get filteredBatches(): AuthBatchSummary[] {
+    if (!this.batchSearched) return this.batches;
+    let items = this.batches;
+    if (this.dateFrom) {
+      const from = new Date(this.dateFrom);
+      items = items.filter(b => b.lastModifiedAt && new Date(b.lastModifiedAt) >= from);
+    }
+    if (this.dateTo) {
+      const to = new Date(this.dateTo);
+      to.setHours(23, 59, 59, 999);
+      items = items.filter(b => b.lastModifiedAt && new Date(b.lastModifiedAt) <= to);
+    }
+    return items;
+  }
+
+  onSearchBatches(): void {
+    this.batchSearched = true;
+  }
+
   selectBatch(batch: AuthBatchSummary): void {
     this.isLoadingDetail = true;
     this.selectedBatch = null;
     this.transactions = [];
     this.txnCurrentPage = 1;
     this.statusFilter = '';
+    this.merchantIdInput = '';
+    this.merchantSelectedId = '';
+    this.showMerchantDropdown = false;
+    this.txnDateFrom = '';
+    this.txnDateTo = '';
+    this.txnSearched = false;
 
     this.http.get<BatchDetailData>(`${this.apiUrl}/detail/${batch.authBatchId}`).subscribe({
       next: (data) => {
         this.selectedBatch = data;
         this.transactions = data.transactions || [];
+        // Build merchant ID list from transactions
+        this.merchantIds = [...new Set(this.transactions.map(t => t.merchantId).filter(Boolean))].sort();
+        this.filteredMerchantIds = [...this.merchantIds];
         this.isLoadingDetail = false;
       },
       error: (err) => {
@@ -155,8 +206,79 @@ export class CheckAuthResultComponent implements OnInit {
   // ===================== Transaction Table =====================
 
   get filteredTransactions(): TransactionResult[] {
-    if (!this.statusFilter) return this.transactions;
-    return this.transactions.filter(t => t.status === this.statusFilter);
+    let list = this.transactions;
+    if (this.statusFilter) {
+      list = list.filter(t => t.status === this.statusFilter);
+    }
+    if (this.txnSearched) {
+      if (this.merchantSelectedId) {
+        list = list.filter(t => t.merchantId === this.merchantSelectedId);
+      }
+      if (this.txnDateFrom) {
+        const from = new Date(this.txnDateFrom);
+        list = list.filter(t => t.createdAt && new Date(t.createdAt) >= from);
+      }
+      if (this.txnDateTo) {
+        const to = new Date(this.txnDateTo);
+        to.setHours(23, 59, 59, 999);
+        list = list.filter(t => t.createdAt && new Date(t.createdAt) <= to);
+      }
+    }
+    return list;
+  }
+
+  onTxnSearch(): void {
+    this.txnSearched = true;
+    this.txnCurrentPage = 1;
+  }
+
+  onStatusFilterChange(): void {
+    this.txnCurrentPage = 1;
+  }
+
+  onClearTxnFilters(): void {
+    this.merchantIdInput = '';
+    this.merchantSelectedId = '';
+    this.showMerchantDropdown = false;
+    this.txnDateFrom = '';
+    this.txnDateTo = '';
+    this.txnSearched = false;
+    this.txnCurrentPage = 1;
+  }
+
+  // ===================== Merchant Combobox =====================
+
+  toggleMerchantDropdown(): void {
+    this.showMerchantDropdown = !this.showMerchantDropdown;
+    if (this.showMerchantDropdown) {
+      this.filteredMerchantIds = [...this.merchantIds];
+    }
+  }
+
+  onMerchantInputFocus(): void {
+    this.filteredMerchantIds = this.merchantIdInput.trim()
+      ? this.merchantIds.filter(id => id.toLowerCase().includes(this.merchantIdInput.trim().toLowerCase()))
+      : [...this.merchantIds];
+    this.showMerchantDropdown = true;
+  }
+
+  onMerchantInputChange(): void {
+    const typed = this.merchantIdInput.trim().toLowerCase();
+    this.showMerchantDropdown = true;
+    if (!typed) {
+      this.filteredMerchantIds = [...this.merchantIds];
+      this.merchantSelectedId = '';
+      return;
+    }
+    this.filteredMerchantIds = this.merchantIds.filter(id => id.toLowerCase().includes(typed));
+    const exact = this.merchantIds.find(id => id.toLowerCase() === typed);
+    this.merchantSelectedId = exact ?? '';
+  }
+
+  selectMerchant(id: string): void {
+    this.merchantSelectedId = id;
+    this.merchantIdInput = id;
+    this.showMerchantDropdown = false;
   }
 
   sortBy(key: string): void {
@@ -202,10 +324,6 @@ export class CheckAuthResultComponent implements OnInit {
   }
 
   txnOnPageSizeChange(): void {
-    this.txnCurrentPage = 1;
-  }
-
-  onStatusFilterChange(): void {
     this.txnCurrentPage = 1;
   }
 

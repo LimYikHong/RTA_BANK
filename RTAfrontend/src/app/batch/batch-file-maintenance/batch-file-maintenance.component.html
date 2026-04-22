@@ -2,15 +2,23 @@
       <h1>Batch File Maintenance</h1>
     </div>
 
-    <!-- Toolbar -->
-    <div class="toolbar">
+    <!-- Search Toolbar -->
+    <div class="search-section">
+      <div class="search-box">
         <input
           type="text"
           class="search-input"
-          placeholder="Search by file name, merchant, status..."
+          placeholder="Search by merchant name..."
           [(ngModel)]="searchTerm"
+          (keyup.enter)="onSearch()"
         />
-      <button class="btn btn-refresh" (click)="loadPage()">Refresh</button>
+        <label class="date-label">Start Date</label>
+        <input type="date" class="search-input date-input" [(ngModel)]="dateFrom" />
+        <label class="date-label">End Date</label>
+        <input type="date" class="search-input date-input" [(ngModel)]="dateTo" />
+        <button class="btn btn-search" (click)="onSearch()">Search</button>
+        <button class="btn btn-refresh" (click)="loadPage()">Refresh</button>
+      </div>
     </div>
 
     <!-- Loading -->
@@ -24,7 +32,7 @@
             <th class="th-sort" (click)="sortBy('authBatchId')" [attr.data-sort]="sortKey==='authBatchId' ? sortDir : ''">Batch ID</th>
             <th class="th-sort" (click)="sortBy('batchStatus')" [attr.data-sort]="sortKey==='batchStatus' ? sortDir : ''">Batch Status</th>
             <th class="th-sort" (click)="sortBy('batchFileId')" [attr.data-sort]="sortKey==='batchFileId' ? sortDir : ''">File ID</th>
-            <th class="th-sort" (click)="sortBy('originalFilename')" [attr.data-sort]="sortKey==='originalFilename' ? sortDir : ''">File Name</th>
+            <th class="th-sort" (click)="sortBy('storedFilename')" [attr.data-sort]="sortKey==='storedFilename' ? sortDir : ''">File Name</th>
             <th class="th-sort" (click)="sortBy('fileStatus')" [attr.data-sort]="sortKey==='fileStatus' ? sortDir : ''">File Status</th>
             <th class="th-sort" (click)="sortBy('insertionStatus')" [attr.data-sort]="sortKey==='insertionStatus' ? sortDir : ''">Data Insertion</th>
             <th class="th-sort" (click)="sortBy('merchantName')" [attr.data-sort]="sortKey==='merchantName' ? sortDir : ''">Merchant Name</th>
@@ -44,7 +52,7 @@
               <span *ngIf="!item.batchStatus" class="text-muted">—</span>
             </td>
             <td>{{ item.batchFileId }}</td>
-            <td class="filename-cell" [title]="item.originalFilename">{{ item.originalFilename }}</td>
+            <td class="filename-cell" [title]="item.storedFilename">{{ item.storedFilename }}</td>
             <td>
               <span class="status-badge" [ngClass]="getFileStatusClass(item.fileStatus)">
                 {{ item.fileStatus }}

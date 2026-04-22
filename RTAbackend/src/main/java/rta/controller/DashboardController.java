@@ -23,6 +23,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import rta.entity.RtaAuthorizationBatch;
 import rta.entity.RtaBatch;
 import rta.entity.RtaIncomingBatchFile;
+import rta.entity.RtaReport;
 import rta.entity.SystemRsaKeyRequest;
 import rta.repository.AuditLogRepository;
 import rta.repository.RtaAuthorizationBatchRepository;
@@ -31,6 +32,7 @@ import rta.repository.MerchantKeyRepository;
 import rta.repository.ProfileRepository;
 import rta.repository.RtaBatchRepository;
 import rta.repository.RtaIncomingBatchFileRepository;
+import rta.repository.RtaReportRepository;
 import rta.repository.RtaTransactionRepository;
 import rta.repository.SystemRsaKeyRequestRepository;
 import rta.service.AuditLogService;
@@ -56,6 +58,7 @@ public class DashboardController {
     private final AuditLogService auditLogService;
     private final MerchantKeyRepository merchantKeyRepository;
     private final RtaAuthorizationBatchRepository authBatchRepository;
+    private final RtaReportRepository reportRepository;
 
     public DashboardController(
             RtaBatchRepository batchRepository,
@@ -68,7 +71,8 @@ public class DashboardController {
             ConsumerKeyService consumerKeyService,
             AuditLogService auditLogService,
             MerchantKeyRepository merchantKeyRepository,
-            RtaAuthorizationBatchRepository authBatchRepository) {
+            RtaAuthorizationBatchRepository authBatchRepository,
+            RtaReportRepository reportRepository) {
         this.batchRepository = batchRepository;
         this.incomingBatchFileRepository = incomingBatchFileRepository;
         this.transactionRepository = transactionRepository;
@@ -80,6 +84,7 @@ public class DashboardController {
         this.auditLogService = auditLogService;
         this.merchantKeyRepository = merchantKeyRepository;
         this.authBatchRepository = authBatchRepository;
+        this.reportRepository = reportRepository;
     }
 
     /**
@@ -206,21 +211,35 @@ public class DashboardController {
             authStatusMap.put("DECLINED", declinedCount);
             stats.put("authStatusBreakdown", authStatusMap);
 
-            // ── Average processing time (one process time per auth batch, in seconds) ─
+            // ── Average processing time (batch createdAt → report createdAt, in seconds) ─
             double avgProcessingSeconds = 0;
-            List<RtaAuthorizationBatch> processedAuthBatches = authBatchRepository.findAll().stream()
-                    .filter(ab -> "PROCESSED".equalsIgnoreCase(ab.getBatchStatus())
-                    && ab.getCreatedAt() != null
-                    && ab.getLastModifiedAt() != null)
+            List<RtaReport> allReports = reportRepository.findAll();
+            // For each processed batch, find its earliest report to mark "fully done"
+            List<RtaBatch> processedBatches = allBatches.stream()
+                    .filter(b -> "PROCESSED".equalsIgnoreCase(b.getStatus())
+                    && b.getCreatedAt() != null)
                     .collect(Collectors.toList());
-            if (!processedAuthBatches.isEmpty()) {
-                double totalSeconds = processedAuthBatches.stream()
-                        .mapToDouble(ab -> ChronoUnit.MILLIS.between(ab.getCreatedAt(), ab.getLastModifiedAt()) / 1000.0)
-                        .sum();
-                avgProcessingSeconds = totalSeconds / processedAuthBatches.size();
+            List<Double> processingTimes = new ArrayList<>();
+            for (RtaBatch batch : processedBatches) {
+                // Find the report generated for this batch
+                Optional<RtaReport> report = allReports.stream()
+                        .filter(r -> batch.getBatchId().equals(r.getBatchId())
+                        && r.getCreatedAt() != null)
+                        .min((a, b2) -> a.getCreatedAt().compareTo(b2.getCreatedAt()));
+                if (report.isPresent()) {
+                    double secs = ChronoUnit.MILLIS.between(
+                            batch.getCreatedAt(), report.get().getCreatedAt()) / 1000.0;
+                    if (secs >= 0) {
+                        processingTimes.add(secs);
+                    }
+                }
+            }
+            if (!processingTimes.isEmpty()) {
+                avgProcessingSeconds = processingTimes.stream()
+                        .mapToDouble(Double::doubleValue).sum() / processingTimes.size();
             }
             stats.put("avgProcessingTimeSeconds", Math.round(avgProcessingSeconds * 100.0) / 100.0);
-            stats.put("processedBatchCount", processedAuthBatches.size());
+            stats.put("processedBatchCount", processingTimes.size());
 
             // ── Daily transaction amount trend (last 7 days) ────────────────────
             List<Map<String, Object>> amountTrend = new ArrayList<>();

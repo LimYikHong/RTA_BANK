@@ -470,6 +470,8 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
   get formattedAvgProcessingTime(): string {
     if (!this.stats) return '—';
     const secs = this.stats.avgProcessingTimeSeconds;
+    if (secs == null || isNaN(secs)) return '—';
+    if (secs < 1) return `${Math.round(secs * 1000)}ms`;
     if (secs < 60) return `${Math.round(secs * 100) / 100}s`;
     const mins = Math.floor(secs / 60);
     const remSec = Math.round(secs % 60);

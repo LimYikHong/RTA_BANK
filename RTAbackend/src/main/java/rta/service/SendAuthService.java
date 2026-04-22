@@ -36,7 +36,7 @@ import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * Sends encrypted batch files to the sendAuth consumer system (port 8881) via
+ * Sends encrypted batch files to the sendAuth consumer system (port 8882) via
  * HTTPS internal API (API key + IP whitelist secured).
  *
  * <p>

@@ -8,6 +8,7 @@ interface BatchFileItem {
   batchFileId: number;
   batchId: number | null;
   originalFilename: string;
+  storedFilename: string;
   merchantId: string;
   merchantName: string;
   fileStatus: string;
@@ -46,6 +47,9 @@ export class BatchFileMaintenanceComponent implements OnInit {
 
   // Search
   searchTerm = '';
+  dateFrom = '';
+  dateTo = '';
+  searched = false;
 
   // Pagination
   currentPage = 1;
@@ -70,6 +74,10 @@ export class BatchFileMaintenanceComponent implements OnInit {
 
   loadPage(): void {
     this.isLoading = true;
+    this.searched = false;
+    this.searchTerm = '';
+    this.dateFrom = '';
+    this.dateTo = '';
     const params = new HttpParams()
       .set('page', (this.currentPage - 1).toString())
       .set('size', this.pageSize.toString());
@@ -92,20 +100,30 @@ export class BatchFileMaintenanceComponent implements OnInit {
     });
   }
 
-  // Client-side search filter
+  // Client-side search filter (merchant name only + date range)
   get filteredItems(): BatchFileItem[] {
-    if (!this.searchTerm.trim()) return this.sortedItems;
-    const term = this.searchTerm.toLowerCase();
-    return this.sortedItems.filter(item =>
-      (item.batchFileId?.toString() || '').includes(term) ||
-      (item.authBatchId?.toString() || '').includes(term) ||
-      (item.originalFilename || '').toLowerCase().includes(term) ||
-      (item.merchantId || '').toLowerCase().includes(term) ||
-      (item.merchantName || '').toLowerCase().includes(term) ||
-      (item.fileStatus || '').toLowerCase().includes(term) ||
-      (item.batchStatus || '').toLowerCase().includes(term) ||
-      (item.insertionStatus || '').toLowerCase().includes(term)
-    );
+    if (!this.searched) return this.sortedItems;
+    let items = this.sortedItems;
+    if (this.searchTerm.trim()) {
+      const term = this.searchTerm.toLowerCase();
+      items = items.filter(item =>
+        (item.merchantName || '').toLowerCase().includes(term)
+      );
+    }
+    if (this.dateFrom) {
+      const from = new Date(this.dateFrom);
+      items = items.filter(item => item.createdAt && new Date(item.createdAt) >= from);
+    }
+    if (this.dateTo) {
+      const to = new Date(this.dateTo);
+      to.setHours(23, 59, 59, 999);
+      items = items.filter(item => item.createdAt && new Date(item.createdAt) <= to);
+    }
+    return items;
+  }
+
+  onSearch(): void {
+    this.searched = true;
   }
 
   // Sorting

@@ -69,6 +69,7 @@ public class BatchFileMaintenanceController {
             item.put("batchFileId", f.getBatchFileId());
             item.put("batchId", f.getBatchId());
             item.put("originalFilename", f.getOriginalFilename());
+            item.put("storedFilename", f.getStoredFilename());
             item.put("merchantId", f.getMerchantId());
 
             // Join merchant name

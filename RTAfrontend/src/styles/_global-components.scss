@@ -419,7 +419,7 @@
 
 .search-input {
   flex: 1;
-  max-width: 400px;
+  max-width: 300px;
   padding: 10px 14px;
   border: 1px solid #d1d5db;
   border-radius: 8px;
@@ -920,6 +920,22 @@
   color: #000000;
 
   &:hover { background-color: #e2e8f0; }
+}
+
+// =============================================
+// DATE PICKER (shared across pages)
+// =============================================
+.date-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #475569;
+  white-space: nowrap;
+}
+
+.date-input {
+  width: 150px !important;
+  min-width: 150px;
+  max-width: 150px;
 }
 
 // =============================================

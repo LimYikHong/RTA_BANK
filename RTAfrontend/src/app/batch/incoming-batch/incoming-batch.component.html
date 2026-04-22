@@ -11,10 +11,13 @@
     </div>
 
     <!-- Search & Refresh -->
-    <div class="toolbar">
-      <input type="text" class="search-input" placeholder="Search by filename, merchant ID, status..."
-        [(ngModel)]="searchTerm" (ngModelChange)="onSearch()" />
-      <button class="btn btn-refresh" (click)="loadIncomingFiles()">Refresh</button>
+    <div class="search-section">
+      <div class="search-box">
+        <input type="text" class="search-input" placeholder="Search by filename, merchant ID, status..."
+          [(ngModel)]="searchTerm" (keyup.enter)="onSearch()" />
+        <button class="btn btn-search" (click)="onSearch()">Search</button>
+        <button class="btn btn-refresh" (click)="loadIncomingFiles()">Refresh</button>
+      </div>
     </div>
 
     <!-- Loading -->

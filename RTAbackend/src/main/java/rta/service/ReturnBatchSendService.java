@@ -51,7 +51,7 @@ import rta.repository.MerchantKeyRepository;
 
 /**
  * Sends encrypted return batch files and report summaries back to the
- * sendAuth/consumer system (port 8881) via HTTPS internal API.
+ * sendAuth/consumer system (port 8882) via HTTPS internal API.
  *
  * <p>
  * Flow:</p>
