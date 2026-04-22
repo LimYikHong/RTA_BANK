@@ -64,10 +64,11 @@ public class FileEncryptionService {
     public byte[] encryptFile(String merchantId, byte[] plainBytes)
             throws GeneralSecurityException, IOException {
 
-        // 1. Get the merchant's active RSA public key
-        String publicKeyPem = rsaKeyService.getActivePublicKey(merchantId)
+        // 1. Get the OUTBOUND RSA public key (bank uses to encrypt return files for merchant)
+        String publicKeyPem = rsaKeyService.getActiveOutboundPublicKey(merchantId)
                 .orElseThrow(() -> new IllegalStateException(
-                "No active RSA public key found for merchantId=" + merchantId));
+                "No active OUTBOUND RSA public key found for merchantId=" + merchantId
+                + ". Please generate RSA keys for this merchant first."));
 
         PublicKey publicKey = parsePublicKey(publicKeyPem);
 

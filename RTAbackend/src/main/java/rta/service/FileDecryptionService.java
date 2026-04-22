@@ -55,10 +55,10 @@ public class FileDecryptionService {
     public byte[] decryptFile(String merchantId, byte[] encryptedBytes)
             throws GeneralSecurityException, IOException {
 
-        // 1. Look up the merchant's active RSA private key
-        MerchantKey merchantKey = rsaKeyService.getActiveKey(merchantId)
+        // 1. Look up the INBOUND RSA private key (bank uses to decrypt merchant uploads)
+        MerchantKey merchantKey = rsaKeyService.getActiveInboundKey(merchantId)
                 .orElseThrow(() -> new IllegalStateException(
-                "No active RSA key found for merchantId=" + merchantId));
+                "No active INBOUND RSA key found for merchantId=" + merchantId));
 
         PrivateKey privateKey = parsePrivateKey(merchantKey.getPrivateKeyPem());
 

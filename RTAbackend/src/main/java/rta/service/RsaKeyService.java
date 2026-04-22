@@ -35,16 +35,42 @@ public class RsaKeyService {
 
     private static final int RSA_KEY_SIZE = 2048;
 
+    // Key purpose constants
+    public static final String PURPOSE_INBOUND = "INBOUND";
+    public static final String PURPOSE_OUTBOUND = "OUTBOUND";
+
     /**
-     * Generate a new RSA key pair for the given merchant and persist it.
+     * Generate TWO RSA key pairs for a merchant:
+     * <ul>
+     * <li><b>INBOUND</b> — bank keeps private key, sends public key to
+     * merchant. Merchant uses it to encrypt batch file uploads.</li>
+     * <li><b>OUTBOUND</b> — bank keeps public key, sends private key to
+     * merchant. Bank uses it to encrypt return batch files for the
+     * merchant.</li>
+     * </ul>
+     *
+     * @return array of [inboundKey, outboundKey]
+     */
+    @Transactional
+    public MerchantKey[] generateBothKeyPairs(String merchantId, String createdBy) {
+        MerchantKey inbound = generateKeyPair(merchantId, createdBy, PURPOSE_INBOUND);
+        MerchantKey outbound = generateKeyPair(merchantId, createdBy, PURPOSE_OUTBOUND);
+        log.info("Generated INBOUND (v{}) + OUTBOUND (v{}) RSA key pairs for merchantId={}",
+                inbound.getVersionNo(), outbound.getVersionNo(), merchantId);
+        return new MerchantKey[]{inbound, outbound};
+    }
+
+    /**
+     * Generate a single RSA key pair for a specific purpose.
      *
      * @param merchantId the merchant to generate keys for
      * @param createdBy audit trail — who triggered the generation
-     * @return the persisted {@link MerchantKey} with PEM-encoded keys
+     * @param purpose INBOUND or OUTBOUND
+     * @return the persisted {@link MerchantKey}
      */
     @Transactional
-    public MerchantKey generateKeyPair(String merchantId, String createdBy) {
-        log.info("Generating RSA-{} key pair for merchantId={}", RSA_KEY_SIZE, merchantId);
+    public MerchantKey generateKeyPair(String merchantId, String createdBy, String purpose) {
+        log.info("Generating RSA-{} {} key pair for merchantId={}", RSA_KEY_SIZE, purpose, merchantId);
 
         try {
             // --- Generate RSA key pair ---
@@ -64,14 +90,14 @@ public class RsaKeyService {
                     .map(k -> k.getVersionNo() + 1)
                     .orElse(1);
 
-            // --- Deactivate any previous ACTIVE key for this merchant ---
+            // --- Deactivate any previous ACTIVE key with the same purpose ---
             merchantKeyRepository
-                    .findByMerchantIdAndStatus(merchantId, "ACTIVE")
+                    .findByMerchantIdAndStatusAndKeyPurpose(merchantId, "ACTIVE", purpose)
                     .ifPresent(oldKey -> {
                         oldKey.setStatus("ROTATED");
                         merchantKeyRepository.save(oldKey);
-                        log.info("Rotated previous key version={} for merchantId={}",
-                                oldKey.getVersionNo(), merchantId);
+                        log.info("Rotated previous {} key version={} for merchantId={}",
+                                purpose, oldKey.getVersionNo(), merchantId);
                     });
 
             // --- Persist the new key pair ---
@@ -79,7 +105,8 @@ public class RsaKeyService {
                     .merchantId(merchantId)
                     .versionNo(nextVersion)
                     .keyProvider("RTA_BANK")
-                    .keystoreAlias(merchantId + "-v" + nextVersion)
+                    .keystoreAlias(merchantId + "-" + purpose.toLowerCase() + "-v" + nextVersion)
+                    .keyPurpose(purpose)
                     .publicKeyPem(publicKeyPem)
                     .privateKeyPem(privateKeyPem)
                     .status("ACTIVE")
@@ -89,8 +116,8 @@ public class RsaKeyService {
                     .build();
 
             MerchantKey saved = merchantKeyRepository.save(merchantKey);
-            log.info("RSA key pair persisted: keyId={}, merchantId={}, version={}",
-                    saved.getKeyId(), merchantId, nextVersion);
+            log.info("RSA {} key pair persisted: keyId={}, merchantId={}, version={}",
+                    purpose, saved.getKeyId(), merchantId, nextVersion);
 
             return saved;
 
@@ -100,24 +127,80 @@ public class RsaKeyService {
     }
 
     /**
-     * Get the active RSA public key PEM for a merchant.
-     *
-     * @param merchantId the merchant ID
-     * @return the PEM-encoded public key, or empty if no active key exists
+     * Backward-compatible: generates an INBOUND key pair (original behavior).
+     */
+    @Transactional
+    public MerchantKey generateKeyPair(String merchantId, String createdBy) {
+        return generateKeyPair(merchantId, createdBy, PURPOSE_INBOUND);
+    }
+
+    // ─── INBOUND key getters (merchant→bank encryption) ───────────────────
+    /**
+     * Get the INBOUND public key PEM — given to merchant so they can encrypt
+     * uploads.
+     */
+    public Optional<String> getActiveInboundPublicKey(String merchantId) {
+        return merchantKeyRepository
+                .findFirstByMerchantIdAndStatusAndKeyPurposeOrderByVersionNoDesc(
+                        merchantId, "ACTIVE", PURPOSE_INBOUND)
+                .map(MerchantKey::getPublicKeyPem);
+    }
+
+    /**
+     * Get the INBOUND key entity (includes private key) — used by bank to
+     * decrypt uploads.
+     */
+    public Optional<MerchantKey> getActiveInboundKey(String merchantId) {
+        return merchantKeyRepository
+                .findFirstByMerchantIdAndStatusAndKeyPurposeOrderByVersionNoDesc(
+                        merchantId, "ACTIVE", PURPOSE_INBOUND);
+    }
+
+    // ─── OUTBOUND key getters (bank→merchant encryption) ──────────────────
+    /**
+     * Get the OUTBOUND public key PEM — used by bank to encrypt return files.
+     */
+    public Optional<String> getActiveOutboundPublicKey(String merchantId) {
+        return merchantKeyRepository
+                .findFirstByMerchantIdAndStatusAndKeyPurposeOrderByVersionNoDesc(
+                        merchantId, "ACTIVE", PURPOSE_OUTBOUND)
+                .map(MerchantKey::getPublicKeyPem);
+    }
+
+    /**
+     * Get the OUTBOUND key entity — the private key is sent to the merchant so
+     * they can decrypt return files.
+     */
+    public Optional<MerchantKey> getActiveOutboundKey(String merchantId) {
+        return merchantKeyRepository
+                .findFirstByMerchantIdAndStatusAndKeyPurposeOrderByVersionNoDesc(
+                        merchantId, "ACTIVE", PURPOSE_OUTBOUND);
+    }
+
+    // ─── Legacy/backward-compatible getters (fallback to any active key) ──
+    /**
+     * Get the active RSA public key PEM for a merchant (legacy — prefers
+     * INBOUND).
      */
     public Optional<String> getActivePublicKey(String merchantId) {
+        Optional<String> inbound = getActiveInboundPublicKey(merchantId);
+        if (inbound.isPresent()) {
+            return inbound;
+        }
+        // Fallback for old keys without purpose
         return merchantKeyRepository
                 .findFirstByMerchantIdAndStatusOrderByVersionNoDesc(merchantId, "ACTIVE")
                 .map(MerchantKey::getPublicKeyPem);
     }
 
     /**
-     * Get the active MerchantKey entity (includes private key) for decryption.
-     *
-     * @param merchantId the merchant ID
-     * @return the active key, or empty
+     * Get the active MerchantKey entity (legacy — prefers INBOUND).
      */
     public Optional<MerchantKey> getActiveKey(String merchantId) {
+        Optional<MerchantKey> inbound = getActiveInboundKey(merchantId);
+        if (inbound.isPresent()) {
+            return inbound;
+        }
         return merchantKeyRepository
                 .findFirstByMerchantIdAndStatusOrderByVersionNoDesc(merchantId, "ACTIVE");
     }

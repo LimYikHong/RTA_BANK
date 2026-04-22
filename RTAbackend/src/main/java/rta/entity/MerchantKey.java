@@ -33,6 +33,14 @@ public class MerchantKey {
     @Column(name = "keystore_alias")
     private String keystoreAlias;
 
+    /**
+     * INBOUND = merchant encrypts uploads → bank decrypts (bank keeps private
+     * key) OUTBOUND = bank encrypts return files → merchant decrypts (bank
+     * keeps public key)
+     */
+    @Column(name = "key_purpose")
+    private String keyPurpose;
+
     @Column(name = "public_key_pem", columnDefinition = "TEXT")
     private String publicKeyPem;
 

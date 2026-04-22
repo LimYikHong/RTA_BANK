@@ -77,10 +77,14 @@ public class MerchantService {
         merchantInfo.setIsTwoFactorEnabled(false);
         MerchantInfo savedMerchant = merchantInfoRepository.save(merchantInfo);
 
-        // 3. Generate RSA key pair for file encryption
-        MerchantKey merchantKey = rsaKeyService.generateKeyPair(savedMerchant.getMerchantId(), createdBy);
-        log.info("RSA key pair generated for merchantId={}, keyVersion={}",
-                savedMerchant.getMerchantId(), merchantKey.getVersionNo());
+        // 3. Generate TWO RSA key pairs:
+        //    INBOUND  — bank keeps private key, sends public key to merchant (for encrypting uploads)
+        //    OUTBOUND — bank keeps public key, sends private key to merchant (for decrypting return files)
+        MerchantKey[] keyPairs = rsaKeyService.generateBothKeyPairs(savedMerchant.getMerchantId(), createdBy);
+        MerchantKey inboundKey = keyPairs[0];
+        MerchantKey outboundKey = keyPairs[1];
+        log.info("RSA key pairs generated for merchantId={}: INBOUND v{}, OUTBOUND v{}",
+                savedMerchant.getMerchantId(), inboundKey.getVersionNo(), outboundKey.getVersionNo());
 
         // 4. Publish Kafka event for sub-systems (includes RSA public key)
         MerchantCreatedEvent event = MerchantCreatedEvent.builder()
@@ -98,7 +102,8 @@ public class MerchantService {
                 .merchantAccName(merchantAccName)
                 .transactionCurrency(transactionCurrency)
                 .settlementCurrency(settlementCurrency)
-                .rsaPublicKeyPem(merchantKey.getPublicKeyPem())
+                .rsaPublicKeyPem(inboundKey.getPublicKeyPem())
+                .rsaOutboundPrivateKeyPem(outboundKey.getPrivateKeyPem())
                 .build();
 
         kafkaProducer.sendMerchantCreatedEvent(event);

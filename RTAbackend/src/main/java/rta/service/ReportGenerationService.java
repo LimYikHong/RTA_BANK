@@ -589,12 +589,13 @@ public class ReportGenerationService {
     // ─────────────────────────────────────────────────────────────────────
     private void sendReportToMerchant(String merchantId, RtaReport report,
             byte[] outputFileBytes, byte[] pdfBytes) throws Exception {
-        // Get merchant's RSA public key
+        // Get merchant's OUTBOUND RSA key (bank uses public key to encrypt return files)
         Optional<MerchantKey> keyOpt = merchantKeyRepository
-                .findFirstByMerchantIdAndStatusOrderByVersionNoDesc(merchantId, "ACTIVE");
+                .findFirstByMerchantIdAndStatusAndKeyPurposeOrderByVersionNoDesc(
+                        merchantId, "ACTIVE", "OUTBOUND");
 
         if (keyOpt.isEmpty()) {
-            throw new IllegalStateException("No active RSA key found for merchant " + merchantId
+            throw new IllegalStateException("No active OUTBOUND RSA key found for merchant " + merchantId
                     + ". Please generate RSA keys for this merchant first.");
         }
 

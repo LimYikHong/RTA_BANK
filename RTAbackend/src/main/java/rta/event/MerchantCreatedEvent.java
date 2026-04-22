@@ -32,6 +32,9 @@ public class MerchantCreatedEvent implements Serializable {
     private String transactionCurrency;
     private String settlementCurrency;
 
-    // RSA public key for file encryption (PEM format)
+    // INBOUND RSA public key — merchant uses to encrypt batch file uploads (PEM)
     private String rsaPublicKeyPem;
+
+    // OUTBOUND RSA private key — merchant uses to decrypt return batch files (PEM)
+    private String rsaOutboundPrivateKeyPem;
 }
