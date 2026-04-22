@@ -113,6 +113,7 @@
 .kpi-indigo { border-left-color: #4338ca; }
 .kpi-amber  { border-left-color: #b45309; }
 .kpi-slate  { border-left-color: #475569; }
+.kpi-green  { border-left-color: #16a34a; }
 
 // skeleton shimmer on KPI values while loading
 .kpi-skeleton {
@@ -150,6 +151,13 @@
 .chart-row-thirds {
   grid-template-columns: 1fr 1fr 1fr;
   @media (max-width: 960px) { grid-template-columns: 1fr 1fr; }
+  @media (max-width: 660px) { grid-template-columns: 1fr; }
+}
+
+// Row 3 alt: four equal quarters
+.chart-row-fourths {
+  grid-template-columns: 1fr 1fr 1fr 1fr;
+  @media (max-width: 1100px) { grid-template-columns: 1fr 1fr; }
   @media (max-width: 660px) { grid-template-columns: 1fr; }
 }
 
@@ -218,6 +226,35 @@
   justify-content: space-between;
   flex-wrap: wrap;
   gap: 12px;
+}
+
+.sys-key-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 14px;
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid #f1f5f9;
+}
+
+.sys-key-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.sys-key-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.sys-key-value {
+  font-size: 14px;
+  color: #1e293b;
+  font-weight: 500;
 }
 
 .rsa-key-info {
@@ -379,7 +416,7 @@
 }
 
 .mk-link {
-  color: #2563eb;
+  color: #000000;
   text-decoration: none;
   font-weight: 600;
 
@@ -423,7 +460,7 @@
 }
 
 .mk-action-btn {
-  color: #2563eb;
+  color: #000000;
   text-decoration: none;
   font-weight: 600;
   font-size: 12px;

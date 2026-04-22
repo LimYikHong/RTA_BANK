@@ -115,19 +115,19 @@ export class ReportListComponent implements OnInit {
 
   getStatusClass(status: string): string {
     switch (status?.toUpperCase()) {
-      case 'GENERATED': return 'status-info';
-      case 'SENT': return 'status-success';
-      case 'FAILED': return 'status-danger';
-      default: return 'status-default';
+      case 'GENERATED': return 'status-processing';
+      case 'SENT': return 'status-completed';
+      case 'FAILED': return 'status-failed';
+      default: return 'status-received';
     }
   }
 
   getSendStatusClass(status: string): string {
     switch (status?.toUpperCase()) {
-      case 'SENT': return 'status-success';
-      case 'FAILED': return 'status-danger';
-      case 'PENDING': return 'status-warning';
-      default: return 'status-default';
+      case 'SENT': return 'status-completed';
+      case 'FAILED': return 'status-failed';
+      case 'PENDING': return 'status-pending';
+      default: return 'status-received';
     }
   }
 

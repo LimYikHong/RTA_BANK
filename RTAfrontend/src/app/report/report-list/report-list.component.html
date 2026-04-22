@@ -1,19 +1,19 @@
     <div class="page-header">
-      <h1>📊 Batch File Result</h1>
+      <h1>Batch File Result</h1>
     </div>
 
     <!-- Search -->
-    <div class="search-bar">
+    <div class="toolbar">
       <input type="text" [(ngModel)]="searchQuery" placeholder="Search by batch result name or merchant ID..."
              (keyup.enter)="onSearch()" class="search-input" />
-      <button class="btn btn-search" (click)="onSearch()">Search</button>
+      <button class="btn btn-primary" (click)="onSearch()">Search</button>
     </div>
 
     <!-- Loading -->
     <div class="loading-text" *ngIf="isLoading">Loading batch file results...</div>
 
     <!-- Report Table -->
-    <div class="table-container" *ngIf="!isLoading">
+    <div class="table-wrapper" *ngIf="!isLoading">
       <table class="data-table">
         <thead>
           <tr>
@@ -32,7 +32,7 @@
         </thead>
         <tbody>
           <tr *ngIf="reports.length === 0">
-            <td colspan="11" class="no-data-cell">No batch file results found. Results are auto-generated when batches are processed.</td>
+            <td colspan="11" style="text-align:center; padding:40px; color:#94a3b8;">No batch file results found. Results are auto-generated when batches are processed.</td>
           </tr>
           <tr *ngFor="let report of reports" (click)="viewReport(report.reportId)" class="clickable-row">
             <td class="report-name">{{ report.reportName }}</td>
@@ -46,11 +46,11 @@
             <td><span class="status-badge" [ngClass]="getSendStatusClass(report.sendStatus)">{{ report.sendStatus }}</span></td>
             <td class="date-cell">{{ report.createdAt | date:'yyyy-MM-dd HH:mm:ss' }}</td>
             <td class="action-cell">
-              <button class="btn-icon" title="View Result" (click)="downloadReport(report.reportId, $event)">📄</button>
-              <button class="btn-icon" title="Download Output" (click)="downloadOutput(report.reportId, $event)">⬇️</button>
-              <button class="btn-icon" title="Retry Send" (click)="retrySend(report, $event)"
+              <button class="btn-action btn-view" title="View Result" (click)="downloadReport(report.reportId, $event)"></button>
+              <button class="btn-action btn-edit" title="Download Output" (click)="downloadOutput(report.reportId, $event)"></button>
+              <button class="btn-action btn-retry" title="Retry Send" (click)="retrySend(report, $event)"
                       *ngIf="report.sendStatus === 'FAILED' || report.sendStatus === 'PENDING'"
-                      [disabled]="report._retrying">🔄</button>
+                      [disabled]="report._retrying"></button>
             </td>
           </tr>
         </tbody>

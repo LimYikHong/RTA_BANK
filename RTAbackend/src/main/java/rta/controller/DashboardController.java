@@ -191,6 +191,32 @@ public class DashboardController {
             recurringMap.put("ONE-TIME", oneTimeCount);
             stats.put("recurringBreakdown", recurringMap);
 
+            // ── Authorization status breakdown (APPROVED vs DECLINED) ───────────
+            long approvedCount = allTxns.stream()
+                    .filter(t -> "APPROVED".equalsIgnoreCase(t.getStatus())).count();
+            long declinedCount = allTxns.stream()
+                    .filter(t -> "DECLINED".equalsIgnoreCase(t.getStatus())).count();
+            Map<String, Long> authStatusMap = new LinkedHashMap<>();
+            authStatusMap.put("APPROVED", approvedCount);
+            authStatusMap.put("DECLINED", declinedCount);
+            stats.put("authStatusBreakdown", authStatusMap);
+
+            // ── Average processing time (receive file → return batch, in minutes) ─
+            double avgProcessingMinutes = 0;
+            List<RtaBatch> processedBatches = allBatches.stream()
+                    .filter(b -> "PROCESSED".equalsIgnoreCase(b.getStatus())
+                    && b.getCreatedAt() != null
+                    && b.getLastModifiedAt() != null)
+                    .collect(Collectors.toList());
+            if (!processedBatches.isEmpty()) {
+                double totalMinutes = processedBatches.stream()
+                        .mapToDouble(b -> ChronoUnit.SECONDS.between(b.getCreatedAt(), b.getLastModifiedAt()) / 60.0)
+                        .sum();
+                avgProcessingMinutes = totalMinutes / processedBatches.size();
+            }
+            stats.put("avgProcessingTimeMinutes", Math.round(avgProcessingMinutes * 100.0) / 100.0);
+            stats.put("processedBatchCount", processedBatches.size());
+
             // ── Daily transaction amount trend (last 7 days) ────────────────────
             List<Map<String, Object>> amountTrend = new ArrayList<>();
             for (int i = 6; i >= 0; i--) {

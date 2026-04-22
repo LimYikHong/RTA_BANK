@@ -39,43 +39,51 @@
                 <div class="kpi-value" [class.kpi-skeleton]="loading || !stats">{{ stats ? stats.adminUsers : '—' }}</div>
                 <div class="kpi-label">Admin Users</div>
             </div>
+            <div class="kpi-card kpi-green">
+                <div class="kpi-value" [class.kpi-skeleton]="loading || !stats">{{ stats ? formattedAvgProcessingTime : '—' }}</div>
+                <div class="kpi-label">Avg Processing Time</div>
+            </div>
         </div>
 
-        <!-- ── RSA Key Management (SUPER_ADMIN only) ─────────────────── -->
+        <!-- ── System RSA Key Status ─────────────────────────────── -->
         <div class="rsa-key-card" *ngIf="isSuperAdmin">
             <div class="rsa-key-header">
                 <div class="rsa-key-info">
-                    <h3>RSA Key Management</h3>
-                    <p *ngIf="rsaKeyStatus?.hasKey" class="rsa-key-detail">
-                        Expires: {{ rsaKeyStatus!.expiresAt | date:'medium' }} · 
-                        <span [class.rsa-warn]="rsaKeyStatus!.needsRenewal" [class.rsa-expired]="rsaKeyStatus!.expired">
-                            {{ rsaKeyStatus!.daysRemaining }} days remaining
-                        </span>
-                    </p>
-                    <p *ngIf="rsaKeyStatus && !rsaKeyStatus.hasKey" class="rsa-key-detail">No RSA key configured yet.</p>
-                </div>
-                <div class="rsa-key-actions">
-                    <div class="rsa-alert" *ngIf="rsaAlertMessage">{{ rsaAlertMessage }}</div>
-                    <button class="btn-rsa" 
-                            [disabled]="rsaButtonDisabled" 
-                            [title]="rsaButtonTooltip"
-                            (click)="onRequestRsaKey()">
-                        <span *ngIf="rsaKeyLoading" class="spinner"></span>
-                        {{ rsaButtonLabel }}
-                    </button>
+                    <h3>System RSA Key Status</h3>
                 </div>
             </div>
-            <div class="rsa-message" *ngIf="rsaKeyMessage" 
-                 [class.rsa-success]="rsaKeyMessageType === 'success'"
-                 [class.rsa-error]="rsaKeyMessageType === 'error'">
-                {{ rsaKeyMessage }}
+            <div class="sys-key-grid" *ngIf="rsaKeyStatus?.hasKey">
+                <div class="sys-key-item">
+                    <span class="sys-key-label">Status</span>
+                    <span class="sys-key-value">
+                        <span class="status-badge" [ngClass]="rsaKeyStatus!.expired ? 'status-failed' : rsaKeyStatus!.needsRenewal ? 'status-pending' : 'status-completed'">{{ rsaKeyStatus!.expired ? 'EXPIRED' : rsaKeyStatus!.needsRenewal ? 'EXPIRING SOON' : 'ACTIVE' }}</span>
+                    </span>
+                </div>
+                <div class="sys-key-item">
+                    <span class="sys-key-label">Requested At</span>
+                    <span class="sys-key-value">{{ rsaKeyStatus!.requestedAt | date:'medium' }}</span>
+                </div>
+                <div class="sys-key-item">
+                    <span class="sys-key-label">Expires At</span>
+                    <span class="sys-key-value">{{ rsaKeyStatus!.expiresAt | date:'medium' }}</span>
+                </div>
+                <div class="sys-key-item">
+                    <span class="sys-key-label">Days Remaining</span>
+                    <span class="sys-key-value" [style.color]="rsaKeyStatus!.daysRemaining <= 0 ? '#dc2626' : rsaKeyStatus!.daysRemaining <= 5 ? '#d97706' : '#16a34a'" style="font-weight:700;">{{ rsaKeyStatus!.daysRemaining }} days</span>
+                </div>
+                <div class="sys-key-item">
+                    <span class="sys-key-label">Days Elapsed</span>
+                    <span class="sys-key-value">{{ rsaKeyStatus!.daysElapsed }} days</span>
+                </div>
             </div>
+            <div *ngIf="rsaKeyStatus && !rsaKeyStatus.hasKey" style="color:#64748b; font-size:13px; padding:8px 0;">No system RSA key record yet — keys are auto-exchanged on first use.</div>
+            <div *ngIf="!rsaKeyStatus" style="color:#64748b; font-size:13px; padding:8px 0;">Loading key status...</div>
         </div>
 
         <!-- ── Merchant Key Management ───────────────────────────────── -->
         <div class="mk-overview-card">
             <div class="mk-header">
-                <h3>🔐 Merchant Key Management</h3>
+                <h3>Merchant Key Management</h3>
                 <span class="mk-badge mk-badge-alert" *ngIf="merchantKeysNeedingAction.length > 0">
                     {{ merchantKeysNeedingAction.length }} need{{ merchantKeysNeedingAction.length === 1 ? 's' : '' }} attention
                 </span>
@@ -123,7 +131,7 @@
                             </td>
                             <td>
                                 <a [routerLink]="['/view-merchant', mk.merchantId]" class="mk-action-btn">
-                                    {{ !mk.hasKey ? '🔑 Request' : mk.canRotate ? '🔁 Rotate' : '👁 View' }}
+                                    {{ !mk.hasKey ? 'Need Request' : mk.canRotate ? 'Rotate' : 'View' }}
                                 </a>
                             </td>
                         </tr>
@@ -176,14 +184,23 @@
             </div>
         </div>
 
-        <!-- ── Row 3: File Status donut + Recurring donut + Daily Amount bars ── -->
-        <div class="chart-row chart-row-thirds">
+        <!-- ── Row 3: File Status donut + Auth Status donut + Recurring donut + Daily Amount bars ── -->
+        <div class="chart-row chart-row-fourths">
             <div class="chart-card">
                 <div class="chart-title">Incoming File Status</div>
                 <ng-container *ngIf="stats; else piePlaceholder2">
                     <canvas #filePieCanvas class="chart-canvas chart-canvas-sq"></canvas>
                 </ng-container>
                 <ng-template #piePlaceholder2>
+                    <div class="chart-empty">{{ loading ? 'Loading…' : 'No data available' }}</div>
+                </ng-template>
+            </div>
+            <div class="chart-card">
+                <div class="chart-title">Authorization Result</div>
+                <ng-container *ngIf="stats; else authPlaceholder">
+                    <canvas #authStatusCanvas class="chart-canvas chart-canvas-sq"></canvas>
+                </ng-container>
+                <ng-template #authPlaceholder>
                     <div class="chart-empty">{{ loading ? 'Loading…' : 'No data available' }}</div>
                 </ng-template>
             </div>

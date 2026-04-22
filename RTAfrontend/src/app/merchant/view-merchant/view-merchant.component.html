@@ -203,7 +203,7 @@
       <!-- Merchant RSA Public Key -->
       <div class="form-section">
         <h3>🔐 Merchant RSA Public Key</h3>
-        <p class="section-desc">Request the merchant's RSA public key to encrypt return batch files before delivery.</p>
+        <p class="section-desc">RSA key pairs are exchanged automatically between systems on startup. The key below is used to encrypt return batch files.</p>
         <div class="rsa-key-info" *ngIf="rsaKeyLoading">Loading key status...</div>
         <div class="rsa-key-info" *ngIf="!rsaKeyLoading && rsaKeyStatus">
           <div class="form-row">
@@ -249,8 +249,10 @@
           <p class="no-key-msg">No RSA public key received from this merchant yet.</p>
         </div>
         <div class="rsa-actions">
-          <button class="btn btn-rsa" (click)="generateRsaKey()" [disabled]="rsaKeyGenerating">
-            {{ rsaKeyGenerating ? 'Requesting...' : (rsaKeyStatus ? '🔄 Request New Key' : '🔑 Request Key from Merchant') }}
+          <button class="btn btn-rsa" (click)="generateRsaKey()" 
+                  [disabled]="rsaKeyGenerating || rsaKeyStatus"
+                  [title]="rsaKeyStatus ? 'Key already exists — keys are exchanged automatically' : 'Request RSA key for this merchant'">
+            {{ rsaKeyGenerating ? 'Requesting...' : (rsaKeyStatus ? '✅ Key Active' : '🔑 Request Key from Merchant') }}
           </button>
           <button class="btn btn-rsa btn-rotate" *ngIf="rsaKeyStatus" (click)="rotateRsaKey()" 
                   [disabled]="rsaKeyRotating || !canRotateKey"

@@ -37,6 +37,7 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
   @ViewChild('txnBarCanvas')    txnBarCanvasRef!:   ElementRef<HTMLCanvasElement>;
   @ViewChild('recurringCanvas') recurringRef!:      ElementRef<HTMLCanvasElement>;
   @ViewChild('amountCanvas')    amountCanvasRef!:   ElementRef<HTMLCanvasElement>;
+  @ViewChild('authStatusCanvas') authStatusRef!:    ElementRef<HTMLCanvasElement>;
 
   constructor(private dashboardService: DashboardService, private authService: AuthService) {}
 
@@ -88,6 +89,7 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
     this.drawTxnPerMerchantBar();
     this.drawRecurringPie();
     this.drawAmountTrend();
+    this.drawAuthStatusPie();
   }
 
   // Trend line chart (success vs failed transactions, last 7 days)
@@ -189,7 +191,19 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
   private readonly RECURRING_COLORS: Record<string, string> = {
     'RECURRING': '#1e40af', 'ONE-TIME': '#94a3b8'
   };
+  private readonly AUTH_COLORS: Record<string, string> = {
+    'APPROVED': '#16a34a', 'DECLINED': '#dc2626'
+  };
   private readonly DEFAULT_COLORS = ['#2563eb','#16a34a','#d97706','#dc2626','#7c3aed','#0891b2','#94a3b8'];
+
+  private drawAuthStatusPie(): void {
+    const canvas = this.authStatusRef?.nativeElement;
+    if (!canvas || !this.stats) return;
+    canvas.width  = canvas.offsetWidth;
+    canvas.height = canvas.offsetWidth;
+    const data = this.stats.authStatusBreakdown;
+    this.drawDonut(canvas, data, this.AUTH_COLORS);
+  }
 
   private drawDonut(canvas: HTMLCanvasElement, data: Record<string, number>, colorMap: Record<string, string>): void {
     const ctx = canvas.getContext('2d')!;
@@ -451,5 +465,15 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
   getTxnBarChartHeight(): number {
     if (!this.stats?.txnPerMerchant) return 160;
     return Math.max(160, this.stats.txnPerMerchant.length * 38);
+  }
+
+  get formattedAvgProcessingTime(): string {
+    if (!this.stats) return '—';
+    const mins = this.stats.avgProcessingTimeMinutes;
+    if (mins < 1) return '< 1 min';
+    if (mins < 60) return `${Math.round(mins)} min`;
+    const hrs = Math.floor(mins / 60);
+    const rem = Math.round(mins % 60);
+    return rem > 0 ? `${hrs}h ${rem}m` : `${hrs}h`;
   }
 }

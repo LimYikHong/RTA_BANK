@@ -38,8 +38,11 @@ export interface DashboardStats {
   incomingFilesPerMerchant: MerchantCount[];
   txnPerMerchant: MerchantCount[];
   recurringBreakdown: Record<string, number>;
+  authStatusBreakdown: Record<string, number>;
   dailyAmountTrend: AmountPoint[];
   recentActivity: RecentActivity[];
+  avgProcessingTimeMinutes: number;
+  processedBatchCount: number;
 }
 
 @Injectable({ providedIn: 'root' })

@@ -457,20 +457,11 @@ public class ReportGenerationService {
                 .filter(t -> "FAILED".equals(t.getStatus()))
                 .count();
 
-        // Build transaction detail rows
-        StringBuilder txnRows = new StringBuilder();
-        for (RtaTransaction txn : transactions) {
-            txnRows.append("<tr>")
-                    .append("<td>").append(txn.getId()).append("</td>")
-                    .append("<td>").append(esc(txn.getMerchantCustomer())).append("</td>")
-                    .append("<td>").append(esc(txn.getMaskedPan())).append("</td>")
-                    .append("<td style='text-align:right'>").append(txn.getAmount() != null ? String.format("%.2f", txn.getAmount() / 100.0) : "0.00").append("</td>")
-                    .append("<td>").append(esc(txn.getCurrency())).append("</td>")
-                    .append("<td>").append(getValidationStatus(txn)).append("</td>")
-                    .append("<td>").append(getAuthorizationStatus(txn)).append("</td>")
-                    .append("<td>").append(esc(txn.getRemark())).append("</td>")
-                    .append("</tr>\n");
-        }
+        // Calculate actual processed amount (sum of APPROVED transactions only)
+        double actualProcessedAmount = transactions.stream()
+                .filter(t -> "APPROVED".equalsIgnoreCase(t.getStatus()))
+                .mapToLong(t -> t.getAmount() != null ? t.getAmount().longValue() : 0L)
+                .sum() / 100.0;
 
         return """
                 <!DOCTYPE html>
@@ -501,10 +492,14 @@ public class ReportGenerationService {
                     .card.declined .number { color: #c62828; }
                     .card.amount { background: #fff3e0; }
                     .card.amount .number { color: #e65100; }
-                    table { width: 100%%; border-collapse: collapse; font-size: 13px; }
-                    th { background: #1a73e8; color: white; padding: 10px 8px; text-align: left; }
-                    td { padding: 8px; border-bottom: 1px solid #eee; }
-                    tr:nth-child(even) { background: #f9f9f9; }
+                    .amount-section { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin: 15px 0; }
+                    .amount-box { padding: 20px; border-radius: 10px; text-align: center; }
+                    .amount-box .amount-value { font-size: 32px; font-weight: 700; }
+                    .amount-box .amount-label { font-size: 13px; color: #666; margin-top: 6px; }
+                    .amount-box.eta { background: #e3f2fd; border: 2px solid #90caf9; }
+                    .amount-box.eta .amount-value { color: #1565c0; }
+                    .amount-box.actual { background: #e8f5e9; border: 2px solid #a5d6a7; }
+                    .amount-box.actual .amount-value { color: #2e7d32; }
                     .footer { text-align: center; margin-top: 30px; padding-top: 15px; border-top: 1px solid #ddd; color: #999; font-size: 11px; }
                     .status-pass { color: #2e7d32; font-weight: 600; }
                     .status-fail { color: #c62828; font-weight: 600; }
@@ -543,19 +538,19 @@ public class ReportGenerationService {
                   </div>
                 
                   <div class="section">
-                    <h2>Transaction Details</h2>
-                    <table>
-                      <thead>
-                        <tr>
-                          <th>Txn ID</th><th>Customer Ref</th><th>Account</th>
-                          <th>Amount</th><th>Currency</th><th>Validation</th>
-                          <th>Auth Status</th><th>Remark</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        %s
-                      </tbody>
-                    </table>
+                    <h2>Amount Overview</h2>
+                    <div class="amount-section">
+                      <div class="amount-box eta">
+                        <div class="amount-value">%.2f</div>
+                        <div class="amount-label">ETA Total Process Amount</div>
+                        <div style="font-size:11px;color:#888;margin-top:4px;">Sum of all transaction record amounts</div>
+                      </div>
+                      <div class="amount-box actual">
+                        <div class="amount-value">%.2f</div>
+                        <div class="amount-label">Actual Total Processed Amount</div>
+                        <div style="font-size:11px;color:#888;margin-top:4px;">Sum of approved transaction amounts only</div>
+                      </div>
+                    </div>
                   </div>
                 
                   <div class="footer">
@@ -569,7 +564,7 @@ public class ReportGenerationService {
                 originalFile, batchFile.getBatchId() != null ? batchFile.getBatchId().toString() : "N/A",
                 totalRecords, approvedCount, declinedCount + failCount, totalAmountDisplay,
                 validationPass, validationFail, approvedCount, declinedCount,
-                txnRows.toString()
+                totalAmountDisplay, actualProcessedAmount
         );
     }
 
