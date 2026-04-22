@@ -1,9 +1,10 @@
-import { Component, OnInit, ElementRef, HostListener } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { AuthService } from '../../services/auth.service';
+import { MerchantFilterComponent, MerchantFilterValues } from '../../shared/merchant-filter/merchant-filter.component';
 interface AuthBatchSummary {
   authBatchId: number;
   batchReference: string;
@@ -59,7 +60,7 @@ interface PagedResponse {
 @Component({
   selector: 'app-check-auth-result',
   standalone: true,
-  imports: [CommonModule, RouterModule, FormsModule],
+  imports: [CommonModule, RouterModule, FormsModule, MerchantFilterComponent],
   templateUrl: './check-auth-result.component.html',
   styleUrl: './check-auth-result.component.scss'
 })
@@ -89,11 +90,8 @@ export class CheckAuthResultComponent implements OnInit {
 
   // --- Filter ---
   statusFilter: string = '';
-  merchantIdInput = '';
   merchantSelectedId = '';
-  showMerchantDropdown = false;
   merchantIds: string[] = [];
-  filteredMerchantIds: string[] = [];
   txnDateFrom = '';
   txnDateTo = '';
   txnSearched = false;
@@ -104,17 +102,8 @@ export class CheckAuthResultComponent implements OnInit {
   constructor(
     private http: HttpClient,
     private router: Router,
-    private authService: AuthService,
-    private elRef: ElementRef
+    private authService: AuthService
   ) {}
-
-  @HostListener('document:click', ['$event'])
-  onDocumentClick(event: Event): void {
-    const combobox = this.elRef.nativeElement.querySelector('.merchant-combobox');
-    if (combobox && !combobox.contains(event.target)) {
-      this.showMerchantDropdown = false;
-    }
-  }
 
   ngOnInit(): void {
     this.loadBatches();
@@ -175,9 +164,7 @@ export class CheckAuthResultComponent implements OnInit {
     this.transactions = [];
     this.txnCurrentPage = 1;
     this.statusFilter = '';
-    this.merchantIdInput = '';
     this.merchantSelectedId = '';
-    this.showMerchantDropdown = false;
     this.txnDateFrom = '';
     this.txnDateTo = '';
     this.txnSearched = false;
@@ -188,7 +175,6 @@ export class CheckAuthResultComponent implements OnInit {
         this.transactions = data.transactions || [];
         // Build merchant ID list from transactions
         this.merchantIds = [...new Set(this.transactions.map(t => t.merchantId).filter(Boolean))].sort();
-        this.filteredMerchantIds = [...this.merchantIds];
         this.isLoadingDetail = false;
       },
       error: (err) => {
@@ -237,48 +223,19 @@ export class CheckAuthResultComponent implements OnInit {
   }
 
   onClearTxnFilters(): void {
-    this.merchantIdInput = '';
     this.merchantSelectedId = '';
-    this.showMerchantDropdown = false;
     this.txnDateFrom = '';
     this.txnDateTo = '';
     this.txnSearched = false;
     this.txnCurrentPage = 1;
   }
 
-  // ===================== Merchant Combobox =====================
-
-  toggleMerchantDropdown(): void {
-    this.showMerchantDropdown = !this.showMerchantDropdown;
-    if (this.showMerchantDropdown) {
-      this.filteredMerchantIds = [...this.merchantIds];
-    }
-  }
-
-  onMerchantInputFocus(): void {
-    this.filteredMerchantIds = this.merchantIdInput.trim()
-      ? this.merchantIds.filter(id => id.toLowerCase().includes(this.merchantIdInput.trim().toLowerCase()))
-      : [...this.merchantIds];
-    this.showMerchantDropdown = true;
-  }
-
-  onMerchantInputChange(): void {
-    const typed = this.merchantIdInput.trim().toLowerCase();
-    this.showMerchantDropdown = true;
-    if (!typed) {
-      this.filteredMerchantIds = [...this.merchantIds];
-      this.merchantSelectedId = '';
-      return;
-    }
-    this.filteredMerchantIds = this.merchantIds.filter(id => id.toLowerCase().includes(typed));
-    const exact = this.merchantIds.find(id => id.toLowerCase() === typed);
-    this.merchantSelectedId = exact ?? '';
-  }
-
-  selectMerchant(id: string): void {
-    this.merchantSelectedId = id;
-    this.merchantIdInput = id;
-    this.showMerchantDropdown = false;
+  onFilterSearch(values: MerchantFilterValues): void {
+    this.merchantSelectedId = values.merchantId;
+    this.txnDateFrom = values.dateFrom;
+    this.txnDateTo = values.dateTo;
+    this.txnSearched = true;
+    this.txnCurrentPage = 1;
   }
 
   sortBy(key: string): void {

@@ -83,7 +83,7 @@
 
     <!-- ==================== Auth Result Detail ==================== -->
     <div *ngIf="selectedBatch">
-      <button class="btn btn-back" (click)="clearSelection()" style="margin-bottom: 16px;">&lt; Back to Batch List</button>
+      <button class="btn-back" (click)="clearSelection()" style="margin-bottom: 16px;">&lt; Back</button>
 
       <!-- Loading -->
       <div *ngIf="isLoadingDetail" class="loading-text">Loading authorization results...</div>
@@ -141,64 +141,21 @@
         </div>
 
         <!-- Toolbar: Filters -->
-        <div class="filter-section" style="margin-top: 20px;">
-          <div class="filter-row">
-
-            <!-- Merchant ID combobox -->
-            <div class="filter-field">
-              <label>Merchant ID</label>
-              <div class="merchant-combobox">
-                <div class="combobox-input-wrapper">
-                  <input
-                    type="text"
-                    [(ngModel)]="merchantIdInput"
-                    (input)="onMerchantInputChange()"
-                    (focus)="onMerchantInputFocus()"
-                    (keyup.enter)="showMerchantDropdown = false; onTxnSearch()"
-                    placeholder="All Merchants"
-                    autocomplete="off"
-                  />
-                  <button type="button" class="combobox-toggle" (click)="toggleMerchantDropdown()" tabindex="-1">&#9660;</button>
-                </div>
-                <ul class="combobox-dropdown" *ngIf="showMerchantDropdown">
-                  <li (click)="selectMerchant('')" [class.active]="merchantSelectedId === ''">All Merchants</li>
-                  <li *ngFor="let mid of filteredMerchantIds"
-                      (click)="selectMerchant(mid)"
-                      [class.active]="merchantSelectedId === mid"
-                  >{{ mid }}</li>
-                  <li *ngIf="filteredMerchantIds.length === 0" class="no-match">No merchant found</li>
-                </ul>
-              </div>
-            </div>
-
-            <!-- Status filter -->
-            <div class="filter-field">
-              <label>Status</label>
-              <select [(ngModel)]="statusFilter" (change)="onStatusFilterChange()" class="filter-select">
-                <option value="">All</option>
-                <option value="APPROVED">Approved</option>
-                <option value="FAILED">Failed</option>
-                <option value="PENDING">Pending</option>
-              </select>
-            </div>
-
-            <!-- Date range -->
-            <div class="filter-field">
-              <label>Start Date</label>
-              <input type="date" class="search-input date-input" [(ngModel)]="txnDateFrom" />
-            </div>
-            <div class="filter-field">
-              <label>End Date</label>
-              <input type="date" class="search-input date-input" [(ngModel)]="txnDateTo" />
-            </div>
-
-            <!-- Search button -->
-            <div class="filter-actions">
-              <button type="button" class="btn-search" (click)="onTxnSearch()">Search</button>
-            </div>
-
+        <app-merchant-filter
+          [merchantIds]="merchantIds"
+          filterStyle="margin-top: 20px"
+          (search)="onFilterSearch($event)">
+          <!-- Status filter -->
+          <div class="filter-field">
+            <label>Status</label>
+            <select [(ngModel)]="statusFilter" (change)="onStatusFilterChange()" class="filter-select">
+              <option value="">All</option>
+              <option value="APPROVED">Approved</option>
+              <option value="FAILED">Failed</option>
+              <option value="PENDING">Pending</option>
+            </select>
           </div>
-        </div>
+        </app-merchant-filter>
 
         <!-- Transaction Results Table -->
         <div class="table-container" style="margin-top: 12px;">

@@ -14,7 +14,7 @@ import { AuthService } from '../../services/auth.service';
 export class EditUserComponent implements OnInit {
   editData: UserProfile = {
     userId: '',
-    name: '',
+    emailAddress: '',
     email: '',
     company: '',
     contact: '',

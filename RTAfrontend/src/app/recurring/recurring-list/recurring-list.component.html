@@ -2,65 +2,25 @@
       <h1>Track Transaction</h1>
     </div>
 
-    <div class="filter-section">
-      <div class="filter-row">
-
-        <!-- Merchant ID combobox -->
-        <div class="filter-field">
-          <label>Merchant ID</label>
-          <div class="merchant-combobox">
-            <div class="combobox-input-wrapper">
-              <input
-                type="text"
-                [(ngModel)]="merchantIdInput"
-                (input)="onMerchantInputChange()"
-                (focus)="onInputFocus()"
-                (keyup.enter)="showDropdown = false"
-                placeholder="All Merchants"
-                autocomplete="off"
-              />
-              <button type="button" class="combobox-toggle" (click)="toggleDropdown()" tabindex="-1">&#9660;</button>
-            </div>
-            <ul class="combobox-dropdown" *ngIf="showDropdown">
-              <li (click)="selectMerchant('')" [class.active]="merchantSelectedId === ''">All Merchants</li>
-              <li *ngFor="let mid of filteredMerchantIds"
-                  (click)="selectMerchant(mid)"
-                  [class.active]="merchantSelectedId === mid"
-              >{{ mid }}</li>
-              <li *ngIf="filteredMerchantIds.length === 0" class="no-match">Merchant not exist</li>
-            </ul>
-          </div>
-        </div>
-
-        <!-- Reference ID / keyword search -->
-        <div class="filter-field">
-          <label>Reference ID</label>
-          <input
-            type="text"
-            [(ngModel)]="searchTerm"
-            (keyup.enter)="applyFilters()"
-            placeholder="Search by reference..."
-            class="search-input"
-          />
-        </div>
-
-        <!-- Transaction Type filter -->
-        <div class="filter-field">
-          <label>Transaction Type</label>
-          <select [(ngModel)]="recurringType" class="filter-select">
-            <option value="ALL">All</option>
-            <option value="RECURRING">Recurring</option>
-            <option value="NON_RECURRING">Non-Recurring</option>
-          </select>
-        </div>
-
-        <!-- Search button -->
-        <div class="filter-actions">
-          <button type="button" class="btn-search" (click)="applyFilters()">Search</button>
-        </div>
-
+    <app-merchant-filter
+      [merchantIds]="merchantIds"
+      [showDateRange]="false"
+      (search)="onFilterSearch($event)">
+      <!-- Reference ID -->
+      <div class="filter-field">
+        <label>Reference ID</label>
+        <input type="text" [(ngModel)]="searchTerm" (keyup.enter)="applyFilters()" placeholder="Search by reference..." class="search-input" />
       </div>
-    </div>
+      <!-- Transaction Type -->
+      <div class="filter-field">
+        <label>Transaction Type</label>
+        <select [(ngModel)]="recurringType" class="filter-select">
+          <option value="ALL">All</option>
+          <option value="RECURRING">Recurring</option>
+          <option value="NON_RECURRING">Non-Recurring</option>
+        </select>
+      </div>
+    </app-merchant-filter>
 
     <div class="table-container" *ngIf="!isLoading">
       <table class="recurring-table">

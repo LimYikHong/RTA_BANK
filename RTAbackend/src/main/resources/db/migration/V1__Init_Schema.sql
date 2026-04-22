@@ -49,7 +49,7 @@ CREATE TABLE rta_bank_user (
     email VARCHAR(255) NOT NULL UNIQUE,
     first_name VARCHAR(255),
     last_name VARCHAR(255),
-    full_name VARCHAR(255),
+    email_address VARCHAR(255),
     phone_number VARCHAR(50),
     office_number VARCHAR(50),
     profile_photo VARCHAR(255),

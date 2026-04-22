@@ -1,8 +1,9 @@
-import { Component, OnInit, HostListener, ElementRef } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { HttpClient, HttpParams } from '@angular/common/http';
+import { MerchantFilterComponent, MerchantFilterValues } from '../../shared/merchant-filter/merchant-filter.component';
 interface RecurringItem {
   recurringReference: string;
   merchantId: string;
@@ -25,7 +26,7 @@ interface PagedResponse {
 @Component({
   selector: 'app-recurring-list',
   standalone: true,
-  imports: [CommonModule, RouterModule, FormsModule],
+  imports: [CommonModule, RouterModule, FormsModule, MerchantFilterComponent],
   templateUrl: './recurring-list.component.html',
   styleUrl: './recurring-list.component.scss'
 })
@@ -34,9 +35,7 @@ export class RecurringListComponent implements OnInit {
 
   pagedItems: RecurringItem[] = [];
   searchTerm = '';
-  merchantIdInput = '';        // text shown in the combobox input
   merchantSelectedId = '';     // the actual selected merchant ID for filtering
-  showDropdown = false;        // controls combobox dropdown visibility
   recurringType = 'ALL';       // ALL | RECURRING | NON_RECURRING
   isLoading = true;
 
@@ -49,7 +48,6 @@ export class RecurringListComponent implements OnInit {
 
   // Merchant ID lists (loaded once from dedicated endpoint)
   merchantIds: string[] = [];          // full list from API
-  filteredMerchantIds: string[] = [];  // subset shown in dropdown based on text input
 
   sortKey: string = '';
   sortDir: 'asc' | 'desc' = 'asc';
@@ -80,17 +78,8 @@ export class RecurringListComponent implements OnInit {
 
   constructor(
     private http: HttpClient,
-    private router: Router,
-    private elRef: ElementRef
+    private router: Router
   ) {}
-
-  @HostListener('document:click', ['$event'])
-  onDocumentClick(event: Event): void {
-    const combobox = this.elRef.nativeElement.querySelector('.merchant-combobox');
-    if (combobox && !combobox.contains(event.target)) {
-      this.showDropdown = false;
-    }
-  }
 
   ngOnInit(): void {
     this.loadMerchantIds();
@@ -106,7 +95,6 @@ export class RecurringListComponent implements OnInit {
     this.http.get<string[]>(url).subscribe({
       next: (ids) => {
         this.merchantIds = ids;
-        this.filteredMerchantIds = [...this.merchantIds];
       },
       error: (err) => console.error('Failed to load merchant IDs:', err)
     });
@@ -155,45 +143,9 @@ export class RecurringListComponent implements OnInit {
     this.loadPage();
   }
 
-  onInputFocus(): void {
-    // Always show the full list when the user clicks into the input
-    this.filteredMerchantIds = this.merchantIdInput.trim()
-      ? this.merchantIds.filter(id => id.toLowerCase().includes(this.merchantIdInput.trim().toLowerCase()))
-      : [...this.merchantIds];
-    this.showDropdown = true;
-  }
-
-  onMerchantInputChange(): void {
-    const typed = this.merchantIdInput.trim().toLowerCase();
-    this.showDropdown = true;
-    if (!typed) {
-      this.filteredMerchantIds = [...this.merchantIds];
-      this.merchantSelectedId = '';
-      return;
-    }
-    this.filteredMerchantIds = this.merchantIds.filter(id =>
-      id.toLowerCase().includes(typed)
-    );
-    // Auto-select if exact match typed but do NOT fire search yet
-    const exact = this.merchantIds.find(id => id.toLowerCase() === typed);
-    this.merchantSelectedId = exact ?? '';
-  }
-
-  selectMerchant(id: string): void {
-    this.merchantSelectedId = id;
-    this.merchantIdInput = id;
-    this.showDropdown = false;
-    this.filteredMerchantIds = [...this.merchantIds];
-    // Do NOT auto-search; user must press the Search button
-  }
-
-  toggleDropdown(): void {
-    this.showDropdown = !this.showDropdown;
-    if (this.showDropdown) {
-      this.filteredMerchantIds = this.merchantIdInput.trim()
-        ? this.merchantIds.filter(id => id.toLowerCase().includes(this.merchantIdInput.trim().toLowerCase()))
-        : [...this.merchantIds];
-    }
+  onFilterSearch(values: MerchantFilterValues): void {
+    this.merchantSelectedId = values.merchantId;
+    this.applyFilters();
   }
 
   onPageSizeChange(): void {

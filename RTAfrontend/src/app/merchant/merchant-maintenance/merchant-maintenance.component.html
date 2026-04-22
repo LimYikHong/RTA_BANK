@@ -7,16 +7,26 @@
             </div>
         </div>
 
-        <!-- Search Bar -->
-        <div class="search-section">
-            <div class="search-box">
-                <input type="text" class="search-input" [(ngModel)]="searchKeyword" (keyup.enter)="onSearch()"
-                    placeholder="Search by name, ID, username, email, company, or contact..." />
-                <button class="btn btn-search" (click)="onSearch()">Search</button>
-                <button class="btn btn-clear" *ngIf="searchKeyword" (click)="clearSearch()">Clear</button>
-                <button class="btn btn-add" *ngIf="hasPermission('MERCHANT_CREATE')" (click)="addMerchant()">Add Merchant</button>
+        <!-- Filters -->
+        <app-merchant-filter
+          [merchantIds]="merchantIds"
+          [showDateRange]="false"
+          (search)="onFilterSearch($event)">
+          <!-- Merchant Name search -->
+          <div class="filter-field">
+            <label>Merchant Name</label>
+            <div class="input-with-clear">
+              <input type="text" class="search-input" [(ngModel)]="searchKeyword" (keyup.enter)="onSearch()"
+                  placeholder="Search by name..." />
+              <span class="input-clear" *ngIf="searchKeyword" (click)="searchKeyword = ''; onSearch()">&times;</span>
             </div>
-            <p class="result-count">Showing {{ filteredMerchants.length }} merchant(s)</p>
+          </div>
+          <button filterActions class="btn-search" *ngIf="hasPermission('MERCHANT_CREATE')" (click)="addMerchant()" style="background:#000;">
+            Add Merchant
+          </button>
+        </app-merchant-filter>
+        <div style="margin: 4px 0 12px; display: flex; align-items: center;">
+            <span class="result-count" style="margin-left: auto;">Showing {{ filteredMerchants.length }} merchant(s)</span>
         </div>
 
         <!-- Loading Indicator -->

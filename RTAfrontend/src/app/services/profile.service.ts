@@ -8,7 +8,7 @@ import { Observable, catchError, of, tap, throwError } from 'rxjs';
  */
 export interface UserProfile {
   userId: string;
-  name: string;
+  emailAddress: string;
   email: string;
   company: string;
   contact: string;
@@ -38,7 +38,7 @@ export interface UserProfile {
 export interface UserListItem {
   id: number;
   username: string;
-  name: string;
+  emailAddress: string;
   email: string;
   userId: string;
   company: string;
@@ -280,7 +280,7 @@ export class ProfileService {
   private emptyProfile(): UserProfile {
     return {
       userId: '',
-      name: '',
+      emailAddress: '',
       email: '',
       company: '',
       contact: '',

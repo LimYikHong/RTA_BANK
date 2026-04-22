@@ -1,6 +1,6 @@
     <!-- Header -->
     <div class="page-header">
-      <button class="btn btn-back" (click)="goBack()"> < Back </button>
+      <button class="btn-back" (click)="goBack()">&lt; Back</button>
       <h1>Batch File Details</h1>
     </div>
 
@@ -10,28 +10,24 @@
     <!-- Summary Section -->
     <div *ngIf="!isLoading && summary" class="summary-section">
       <div class="summary-header">
-        <h2>📊 Batch Summary</h2>
+        <h2>Batch Summary</h2>
         <span class="status-badge large" [ngClass]="getStatusClass(summary.status)">{{ summary.status }}</span>
       </div>
 
       <div class="summary-cards">
         <div class="summary-card total">
-          <div class="card-icon">📄</div>
           <div class="card-value">{{ summary.totalRecords }}</div>
           <div class="card-label">Total Records</div>
         </div>
         <div class="summary-card success">
-          <div class="card-icon">✅</div>
           <div class="card-value">{{ summary.successCount }}</div>
           <div class="card-label">Successful</div>
         </div>
         <div class="summary-card failed">
-          <div class="card-icon">❌</div>
           <div class="card-value">{{ summary.failCount }}</div>
           <div class="card-label">Failed</div>
         </div>
         <div class="summary-card amount">
-          <div class="card-icon">💰</div>
           <div class="card-value">{{ summary.totalAmount | number:'1.2-2' }}</div>
           <div class="card-label">Total Amount (Success)</div>
         </div>
@@ -70,16 +66,16 @@
 
     <!-- Failed Transactions Section -->
     <div *ngIf="!isLoading && summary" class="failed-section">
-      <h2>❌ Failed Transaction Records</h2>
+      <h2>Failed Transaction Records</h2>
 
       <!-- Show different message based on status -->
       <div *ngIf="summary.status === 'VALIDATION_FAILED' && failedTransactions.length === 0" class="error-state">
-        <p>⚠️ File structure validation failed — no transactions were processed.</p>
+        <p>File structure validation failed — no transactions were processed.</p>
         <p class="hint">Check the validation errors above for details about missing or incorrect columns.</p>
       </div>
 
       <div *ngIf="summary.status !== 'VALIDATION_FAILED' && failedTransactions.length === 0" class="empty-state">
-        <p>🎉 No failed transactions — all records passed validation!</p>
+        <p>No failed transactions — all records passed validation!</p>
       </div>
 
       <div class="table-wrapper" *ngIf="failedTransactions.length > 0">
@@ -99,7 +95,7 @@
             </tr>
           </thead>
           <tbody>
-            <tr *ngFor="let txn of sortedTransactions" class="failed-row">
+            <tr *ngFor="let txn of pagedTransactions" class="failed-row">
               <td>{{ txn.batchSeq }}</td>
               <td>{{ txn.customerReference || '-' }}</td>
               <td>{{ txn.accountNum || '-' }}</td>
@@ -115,5 +111,25 @@
             </tr>
           </tbody>
         </table>
+
+        <!-- Pagination -->
+        <div class="pagination-section" *ngIf="failedTransactions.length > 0">
+          <div class="pagination-info">
+            <div class="page-size-selector">
+              <label>Rows:</label>
+              <select [(ngModel)]="pageSize" (change)="onPageSizeChange()" class="filter-select">
+                <option *ngFor="let size of pageSizeOptions" [ngValue]="size">{{ size }}</option>
+              </select>
+            </div>
+            <span>Showing {{ startRecord }}–{{ endRecord }} of {{ failedTransactions.length }}</span>
+          </div>
+          <div class="pagination-controls">
+            <button class="page-btn" (click)="goToPage(1)" [disabled]="currentPage === 1">«</button>
+            <button class="page-btn" (click)="goToPage(currentPage - 1)" [disabled]="currentPage === 1">‹</button>
+            <button *ngFor="let p of visiblePages" class="page-btn" [class.active]="p === currentPage" (click)="goToPage(p)">{{ p }}</button>
+            <button class="page-btn" (click)="goToPage(currentPage + 1)" [disabled]="currentPage === totalPages">›</button>
+            <button class="page-btn" (click)="goToPage(totalPages)" [disabled]="currentPage === totalPages">»</button>
+          </div>
+        </div>
       </div>
     </div>

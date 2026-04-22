@@ -1,0 +1,55 @@
+<div class="filter-section" [style]="filterStyle">
+  <div class="filter-row">
+
+    <!-- Dropdown combobox -->
+    <div class="filter-field">
+      <label>{{ dropdownLabel }}</label>
+      <div class="merchant-combobox">
+        <div class="combobox-input-wrapper">
+          <input
+            type="text"
+            [(ngModel)]="merchantIdInput"
+            (input)="onMerchantInputChange()"
+            (focus)="onMerchantInputFocus()"
+            (keyup.enter)="onSearch()"
+            [placeholder]="dropdownPlaceholder"
+            autocomplete="off"
+          />
+          <span class="input-clear" *ngIf="merchantIdInput" (click)="clearMerchant()">&times;</span>
+          <button type="button" class="combobox-toggle" (click)="toggleMerchantDropdown()" tabindex="-1">&#9660;</button>
+        </div>
+        <ul class="combobox-dropdown" *ngIf="showMerchantDropdown">
+          <li (click)="selectMerchant('')" [class.active]="merchantSelectedId === ''">{{ dropdownPlaceholder }}</li>
+          <li *ngFor="let mid of filteredMerchantIds"
+              (click)="selectMerchant(mid)"
+              [class.active]="merchantSelectedId === mid"
+          >{{ mid }}</li>
+          <li *ngIf="filteredMerchantIds.length === 0" class="no-match">No match found</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Extra fields projected from parent -->
+    <ng-content select="[filterFields]"></ng-content>
+    <ng-content></ng-content>
+
+    <!-- Date range -->
+    <ng-container *ngIf="showDateRange">
+      <div class="filter-field">
+        <label>Start Date</label>
+        <input type="date" class="search-input date-input" [(ngModel)]="dateFrom" />
+      </div>
+      <div class="filter-field">
+        <label>End Date</label>
+        <input type="date" class="search-input date-input" [(ngModel)]="dateTo" />
+      </div>
+    </ng-container>
+
+    <!-- Search button -->
+    <div class="filter-actions">
+      <button type="button" class="btn-search" (click)="onSearch()">Search</button>
+      <ng-content select="[filterActions]"></ng-content>
+    </div>
+
+  </div>
+</div>

@@ -10,15 +10,11 @@
       </span>
     </div>
 
-    <!-- Search & Refresh -->
-    <div class="search-section">
-      <div class="search-box">
-        <input type="text" class="search-input" placeholder="Search by filename, merchant ID, status..."
-          [(ngModel)]="searchTerm" (keyup.enter)="onSearch()" />
-        <button class="btn btn-search" (click)="onSearch()">Search</button>
-        <button class="btn btn-refresh" (click)="loadIncomingFiles()">Refresh</button>
-      </div>
-    </div>
+    <!-- Filters -->
+    <app-merchant-filter
+      [merchantIds]="merchantIds"
+      (search)="onFilterSearch($event)">
+    </app-merchant-filter>
 
     <!-- Loading -->
     <div *ngIf="isLoading" class="loading-text">Loading incoming files...</div>

@@ -4,6 +4,7 @@ import { RouterModule, Router, ActivatedRoute } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 import { AuthService } from '../../services/auth.service';
+import { MerchantFilterComponent, MerchantFilterValues } from '../../shared/merchant-filter/merchant-filter.component';
 interface BatchFileDetail {
   batchFileId: number;
   batchId: number | null;
@@ -59,7 +60,7 @@ interface TransactionRecord {
 @Component({
   selector: 'app-batch-file-detail',
   standalone: true,
-  imports: [CommonModule, RouterModule, FormsModule],
+  imports: [CommonModule, RouterModule, FormsModule, MerchantFilterComponent],
   templateUrl: './batch-file-detail.component.html',
   styleUrl: './batch-file-detail.component.scss'
 })
@@ -73,6 +74,10 @@ export class BatchFileDetailComponent implements OnInit {
   // Transaction filter
   statusFilter = 'ALL';
   searchTerm = '';
+  merchantIds: string[] = [];
+  merchantSelectedId = '';
+  txnDateFrom = '';
+  txnDateTo = '';
 
   // Transaction table sort
   sortKey = '';
@@ -100,6 +105,7 @@ export class BatchFileDetailComponent implements OnInit {
     this.http.get<BatchFileDetail>(`${this.apiUrl}/detail/${this.batchFileId}`).subscribe({
       next: (data) => {
         this.detail = data;
+        this.merchantIds = [...new Set((data.transactions || []).map(t => t.merchantId).filter(Boolean))].sort();
         this.isLoading = false;
       },
       error: (err) => {
@@ -114,12 +120,21 @@ export class BatchFileDetailComponent implements OnInit {
     if (!this.detail) return [];
     let txns = this.detail.transactions;
 
-    // Status filter
+    if (this.merchantSelectedId) {
+      txns = txns.filter(t => t.merchantId === this.merchantSelectedId);
+    }
+    if (this.txnDateFrom) {
+      const from = new Date(this.txnDateFrom);
+      txns = txns.filter(t => t.createdAt && new Date(t.createdAt) >= from);
+    }
+    if (this.txnDateTo) {
+      const to = new Date(this.txnDateTo);
+      to.setHours(23, 59, 59, 999);
+      txns = txns.filter(t => t.createdAt && new Date(t.createdAt) <= to);
+    }
     if (this.statusFilter !== 'ALL') {
       txns = txns.filter(t => t.status === this.statusFilter);
     }
-
-    // Search filter
     if (this.searchTerm.trim()) {
       const term = this.searchTerm.toLowerCase();
       txns = txns.filter(t =>
@@ -133,8 +148,19 @@ export class BatchFileDetailComponent implements OnInit {
         (t.remark || '').toLowerCase().includes(term)
       );
     }
-
     return txns;
+  }
+
+  onFilterSearch(values: MerchantFilterValues): void {
+    this.merchantSelectedId = values.merchantId;
+    this.txnDateFrom = values.dateFrom;
+    this.txnDateTo = values.dateTo;
+  }
+
+  onTxnSearch(): void {}
+
+  onFilterChange(): void {
+    this.txnPage = 1;
   }
 
   // ---- Sorting ----
@@ -201,10 +227,6 @@ export class BatchFileDetailComponent implements OnInit {
   }
 
   onTxnPageSizeChange(): void {
-    this.txnPage = 1;
-  }
-
-  onFilterChange(): void {
     this.txnPage = 1;
   }
 

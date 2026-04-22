@@ -5,11 +5,12 @@ import { FormsModule } from '@angular/forms';
 import { ProfileService, UserListItem } from '../../services/profile.service';
 import { AuthService } from '../../services/auth.service';
 import { Subscription, filter } from 'rxjs';
+import { MerchantFilterComponent, MerchantFilterValues } from '../../shared/merchant-filter/merchant-filter.component';
 
 @Component({
   selector: 'app-user-management',
   standalone: true,
-  imports: [CommonModule, RouterModule, FormsModule],
+  imports: [CommonModule, RouterModule, FormsModule, MerchantFilterComponent],
   templateUrl: './user-management.component.html',
   styleUrl: './user-management.component.scss'
 })
@@ -18,6 +19,9 @@ export class UserManagementComponent implements OnInit, OnDestroy {
   filteredUsers: UserListItem[] = [];
   searchKeyword: string = '';
   isLoading: boolean = false;
+  userIds: string[] = [];
+  selectedUserId: string = '';
+  roleFilter: string = '';
   private routerSub!: Subscription;
 
   // Delete confirmation modal
@@ -91,6 +95,11 @@ export class UserManagementComponent implements OnInit, OnDestroy {
     return this.authService.hasPermission(perm);
   }
 
+  isSelf(user: UserListItem): boolean {
+    const current = this.authService.getCurrentUser();
+    return !!current && current.username === user.username;
+  }
+
   ngOnInit(): void {
     this.loadUsers();
 
@@ -115,6 +124,7 @@ export class UserManagementComponent implements OnInit, OnDestroy {
       next: (data) => {
         this.users = data;
         this.filteredUsers = data;
+        this.userIds = [...new Set(data.map(u => u.userId).filter(Boolean))].sort();
         this.isLoading = false;
       },
       error: (err) => {
@@ -125,24 +135,33 @@ export class UserManagementComponent implements OnInit, OnDestroy {
   }
 
   onSearch(): void {
-    const keyword = this.searchKeyword.trim();
-    if (!keyword) {
-      this.loadUsers();
-      return;
+    let list = this.users;
+    if (this.selectedUserId) {
+      list = list.filter(u => u.userId === this.selectedUserId);
     }
-    this.profileService.searchUsers(keyword).subscribe({
-      next: (data) => {
-        this.filteredUsers = data;
-        this.currentPage = 1;
-      },
-      error: (err) => {
-        console.error('Search failed:', err);
-      }
-    });
+    if (this.roleFilter) {
+      list = list.filter(u => u.role === this.roleFilter);
+    }
+    const keyword = this.searchKeyword.trim();
+    if (keyword) {
+      const kw = keyword.toLowerCase();
+      list = list.filter(u =>
+        (u.username && u.username.toLowerCase().includes(kw))
+      );
+    }
+    this.filteredUsers = list;
+    this.currentPage = 1;
+  }
+
+  onFilterSearch(values: MerchantFilterValues): void {
+    this.selectedUserId = values.merchantId;
+    this.onSearch();
   }
 
   clearSearch(): void {
     this.searchKeyword = '';
+    this.selectedUserId = '';
+    this.roleFilter = '';
     this.filteredUsers = this.users;
     this.currentPage = 1;
   }

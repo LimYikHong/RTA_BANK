@@ -1,6 +1,6 @@
     <!-- Header -->
     <div class="page-header">
-      <button class="btn btn-back" (click)="goBack()"> &lt; Back </button>
+      <button class="btn-back" (click)="goBack()">&lt; Back</button>
       <h1>Authorization Batch Detail</h1>
     </div>
 
@@ -10,28 +10,24 @@
     <!-- Summary Section -->
     <div *ngIf="!isLoading && batch" class="summary-section">
       <div class="summary-header">
-        <h2>📊 Batch Summary</h2>
+        <h2>Batch Summary</h2>
         <span class="status-badge large" [ngClass]="getStatusClass(batch.batchStatus)">{{ batch.batchStatus }}</span>
       </div>
 
       <div class="summary-cards">
         <div class="summary-card total">
-          <div class="card-icon">📄</div>
           <div class="card-value">{{ batch.totalCount }}</div>
           <div class="card-label">Total Transactions</div>
         </div>
         <div class="summary-card success">
-          <div class="card-icon">✅</div>
           <div class="card-value">{{ batch.successCount }}</div>
           <div class="card-label">Successful</div>
         </div>
         <div class="summary-card failed">
-          <div class="card-icon">❌</div>
           <div class="card-value">{{ batch.failCount }}</div>
           <div class="card-label">Failed</div>
         </div>
         <div class="summary-card amount">
-          <div class="card-icon">💰</div>
           <div class="card-value">{{ formatAmount(batch.totalAmountCents) }}</div>
           <div class="card-label">Total Amount</div>
         </div>
@@ -72,7 +68,7 @@
 
     <!-- Files Section -->
     <div *ngIf="!isLoading && batch" class="section">
-      <h2>📁 Files in this Batch ({{ batch.files.length || 0 }})</h2>
+      <h2>Files in this Batch ({{ batch.files.length || 0 }})</h2>
 
       <div class="table-wrapper" *ngIf="batch.files && batch.files.length > 0">
         <table class="data-table">
@@ -112,7 +108,7 @@
     <!-- Transactions Section -->
     <div *ngIf="!isLoading && batch" class="section">
       <div class="section-header">
-        <h2>💳 Transactions ({{ txnTotalElements }})</h2>
+        <h2>Transactions ({{ txnTotalElements }})</h2>
         <div class="file-filter" *ngIf="batch.files && batch.files.length > 0">
           <label for="fileFilter">Filter by File:</label>
           <select id="fileFilter" class="filter-select" [(ngModel)]="selectedFileId" (change)="onFileFilterChange()">

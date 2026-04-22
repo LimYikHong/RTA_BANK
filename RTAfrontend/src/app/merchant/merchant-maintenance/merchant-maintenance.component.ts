@@ -6,6 +6,7 @@ import { ProfileService } from '../../services/profile.service';
 import { AuthService } from '../../services/auth.service';
 import { HttpClient } from '@angular/common/http';
 import { Subscription, filter, catchError, of } from 'rxjs';
+import { MerchantFilterComponent, MerchantFilterValues } from '../../shared/merchant-filter/merchant-filter.component';
 
 export interface MerchantListItem {
   id: number;
@@ -24,7 +25,7 @@ export interface MerchantListItem {
 @Component({
   selector: 'app-merchant-maintenance',
   standalone: true,
-  imports: [CommonModule, RouterModule, FormsModule],
+  imports: [CommonModule, RouterModule, FormsModule, MerchantFilterComponent],
   templateUrl: './merchant-maintenance.component.html',
   styleUrl: './merchant-maintenance.component.scss'
 })
@@ -33,6 +34,8 @@ export class MerchantMaintenanceComponent implements OnInit, OnDestroy {
   filteredMerchants: MerchantListItem[] = [];
   searchKeyword: string = '';
   isLoading: boolean = false;
+  merchantIds: string[] = [];
+  merchantSelectedId: string = '';
 
   // Delete confirmation modal
   showDeleteModal: boolean = false;
@@ -138,6 +141,7 @@ export class MerchantMaintenanceComponent implements OnInit, OnDestroy {
       next: (data) => {
         this.merchants = data;
         this.filteredMerchants = data;
+        this.merchantIds = [...new Set(data.map(m => m.merchantId).filter(Boolean))].sort();
         this.isLoading = false;
       },
       error: () => {
@@ -147,26 +151,34 @@ export class MerchantMaintenanceComponent implements OnInit, OnDestroy {
   }
 
   onSearch(): void {
-    const keyword = this.searchKeyword.trim();
-    if (!keyword) {
-      this.loadMerchants();
-      return;
+    let list = this.merchants;
+    if (this.merchantSelectedId) {
+      list = list.filter(m => m.merchantId === this.merchantSelectedId);
     }
-    const kw = keyword.toLowerCase();
-    this.filteredMerchants = this.merchants.filter(m =>
-      (m.name && m.name.toLowerCase().includes(kw)) ||
-      (m.merchantId && m.merchantId.toLowerCase().includes(kw)) ||
-      (m.username && m.username.toLowerCase().includes(kw)) ||
-      (m.email && m.email.toLowerCase().includes(kw)) ||
-      (m.company && m.company.toLowerCase().includes(kw)) ||
-      (m.contact && m.contact.toLowerCase().includes(kw)) ||
-      (m.phone && m.phone.toLowerCase().includes(kw))
-    );
+    const keyword = this.searchKeyword.trim();
+    if (keyword) {
+      const kw = keyword.toLowerCase();
+      list = list.filter(m =>
+        (m.name && m.name.toLowerCase().includes(kw)) ||
+        (m.username && m.username.toLowerCase().includes(kw)) ||
+        (m.email && m.email.toLowerCase().includes(kw)) ||
+        (m.company && m.company.toLowerCase().includes(kw)) ||
+        (m.contact && m.contact.toLowerCase().includes(kw)) ||
+        (m.phone && m.phone.toLowerCase().includes(kw))
+      );
+    }
+    this.filteredMerchants = list;
     this.currentPage = 1;
+  }
+
+  onFilterSearch(values: MerchantFilterValues): void {
+    this.merchantSelectedId = values.merchantId;
+    this.onSearch();
   }
 
   clearSearch(): void {
     this.searchKeyword = '';
+    this.merchantSelectedId = '';
     this.filteredMerchants = this.merchants;
     this.currentPage = 1;
   }

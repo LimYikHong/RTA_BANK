@@ -4,6 +4,7 @@ import { RouterModule, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { AuthService } from '../../services/auth.service';
+import { MerchantFilterComponent, MerchantFilterValues } from '../../shared/merchant-filter/merchant-filter.component';
 interface BatchFileItem {
   batchFileId: number;
   batchId: number | null;
@@ -35,7 +36,7 @@ interface PagedResponse {
 @Component({
   selector: 'app-batch-file-maintenance',
   standalone: true,
-  imports: [CommonModule, RouterModule, FormsModule],
+  imports: [CommonModule, RouterModule, FormsModule, MerchantFilterComponent],
   templateUrl: './batch-file-maintenance.component.html',
   styleUrl: './batch-file-maintenance.component.scss'
 })
@@ -50,6 +51,8 @@ export class BatchFileMaintenanceComponent implements OnInit {
   dateFrom = '';
   dateTo = '';
   searched = false;
+  merchantIds: string[] = [];
+  merchantSelectedId = '';
 
   // Pagination
   currentPage = 1;
@@ -88,6 +91,7 @@ export class BatchFileMaintenanceComponent implements OnInit {
         this.totalElements = data.totalElements;
         this.totalPages = Math.max(1, data.totalPages);
         this.currentPage = data.currentPage + 1;
+        this.merchantIds = [...new Set(data.content.map(f => f.merchantId).filter(Boolean))].sort();
         this.isLoading = false;
       },
       error: (err) => {
@@ -104,6 +108,9 @@ export class BatchFileMaintenanceComponent implements OnInit {
   get filteredItems(): BatchFileItem[] {
     if (!this.searched) return this.sortedItems;
     let items = this.sortedItems;
+    if (this.merchantSelectedId) {
+      items = items.filter(item => item.merchantId === this.merchantSelectedId);
+    }
     if (this.searchTerm.trim()) {
       const term = this.searchTerm.toLowerCase();
       items = items.filter(item =>
@@ -123,6 +130,13 @@ export class BatchFileMaintenanceComponent implements OnInit {
   }
 
   onSearch(): void {
+    this.searched = true;
+  }
+
+  onFilterSearch(values: MerchantFilterValues): void {
+    this.merchantSelectedId = values.merchantId;
+    this.dateFrom = values.dateFrom;
+    this.dateTo = values.dateTo;
     this.searched = true;
   }
 

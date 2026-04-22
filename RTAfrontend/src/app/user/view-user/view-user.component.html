@@ -1,6 +1,6 @@
 <div *ngIf="!isLoading && profile; else loading">
     <!-- Back button (only when viewing from user management) -->
-    <button class="back-btn" *ngIf="!isOwnProfile" routerLink="/users">← Back to Users</button>
+    <button class="btn-back" *ngIf="!isOwnProfile" routerLink="/users">&lt; Back</button>
 
     <!-- Profile Header with Avatar (own profile) -->
     <div class="profile-header" *ngIf="isOwnProfile">
@@ -8,7 +8,7 @@
         <img *ngIf="profile.profilePhotoUrl" [src]="'https://localhost:8086' + profile.profilePhotoUrl"
           alt="Profile Photo" class="profile-photo" />
         <span *ngIf="!profile.profilePhotoUrl">{{
-          profile.name ? profile.name.charAt(0) : '?'
+          profile.emailAddress ? profile.emailAddress.charAt(0) : '?'
         }}</span>
         <div class="edit-overlay">
           <i class="fas fa-pencil-alt"></i>
@@ -16,7 +16,7 @@
         <input type="file" #fileInput style="display: none" (change)="onFileSelected($event)" accept="image/*" />
       </div>
       <div class="header-info">
-        <h1>{{ profile.name }}</h1>
+        <h1>{{ profile.emailAddress }}</h1>
         <p class="email">{{ profile.email }}</p>
         <p class="username-display">{{'@'}}{{ profile.username }}</p>
         <button class="edit-btn" *ngIf="hasPermission('USER_EDIT')" (click)="editUser()">Edit Profile</button>
@@ -27,14 +27,14 @@
     <div class="page-header" *ngIf="!isOwnProfile">
       <div class="header-top">
         <div>
-          <h1>{{ profile.name || 'User Details' }}</h1>
+          <h1>{{ profile.emailAddress || 'User Details' }}</h1>
         </div>
         <div class="header-actions">
-          <button class="btn btn-primary" *ngIf="hasPermission('USER_EDIT')" (click)="editUser()">Edit User</button>
-          <button class="btn btn-warning" *ngIf="canToggleStatus && !isDisabledUser" (click)="openDisableModal()">Disable User</button>
-          <button class="btn btn-enable" *ngIf="canToggleStatus && isDisabledUser" (click)="confirmEnable()"
-            [disabled]="isDisabling">{{ isDisabling ? 'Enabling...' : 'Enable User' }}</button>
-          <button class="btn btn-danger" *ngIf="canDelete" (click)="openDeleteModal()">Delete User</button>
+          <button class="btn-action btn-edit" *ngIf="hasPermission('USER_EDIT')" (click)="editUser()" title="Edit User"></button>
+          <button class="btn-action btn-disable" *ngIf="canToggleStatus && !isDisabledUser" (click)="openDisableModal()" title="Disable User"></button>
+          <button class="btn-action btn-enable" *ngIf="canToggleStatus && isDisabledUser" (click)="confirmEnable()"
+            [disabled]="isDisabling" title="Enable User"></button>
+          <button class="btn-action btn-delete" *ngIf="canDelete" (click)="openDeleteModal()" title="Delete User"></button>
         </div>
       </div>
     </div>
@@ -75,8 +75,8 @@
       <h2>Personal Information</h2>
       <div class="details-grid">
         <div class="detail-item">
-          <label>Full Name</label>
-          <span>{{ profile.name || '-' }}</span>
+          <label>Email Address</label>
+          <span>{{ profile.emailAddress || '-' }}</span>
         </div>
         <div class="detail-item">
           <label>First Name</label>
@@ -158,7 +158,7 @@
     <h3 class="modal-title">Confirm Disable</h3>
     <p class="modal-body">
       Are you sure you want to disable user
-      <strong>{{ profile?.userId }}</strong> ({{ profile?.name }})?
+      <strong>{{ profile?.userId }}</strong> ({{ profile?.emailAddress }})?
       <br />The user will no longer be able to log in.
     </p>
     <div class="modal-actions">
@@ -176,7 +176,7 @@
     <h3 class="modal-title">Confirm Delete</h3>
     <p class="modal-body">
       Are you sure you want to delete user
-      <strong>{{ profile?.userId }}</strong> ({{ profile?.name }})?
+      <strong>{{ profile?.userId }}</strong> ({{ profile?.emailAddress }})?
       <br />This action cannot be undone.
     </p>
     <div class="modal-actions">

@@ -10,17 +10,19 @@
         <div class="log-section">
             <div class="section-header">
                 <h2>User Activity Log</h2>
-                <button class="btn btn-refresh" (click)="loadUserLogs()">Refresh</button>
             </div>
 
             <!-- Search -->
             <div class="search-section">
                 <div class="search-box">
-                    <input type="text" class="search-input" [(ngModel)]="userSearchKeyword"
-                        (keyup.enter)="onUserSearch()"
-                        placeholder="Search by action, user ID, status..." />
+                    <div class="input-with-clear">
+                        <input type="text" class="search-input" [(ngModel)]="userSearchKeyword"
+                            (keyup.enter)="onUserSearch()"
+                            placeholder="Search by action, user ID, status..." />
+                        <span class="input-clear" *ngIf="userSearchKeyword" (click)="clearUserSearch()">&times;</span>
+                    </div>
                     <button class="btn btn-search" (click)="onUserSearch()">Search</button>
-                    <button class="btn btn-clear" *ngIf="userSearchKeyword" (click)="clearUserSearch()">Clear</button>
+                    <button class="btn btn-refresh" (click)="loadUserLogs()">Refresh</button>
                 </div>
                 <p class="result-count">Showing {{ filteredUserLogs.length }} record(s)</p>
             </div>
@@ -94,17 +96,19 @@
         <div class="log-section">
             <div class="section-header">
                 <h2>System Activity Log</h2>
-                <button class="btn btn-refresh" (click)="loadSystemLogs()">Refresh</button>
             </div>
 
             <!-- Search -->
             <div class="search-section">
                 <div class="search-box">
-                    <input type="text" class="search-input" [(ngModel)]="systemSearchKeyword"
-                        (keyup.enter)="onSystemSearch()"
-                        placeholder="Search by action, status..." />
+                    <div class="input-with-clear">
+                        <input type="text" class="search-input" [(ngModel)]="systemSearchKeyword"
+                            (keyup.enter)="onSystemSearch()"
+                            placeholder="Search by action, status..." />
+                        <span class="input-clear" *ngIf="systemSearchKeyword" (click)="clearSystemSearch()">&times;</span>
+                    </div>
                     <button class="btn btn-search" (click)="onSystemSearch()">Search</button>
-                    <button class="btn btn-clear" *ngIf="systemSearchKeyword" (click)="clearSystemSearch()">Clear</button>
+                    <button class="btn btn-refresh" (click)="loadSystemLogs()">Refresh</button>
                 </div>
                 <p class="result-count">Showing {{ filteredSystemLogs.length }} record(s)</p>
             </div>

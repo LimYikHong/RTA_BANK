@@ -138,7 +138,7 @@ public class ProfileService {
         UserProfile existing = profileRepository.findByUserIdAndDeletedAtIsNull(userId)
                 .orElseThrow(() -> new RuntimeException("User profile not found: " + userId));
 
-        existing.setName(newProfile.getName());
+        existing.setEmailAddress(newProfile.getEmailAddress());
         existing.setEmail(newProfile.getEmail());
         existing.setCompany(newProfile.getCompany());
         existing.setContact(newProfile.getContact());

@@ -1,6 +1,6 @@
     <!-- Header -->
     <div class="page-header">
-      <button class="back-btn" (click)="goBack()">← Back to Batch File Maintenance</button>
+      <button class="btn-back" (click)="goBack()">&lt; Back</button>
       <h1>Batch File Detail</h1>
     </div>
 
@@ -11,22 +11,19 @@
       <!-- File Summary Cards -->
       <div class="summary-cards">
         <div class="summary-card total">
-          <div class="card-icon">📄</div>
           <div class="card-value">{{ detail.totalRecordCount }}</div>
           <div class="card-label">Total Records</div>
         </div>
         <div class="summary-card success">
-          <div class="card-icon">✅</div>
+          <div class="card-icon"></div>
           <div class="card-value">{{ detail.successCount }}</div>
           <div class="card-label">Successful</div>
         </div>
         <div class="summary-card failed">
-          <div class="card-icon">❌</div>
           <div class="card-value">{{ detail.failCount }}</div>
           <div class="card-label">Failed</div>
         </div>
         <div class="summary-card rate">
-          <div class="card-icon">📊</div>
           <div class="card-value">{{ getSuccessRate() }}%</div>
           <div class="card-label">Success Rate</div>
         </div>
@@ -103,21 +100,22 @@
       <div class="detail-card transactions-card">
         <div class="txn-header">
           <h3>Transaction Records ({{ detail.transactionCount }})</h3>
-          <div class="txn-controls">
-            <input
-              type="text"
-              class="search-input"
-              placeholder="Search transactions..."
-              [(ngModel)]="searchTerm"
-              (input)="onFilterChange()"
-            />
+        </div>
+
+        <!-- Filter Section -->
+        <app-merchant-filter
+          [merchantIds]="merchantIds"
+          (search)="onFilterSearch($event)">
+          <!-- Status filter -->
+          <div class="filter-field">
+            <label>Status</label>
             <select class="filter-select" [(ngModel)]="statusFilter" (change)="onFilterChange()">
               <option value="ALL">All Status</option>
               <option value="SUCCESS">Success</option>
               <option value="FAILED">Failed</option>
             </select>
           </div>
-        </div>
+        </app-merchant-filter>
 
         <div class="table-container">
           <table class="data-table">

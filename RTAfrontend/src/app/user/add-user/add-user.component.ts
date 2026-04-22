@@ -14,7 +14,7 @@ import { AuthService } from '../../services/auth.service';
 export class AddUserComponent implements OnInit {
   newUser: UserProfile = {
     userId: '',
-    name: '',
+    emailAddress: '',
     email: '',
     company: '',
     contact: '',

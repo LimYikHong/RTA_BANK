@@ -2,12 +2,11 @@
       <h1>Batch File Result</h1>
     </div>
 
-    <!-- Search -->
-    <div class="toolbar">
-      <input type="text" [(ngModel)]="searchQuery" placeholder="Search by batch result name or merchant ID..."
-             (keyup.enter)="onSearch()" class="search-input" />
-      <button class="btn btn-primary" (click)="onSearch()">Search</button>
-    </div>
+    <!-- Filters -->
+    <app-merchant-filter
+      [merchantIds]="merchantIds"
+      (search)="onFilterSearch($event)">
+    </app-merchant-filter>
 
     <!-- Loading -->
     <div class="loading-text" *ngIf="isLoading">Loading batch file results...</div>
@@ -47,7 +46,7 @@
             <td class="date-cell">{{ report.createdAt | date:'yyyy-MM-dd HH:mm:ss' }}</td>
             <td class="action-cell">
               <button class="btn-action btn-view" title="View Result" (click)="downloadReport(report.reportId, $event)"></button>
-              <button class="btn-action btn-edit" title="Download Output" (click)="downloadOutput(report.reportId, $event)"></button>
+              <button class="btn-action btn-download" title="Download Output" (click)="downloadOutput(report.reportId, $event)"></button>
               <button class="btn-action btn-retry" title="Retry Send" (click)="retrySend(report, $event)"
                       *ngIf="report.sendStatus === 'FAILED' || report.sendStatus === 'PENDING'"
                       [disabled]="report._retrying"></button>

@@ -7,16 +7,37 @@
             </div>
         </div>
 
-        <!-- Search Bar -->
-        <div class="search-section">
-            <div class="search-box">
-                <input type="text" class="search-input" [(ngModel)]="searchKeyword" (keyup.enter)="onSearch()"
-                    placeholder="Search by name, username, email, ID, or company..." />
-                <button class="btn btn-search" (click)="onSearch()">Search</button>
-                <button class="btn btn-clear" *ngIf="searchKeyword" (click)="clearSearch()">Clear</button>
-                <button class="btn btn-add" *ngIf="hasPermission('USER_CREATE')" (click)="addUser()">Add User</button>
+        <!-- Filters -->
+        <app-merchant-filter
+          [merchantIds]="userIds"
+          [showDateRange]="false"
+          dropdownLabel="User ID"
+          dropdownPlaceholder="All Users"
+          (search)="onFilterSearch($event)">
+          <!-- Username search -->
+          <div class="filter-field">
+            <label>Username</label>
+            <div class="input-with-clear">
+              <input type="text" class="search-input" [(ngModel)]="searchKeyword" (keyup.enter)="onSearch()"
+                  placeholder="Search by username..." />
+              <span class="input-clear" *ngIf="searchKeyword" (click)="searchKeyword = ''; onSearch()">&times;</span>
             </div>
-            <p class="result-count">Showing {{ filteredUsers.length }} user(s)</p>
+          </div>
+          <!-- Role filter -->
+          <div class="filter-field">
+            <label>Role</label>
+            <select [(ngModel)]="roleFilter" class="filter-select">
+              <option value="">All Roles</option>
+              <option value="ADMIN">Admin</option>
+              <option value="SUPER_ADMIN">Super Admin</option>
+            </select>
+          </div>
+          <button filterActions class="btn-search" *ngIf="hasPermission('USER_CREATE')" (click)="addUser()" style="background:#000;">
+            Add User
+          </button>
+        </app-merchant-filter>
+        <div style="margin: 4px 0 12px; display: flex; align-items: center;">
+            <span class="result-count" style="margin-left: auto;">Showing {{ filteredUsers.length }} user(s)</span>
         </div>
 
         <!-- Loading Indicator -->
@@ -28,7 +49,7 @@
                 <thead>
                     <tr>
                         <th class="th-sort" (click)="sortBy('username')" [attr.data-sort]="sortKey==='username' ? sortDir : ''">Username</th>
-                        <th class="th-sort" (click)="sortBy('name')" [attr.data-sort]="sortKey==='name' ? sortDir : ''">Full Name</th>
+                        <th class="th-sort" (click)="sortBy('emailAddress')" [attr.data-sort]="sortKey==='emailAddress' ? sortDir : ''">Email Address</th>
                         <th class="th-sort" (click)="sortBy('email')" [attr.data-sort]="sortKey==='email' ? sortDir : ''">Email</th>
                         <th class="th-sort" (click)="sortBy('userId')" [attr.data-sort]="sortKey==='userId' ? sortDir : ''">User ID</th>
                         <th class="th-sort" (click)="sortBy('company')" [attr.data-sort]="sortKey==='company' ? sortDir : ''">Company</th>
@@ -41,7 +62,7 @@
                 <tbody>
                     <tr *ngFor="let user of sortedUsers">
                         <td>{{ user.username }}</td>
-                        <td>{{ user.name || '-' }}</td>
+                        <td>{{ user.emailAddress || '-' }}</td>
                         <td>{{ user.email || '-' }}</td>
                         <td>{{ user.userId || '-' }}</td>
                         <td>{{ user.company || '-' }}</td>
@@ -59,7 +80,7 @@
                         <td class="action-cell">
                             <button class="btn-action btn-view" (click)="viewUser(user)" title="View"></button>
                             <button class="btn-action btn-edit" *ngIf="hasPermission('USER_EDIT')" (click)="editUser(user)" title="Edit"></button>
-                            <button class="btn-action btn-delete" *ngIf="hasPermission('USER_DELETE')" (click)="openDeleteModal(user)" title="Delete"></button>
+                            <button class="btn-action btn-delete" *ngIf="hasPermission('USER_DELETE') && !isSelf(user)" (click)="openDeleteModal(user)" title="Delete"></button>
                         </td>
                     </tr>
                 </tbody>

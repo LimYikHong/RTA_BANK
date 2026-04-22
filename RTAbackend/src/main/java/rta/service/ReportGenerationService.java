@@ -1,27 +1,45 @@
 package rta.service;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.apache.poi.ss.usermodel.*;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.OutputStreamWriter;
+import java.io.PrintWriter;
+import java.nio.charset.StandardCharsets;
+import java.security.PrivateKey;
+import java.security.Signature;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.Base64;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.stream.Collectors;
+
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import rta.entity.*;
-import rta.repository.*;
 
-import javax.crypto.Cipher;
-import javax.crypto.KeyGenerator;
-import javax.crypto.SecretKey;
-import javax.crypto.spec.IvParameterSpec;
-import java.io.*;
-import java.nio.charset.StandardCharsets;
-import java.security.*;
-import java.security.spec.PKCS8EncodedKeySpec;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
-import java.util.*;
-import java.util.stream.Collectors;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import rta.entity.MerchantKey;
+import rta.entity.RtaFieldMapping;
+import rta.entity.RtaFileProfile;
+import rta.entity.RtaIncomingBatchFile;
+import rta.entity.RtaReport;
+import rta.entity.RtaTransaction;
+import rta.repository.MerchantKeyRepository;
+import rta.repository.RtaAuthorizationBatchRepository;
+import rta.repository.RtaBatchRepository;
+import rta.repository.RtaIncomingBatchFileRepository;
+import rta.repository.RtaReportRepository;
+import rta.repository.RtaTransactionRepository;
 
 /**
  * ReportGenerationService — Handles the full report generation pipeline: 1.
@@ -507,7 +525,7 @@ public class ReportGenerationService {
                 </head>
                 <body>
                   <div class="header">
-                    <h1>📊 Batch File Result</h1>
+                    <h1>Batch File Result</h1>
                     <p>Generated: %s</p>
                   </div>
                 

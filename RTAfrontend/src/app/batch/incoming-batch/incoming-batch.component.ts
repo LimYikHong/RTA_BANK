@@ -5,6 +5,7 @@ import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 import { AuthService } from '../../services/auth.service';
 import { BatchTimerService } from '../../services/batch-timer.service';
+import { MerchantFilterComponent, MerchantFilterValues } from '../../shared/merchant-filter/merchant-filter.component';
 
 interface IncomingBatchFile {
   batchFileId: number;
@@ -31,7 +32,7 @@ interface IncomingBatchFile {
 @Component({
   selector: 'app-incoming-batch',
   standalone: true,
-  imports: [CommonModule, RouterModule, FormsModule],
+  imports: [CommonModule, RouterModule, FormsModule, MerchantFilterComponent],
   templateUrl: './incoming-batch.component.html',
   styleUrl: './incoming-batch.component.scss'
 })
@@ -42,6 +43,12 @@ export class IncomingBatchComponent implements OnInit {
   filteredFiles: IncomingBatchFile[] = [];
   searchTerm = '';
   isLoading = true;
+
+  // Merchant filter
+  merchantIds: string[] = [];
+  merchantSelectedId = '';
+  dateFrom = '';
+  dateTo = '';
   
   // Retry validation
   retryingFileId: number | null = null;
@@ -121,6 +128,7 @@ export class IncomingBatchComponent implements OnInit {
       next: (data) => {
         this.incomingFiles = data;
         this.filteredFiles = data;
+        this.merchantIds = [...new Set(data.map(f => f.merchantId).filter(Boolean))].sort();
         this.isLoading = false;
       },
       error: (err) => {
@@ -131,11 +139,10 @@ export class IncomingBatchComponent implements OnInit {
   }
 
   onSearch(): void {
+    let list = this.incomingFiles;
     const term = this.searchTerm.toLowerCase().trim();
-    if (!term) {
-      this.filteredFiles = this.incomingFiles;
-    } else {
-      this.filteredFiles = this.incomingFiles.filter(f =>
+    if (term) {
+      list = list.filter(f =>
         f.storedFilename?.toLowerCase().includes(term) ||
         f.originalFilename?.toLowerCase().includes(term) ||
         f.merchantId?.toLowerCase().includes(term) ||
@@ -143,7 +150,27 @@ export class IncomingBatchComponent implements OnInit {
         f.createBy?.toLowerCase().includes(term)
       );
     }
+    if (this.merchantSelectedId) {
+      list = list.filter(f => f.merchantId === this.merchantSelectedId);
+    }
+    if (this.dateFrom) {
+      const from = new Date(this.dateFrom);
+      list = list.filter(f => f.createdAt && new Date(f.createdAt) >= from);
+    }
+    if (this.dateTo) {
+      const to = new Date(this.dateTo);
+      to.setHours(23, 59, 59, 999);
+      list = list.filter(f => f.createdAt && new Date(f.createdAt) <= to);
+    }
+    this.filteredFiles = list;
     this.currentPage = 1;
+  }
+
+  onFilterSearch(values: MerchantFilterValues): void {
+    this.merchantSelectedId = values.merchantId;
+    this.dateFrom = values.dateFrom;
+    this.dateTo = values.dateTo;
+    this.onSearch();
   }
 
   getStatusClass(status: string): string {

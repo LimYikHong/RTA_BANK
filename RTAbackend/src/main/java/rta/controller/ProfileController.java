@@ -287,7 +287,7 @@ public class ProfileController {
             Map<String, Object> map = new HashMap<>();
             map.put("id", u.getId());
             map.put("username", u.getUsername());
-            map.put("name", u.getName());
+            map.put("emailAddress", u.getEmailAddress());
             map.put("email", u.getEmail());
             map.put("userId", u.getUserId());
             map.put("company", u.getCompany());
@@ -310,7 +310,7 @@ public class ProfileController {
             Map<String, Object> map = new HashMap<>();
             map.put("id", u.getId());
             map.put("username", u.getUsername());
-            map.put("name", u.getName());
+            map.put("emailAddress", u.getEmailAddress());
             map.put("email", u.getEmail());
             map.put("userId", u.getUserId());
             map.put("company", u.getCompany());

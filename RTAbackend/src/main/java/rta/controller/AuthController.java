@@ -132,7 +132,7 @@ public class AuthController {
             // Build response with user profile, token, role, and permissions
             Map<String, Object> response = new HashMap<>();
             response.put("userId", user.getUserId());
-            response.put("name", user.getName());
+            response.put("emailAddress", user.getEmailAddress());
             response.put("email", user.getEmail());
             response.put("company", user.getCompany());
             response.put("contact", user.getContact());
