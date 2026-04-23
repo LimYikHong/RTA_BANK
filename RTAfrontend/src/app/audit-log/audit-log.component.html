@@ -1,17 +1,10 @@
         <!-- Page Header -->
         <div class="page-header">
-            <h1>Audit Log</h1>
-            <p class="subtitle">Track user and system activities across the platform</p>
+            <h1>User Activity Log</h1>
+            <p class="subtitle">Track user actions and login activities across the platform</p>
         </div>
 
-        <!-- ============================== -->
-        <!-- USER ACTIVITY LOG              -->
-        <!-- ============================== -->
         <div class="log-section">
-            <div class="section-header">
-                <h2>User Activity Log</h2>
-            </div>
-
             <!-- Search -->
             <div class="search-section">
                 <div class="search-box">
@@ -85,86 +78,6 @@
                 <ng-template #noUserLogs>
                     <div class="empty-state">
                         <p>No user activity logs found.</p>
-                    </div>
-                </ng-template>
-            </div>
-        </div>
-
-        <!-- ============================== -->
-        <!-- SYSTEM ACTIVITY LOG            -->
-        <!-- ============================== -->
-        <div class="log-section">
-            <div class="section-header">
-                <h2>System Activity Log</h2>
-            </div>
-
-            <!-- Search -->
-            <div class="search-section">
-                <div class="search-box">
-                    <div class="input-with-clear">
-                        <input type="text" class="search-input" [(ngModel)]="systemSearchKeyword"
-                            (keyup.enter)="onSystemSearch()"
-                            placeholder="Search by action, status..." />
-                        <span class="input-clear" *ngIf="systemSearchKeyword" (click)="clearSystemSearch()">&times;</span>
-                    </div>
-                    <button class="btn btn-search" (click)="onSystemSearch()">Search</button>
-                    <button class="btn btn-refresh" (click)="loadSystemLogs()">Refresh</button>
-                </div>
-                <p class="result-count">Showing {{ filteredSystemLogs.length }} record(s)</p>
-            </div>
-
-            <!-- Loading -->
-            <div class="loading-text" *ngIf="systemLoading">Loading system activity logs...</div>
-
-            <!-- Table -->
-            <div class="table-card" *ngIf="!systemLoading">
-                <table *ngIf="filteredSystemLogs.length > 0; else noSystemLogs">
-                    <thead>
-                        <tr>
-                            <th class="th-sort" (click)="systemSortBy('createdAt')"
-                                [attr.data-sort]="systemSortKey==='createdAt' ? systemSortDir : ''">Date &amp; Time</th>
-                            <th class="th-sort" (click)="systemSortBy('description')"
-                                [attr.data-sort]="systemSortKey==='description' ? systemSortDir : ''">Action</th>
-                            <th class="th-sort" (click)="systemSortBy('status')"
-                                [attr.data-sort]="systemSortKey==='status' ? systemSortDir : ''">Status</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr *ngFor="let log of sortedSystemLogs">
-                            <td>{{ log.createdAt | date: 'medium' }}</td>
-                            <td>{{ log.description || log.action }}</td>
-                            <td>
-                                <span class="status-badge" [ngClass]="getStatusClass(log.status)">
-                                    {{ log.status || '-' }}
-                                </span>
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
-
-                <!-- Pagination -->
-                <div class="pagination-section" *ngIf="systemTotalElements > 0">
-                    <div class="pagination-info">
-                        <div class="page-size-selector">
-                            <label>Rows:</label>
-                            <select [(ngModel)]="systemPageSize" (change)="onSystemPageSizeChange()" class="filter-select">
-                                <option *ngFor="let size of pageSizeOptions" [ngValue]="size">{{ size }}</option>
-                            </select>
-                        </div>
-                        <span>Showing {{ systemStartRecord }}–{{ systemEndRecord }} of {{ systemTotalElements }}</span>
-                    </div>
-                    <div class="pagination-controls">
-                        <button class="page-btn" (click)="goToSystemPage(1)" [disabled]="systemCurrentPage === 1">«</button>
-                        <button class="page-btn" (click)="goToSystemPage(systemCurrentPage - 1)" [disabled]="systemCurrentPage === 1">‹</button>
-                        <button *ngFor="let p of systemVisiblePages" class="page-btn" [class.active]="p === systemCurrentPage" (click)="goToSystemPage(p)">{{ p }}</button>
-                        <button class="page-btn" (click)="goToSystemPage(systemCurrentPage + 1)" [disabled]="systemCurrentPage === systemTotalPages">›</button>
-                        <button class="page-btn" (click)="goToSystemPage(systemTotalPages)" [disabled]="systemCurrentPage === systemTotalPages">»</button>
-                    </div>
-                </div>
-
-                <ng-template #noSystemLogs>
-                    <div class="empty-state">
-                        <p>No system activity logs found.</p>
                     </div>
                 </ng-template>
             </div>

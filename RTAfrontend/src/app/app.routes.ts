@@ -19,6 +19,7 @@ import { MerchantMaintenanceComponent } from './merchant/merchant-maintenance/me
 import { RecurringListComponent } from './recurring/recurring-list/recurring-list.component';
 import { RecurringDetailComponent } from './recurring/recurring-detail/recurring-detail.component';
 import { AuditLogComponent } from './audit-log/audit-log.component';
+import { SystemLogComponent } from './audit-log/system-log/system-log.component';
 import { CheckAuthResultComponent } from './batch/check-auth-result/check-auth-result.component';
 import { AuthResultDetailComponent } from './batch/auth-result-detail/auth-result-detail.component';
 import { ReportListComponent } from './report/report-list/report-list.component';
@@ -56,6 +57,7 @@ export const routes: Routes = [
       { path: 'edit-merchant/:merchantId', component: EditMerchantComponent, canActivate: [permissionGuard('MERCHANT_EDIT')] },
       { path: 'view-merchant/:merchantId', component: ViewMerchantComponent },
       { path: 'audit-log', component: AuditLogComponent },
+      { path: 'system-log', component: SystemLogComponent },
       { path: 'report-list', component: ReportListComponent },
       { path: 'report-detail/:reportId', component: ReportDetailComponent },
     ]
