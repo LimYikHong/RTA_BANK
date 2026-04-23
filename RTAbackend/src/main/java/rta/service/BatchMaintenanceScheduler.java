@@ -364,7 +364,13 @@ public class BatchMaintenanceScheduler {
                     + "Time: " + String.format("%.3f", updateAuthSec) + "s",
                     "SUCCESS");
 
+            // ── Pre-cache: load transactions once for steps 5-7 ──
+            List<RtaTransaction> cachedTxns = transactionRepository.findByBatchBatchId(batch.getBatchId());
+            String primaryMerchant = cachedTxns.isEmpty() ? batch.getMerchantIds()
+                    : cachedTxns.get(0).getMerchantId();
+
             // ── Step 5: Update existing RtaAuthorizationBatch with auth results ──
+            long step5StartMs = System.currentTimeMillis();
             long totalAmountCents = transactionRepository.sumAmountByBatchIdAndStatusSuccess(batch.getBatchId());
 
             // Find the auth batch created in Phase 1 via batch reference
@@ -401,16 +407,15 @@ public class BatchMaintenanceScheduler {
                 incomingFileRepository.save(bf);
             }
 
-            // ── Step 6: Send return batch file back to consumer (encrypted) ──
-            try {
-                List<RtaTransaction> processedTxns = transactionRepository
-                        .findByBatchBatchId(batch.getBatchId());
-                String primaryMerchant = processedTxns.isEmpty() ? batch.getMerchantIds()
-                        : processedTxns.get(0).getMerchantId();
+            long step5ElapsedMs = System.currentTimeMillis() - step5StartMs;
+            double step5Sec = step5ElapsedMs / 1000.0;
 
+            // ── Step 6: Send return batch file back to consumer (encrypted) ──
+            long step6StartMs = System.currentTimeMillis();
+            try {
                 ReturnBatchSendService.ReturnBatchResponse returnResponse
                         = returnBatchSendService.sendReturnBatch(
-                                batch, primaryMerchant, processedTxns,
+                                batch, primaryMerchant, cachedTxns,
                                 batch.getOriginalFileName(),
                                 authResponse.getApproved() + " approved, "
                                 + authResponse.getRejected() + " rejected");
@@ -434,19 +439,18 @@ public class BatchMaintenanceScheduler {
                         batch.getBatchId(), returnEx.getMessage(), returnEx);
             }
 
-            // ── Step 7: Send report summary to consumer (encrypted) ──
-            try {
-                List<RtaTransaction> allTxns = transactionRepository
-                        .findByBatchBatchId(batch.getBatchId());
-                String primaryMerchant = allTxns.isEmpty() ? batch.getMerchantIds()
-                        : allTxns.get(0).getMerchantId();
+            long step6ElapsedMs = System.currentTimeMillis() - step6StartMs;
+            double step6Sec = step6ElapsedMs / 1000.0;
 
-                int failedCount = allTxns.size() - authResponse.getApproved() - authResponse.getRejected();
+            // ── Step 7: Send report summary to consumer (encrypted) ──
+            long step7StartMs = System.currentTimeMillis();
+            try {
+                int failedCount = cachedTxns.size() - authResponse.getApproved() - authResponse.getRejected();
                 ReturnBatchSendService.ReportResponse reportResponse
                         = returnBatchSendService.sendReportSummary(
                                 batch, primaryMerchant,
                                 authResponse.getApproved(), authResponse.getRejected(),
-                                Math.max(failedCount, 0), allTxns);
+                                Math.max(failedCount, 0), cachedTxns);
 
                 if (reportResponse.isSuccess()) {
                     log.info("[BatchMaintenance] Report summary sent for batch {}", batch.getBatchId());
@@ -467,7 +471,11 @@ public class BatchMaintenanceScheduler {
                         batch.getBatchId(), reportEx.getMessage(), reportEx);
             }
 
+            long step7ElapsedMs = System.currentTimeMillis() - step7StartMs;
+            double step7Sec = step7ElapsedMs / 1000.0;
+
             // ── Step 8: Auto-generate batch file results ──
+            long step8StartMs = System.currentTimeMillis();
             try {
                 var results = reportGenerationService.generateReportsForProcessedBatches();
                 log.info("[BatchMaintenance] Auto-generated {} batch file result(s) for batch {}",
@@ -476,6 +484,9 @@ public class BatchMaintenanceScheduler {
                 log.error("[BatchMaintenance] Error auto-generating batch file results for batch {}: {}",
                         batch.getBatchId(), resultEx.getMessage(), resultEx);
             }
+
+            long step8ElapsedMs = System.currentTimeMillis() - step8StartMs;
+            double step8Sec = step8ElapsedMs / 1000.0;
 
             long totalElapsedMs = System.currentTimeMillis() - batchStartMs;
 
@@ -486,7 +497,9 @@ public class BatchMaintenanceScheduler {
                     "Batch #" + batch.getBatchId() + " sent to consumer and authorized — "
                     + authResponse.getApproved() + " approved, " + authResponse.getRejected() + " rejected. "
                     + "CSV: " + String.format("%.3f", csvElapsedSec) + "s, Send+Auth: " + String.format("%.3f", sendElapsedSec) + "s, "
-                    + "Update: " + String.format("%.3f", updateAuthSec) + "s, Total: " + String.format("%.3f", totalElapsedSec) + "s",
+                    + "Update: " + String.format("%.3f", updateAuthSec) + "s, StatusUpdate: " + String.format("%.3f", step5Sec) + "s, "
+                    + "ReturnBatch: " + String.format("%.3f", step6Sec) + "s, Report: " + String.format("%.3f", step7Sec) + "s, "
+                    + "GenResults: " + String.format("%.3f", step8Sec) + "s, Total: " + String.format("%.3f", totalElapsedSec) + "s",
                     "SUCCESS");
 
         } else {

@@ -1,8 +1,14 @@
 package rta.entity;
 
-import jakarta.persistence.*;
-import lombok.*;
 import java.time.LocalDateTime;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Entity
 @Table(name = "merchant_info")
@@ -68,4 +74,17 @@ public class MerchantInfo {
 
     @Column(name = "deleted_at")
     private LocalDateTime deletedAt;
+
+    // ── Merchant API endpoint configuration ──
+    @Column(name = "api_base_url")
+    private String apiBaseUrl;
+
+    @Column(name = "batch_return_path")
+    private String batchReturnPath;
+
+    @Column(name = "report_path")
+    private String reportPath;
+
+    @Column(name = "api_key")
+    private String apiKey;
 }

@@ -9,6 +9,9 @@
         {{ timer.minutes }}m {{ timer.secondsPadded }}s
       </span>
       <button class="btn btn-refresh" (click)="loadPage()">Refresh</button>
+      <button class="btn btn-primary" (click)="triggerManualRun()" [disabled]="isRunning" style="margin-left: 8px;">
+        {{ isRunning ? 'Running...' : '▶ Run Batch Now' }}
+      </button>
     </div>
 
     <!-- Loading -->

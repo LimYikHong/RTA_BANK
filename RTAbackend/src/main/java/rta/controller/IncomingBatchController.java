@@ -1463,7 +1463,8 @@ public class IncomingBatchController {
      */
     @GetMapping("/upload-history")
     public ResponseEntity<List<Map<String, Object>>> getUploadHistory() {
-        List<RtaUploadedFileHash> hashes = uploadedFileHashRepository.findAllByOrderByUploadedAtDesc();
+        // Exclude files received from external systems via internal API (createdBy='merchant')
+        List<RtaUploadedFileHash> hashes = uploadedFileHashRepository.findByCreatedByNotOrderByUploadedAtDesc("merchant");
 
         List<Map<String, Object>> result = new ArrayList<>();
         for (RtaUploadedFileHash h : hashes) {

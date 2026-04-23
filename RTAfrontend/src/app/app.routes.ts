@@ -20,6 +20,7 @@ import { RecurringListComponent } from './recurring/recurring-list/recurring-lis
 import { RecurringDetailComponent } from './recurring/recurring-detail/recurring-detail.component';
 import { AuditLogComponent } from './audit-log/audit-log.component';
 import { CheckAuthResultComponent } from './batch/check-auth-result/check-auth-result.component';
+import { AuthResultDetailComponent } from './batch/auth-result-detail/auth-result-detail.component';
 import { ReportListComponent } from './report/report-list/report-list.component';
 import { ReportDetailComponent } from './report/report-detail/report-detail.component';
 import { authGuard } from './services/auth.guard';
@@ -34,7 +35,7 @@ export const routes: Routes = [
     canActivate: [authGuard],
     children: [
       { path: 'dashboard', component: DashboardComponent },
-      { path: 'batch-list', component: BatchListComponent },
+      { path: 'upload-batch-file', component: BatchListComponent },
       { path: 'incoming-batch', component: IncomingBatchComponent },
       { path: 'batch-detail/:batchFileId', component: BatchDetailComponent },
       { path: 'batch-file-maintenance', component: BatchFileMaintenanceComponent },
@@ -42,6 +43,7 @@ export const routes: Routes = [
       { path: 'batch-maintenance', component: BatchMaintenanceComponent },
       { path: 'batch-maintenance-detail/:authBatchId', component: BatchMaintenanceDetailComponent },
       { path: 'check-auth-result', component: CheckAuthResultComponent },
+      { path: 'auth-result-detail/:authBatchId', component: AuthResultDetailComponent },
       { path: 'profile', component: ViewUserComponent },
       { path: 'users', component: UserManagementComponent },
       { path: 'view-user/:userId', component: ViewUserComponent },

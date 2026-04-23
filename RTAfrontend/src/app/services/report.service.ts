@@ -22,6 +22,8 @@ export interface RtaReport {
   digitalSignature: string | null;
   status: string;
   sendStatus: string;
+  validationStatus: string | null;
+  authStatus: string | null;
   sentAt: string | null;
   createdAt: string;
   createdBy: string;

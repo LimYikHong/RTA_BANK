@@ -3,7 +3,7 @@
     </div>
 
     <!-- ==================== Batch Selection (no detail selected) ==================== -->
-    <div *ngIf="!selectedBatch">
+    <div>
       <!-- Search by date range -->
       <div class="search-section">
         <div class="search-box">
@@ -53,7 +53,7 @@
               </td>
               <td class="date-cell">{{ b.lastModifiedAt | date:'yyyy-MM-dd HH:mm:ss' }}</td>
               <td class="action-cell">
-                <button class="btn btn-primary btn-sm" (click)="selectBatch(b)">View Results</button>
+                 <button class="btn-action btn-view" (click)="selectBatch(b)" title="View Results"></button>
               </td>
             </tr>
           </tbody>
@@ -76,143 +76,6 @@
             <button *ngFor="let p of visiblePages" class="page-btn" [class.active]="p === currentPage" (click)="goToPage(p)">{{ p }}</button>
             <button class="page-btn" (click)="goToPage(currentPage + 1)" [disabled]="currentPage === totalPages">›</button>
             <button class="page-btn" (click)="goToPage(totalPages)" [disabled]="currentPage === totalPages">»</button>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- ==================== Auth Result Detail ==================== -->
-    <div *ngIf="selectedBatch">
-      <button class="btn-back" (click)="clearSelection()" style="margin-bottom: 16px;">&lt; Back</button>
-
-      <!-- Loading -->
-      <div *ngIf="isLoadingDetail" class="loading-text">Loading authorization results...</div>
-
-      <div *ngIf="!isLoadingDetail">
-        <!-- Summary Cards -->
-        <div class="summary-section">
-          <div class="summary-header">
-            <h2>Batch: {{ selectedBatch.batchReference }}</h2>
-            <span class="status-badge large" [ngClass]="getStatusClass(selectedBatch.batchStatus)">{{ selectedBatch.batchStatus }}</span>
-          </div>
-
-          <div class="summary-cards">
-            <div class="summary-card total">
-              <div class="card-value">{{ transactions.length }}</div>
-              <div class="card-label">Total Transactions</div>
-            </div>
-            <div class="summary-card success">
-              <div class="card-value">{{ approvedCount }}</div>
-              <div class="card-label">Approved</div>
-            </div>
-            <div class="summary-card failed">
-              <div class="card-value">{{ failedCount }}</div>
-              <div class="card-label">Failed / Declined</div>
-            </div>
-            <div class="summary-card amount">
-              <div class="card-value">{{ pendingCount }}</div>
-              <div class="card-label">Pending</div>
-            </div>
-          </div>
-
-          <!-- Progress bar -->
-          <div class="progress-section" *ngIf="transactions.length > 0">
-            <div class="progress-bar">
-              <div class="progress-fill success-fill" [style.width.%]="(approvedCount / transactions.length) * 100"></div>
-            </div>
-            <p class="progress-text">{{ ((approvedCount / transactions.length) * 100) | number:'1.0-0' }}% approved</p>
-          </div>
-
-          <!-- Batch Info -->
-          <div class="batch-info">
-            <div class="info-row">
-              <span class="info-label">Created At:</span>
-              <span class="info-value">{{ selectedBatch.createdAt | date:'yyyy-MM-dd HH:mm:ss' }}</span>
-            </div>
-            <div class="info-row" *ngIf="selectedBatch.lastModifiedAt">
-              <span class="info-label">Last Modified:</span>
-              <span class="info-value">{{ selectedBatch.lastModifiedAt | date:'yyyy-MM-dd HH:mm:ss' }}</span>
-            </div>
-            <div class="info-row" *ngIf="selectedBatch.remark">
-              <span class="info-label">Remark:</span>
-              <span class="info-value">{{ selectedBatch.remark }}</span>
-            </div>
-          </div>
-        </div>
-
-        <!-- Toolbar: Filters -->
-        <app-merchant-filter
-          [merchantIds]="merchantIds"
-          filterStyle="margin-top: 20px"
-          (search)="onFilterSearch($event)">
-          <!-- Status filter -->
-          <div class="filter-field">
-            <label>Status</label>
-            <select [(ngModel)]="statusFilter" (change)="onStatusFilterChange()" class="filter-select">
-              <option value="">All</option>
-              <option value="APPROVED">Approved</option>
-              <option value="FAILED">Failed</option>
-              <option value="PENDING">Pending</option>
-            </select>
-          </div>
-        </app-merchant-filter>
-
-        <!-- Transaction Results Table -->
-        <div class="table-container" style="margin-top: 12px;">
-          <table class="data-table">
-            <thead>
-              <tr>
-                <th class="th-sort" (click)="sortBy('transactionId')" [attr.data-sort]="sortKey==='transactionId' ? sortDir : ''">Txn ID</th>
-                <th class="th-sort" (click)="sortBy('merchantId')" [attr.data-sort]="sortKey==='merchantId' ? sortDir : ''">Merchant ID</th>
-                <th class="th-sort" (click)="sortBy('merchantCustomer')" [attr.data-sort]="sortKey==='merchantCustomer' ? sortDir : ''">Customer</th>
-                <th class="th-sort" (click)="sortBy('maskedPan')" [attr.data-sort]="sortKey==='maskedPan' ? sortDir : ''">Masked PAN</th>
-                <th class="th-sort" (click)="sortBy('amount')" [attr.data-sort]="sortKey==='amount' ? sortDir : ''">Amount</th>
-                <th class="th-sort" (click)="sortBy('currency')" [attr.data-sort]="sortKey==='currency' ? sortDir : ''">Currency</th>
-                <th class="th-sort" (click)="sortBy('status')" [attr.data-sort]="sortKey==='status' ? sortDir : ''">Auth Result</th>
-                <th class="th-sort" (click)="sortBy('remark')" [attr.data-sort]="sortKey==='remark' ? sortDir : ''">Decision Reason</th>
-                <th class="th-sort" (click)="sortBy('authorizationDatetime')" [attr.data-sort]="sortKey==='authorizationDatetime' ? sortDir : ''">Auth Time</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr *ngFor="let txn of sortedTransactions">
-                <td>{{ txn.transactionId }}</td>
-                <td>{{ txn.merchantId }}</td>
-                <td>{{ txn.merchantCustomer }}</td>
-                <td class="monospace">{{ txn.maskedPan }}</td>
-                <td class="amount-cell">{{ formatAmount(txn.amount) }}</td>
-                <td class="count-cell">{{ txn.currency }}</td>
-                <td>
-                  <span class="status-badge" [ngClass]="getStatusClass(txn.status)">{{ txn.status }}</span>
-                </td>
-                <td class="remark-cell">{{ txn.remark || '–' }}</td>
-                <td class="date-cell">{{ txn.authorizationDatetime ? (txn.authorizationDatetime | date:'yyyy-MM-dd HH:mm:ss') : '–' }}</td>
-              </tr>
-              <tr *ngIf="txnTotalElements === 0">
-                <td colspan="9" class="no-data-cell">
-                  <div class="no-data"><p>No transactions found.</p></div>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-
-          <!-- Pagination -->
-          <div class="pagination-section" *ngIf="txnTotalElements > 0">
-            <div class="pagination-info">
-              <div class="page-size-selector">
-                <label>Rows:</label>
-                <select [(ngModel)]="txnPageSize" (change)="txnOnPageSizeChange()" class="filter-select">
-                  <option *ngFor="let size of txnPageSizeOptions" [ngValue]="size">{{ size }}</option>
-                </select>
-              </div>
-              <span>Showing {{ txnStartRecord }}–{{ txnEndRecord }} of {{ txnTotalElements }}</span>
-            </div>
-            <div class="pagination-controls">
-              <button class="page-btn" (click)="txnGoToPage(1)" [disabled]="txnCurrentPage === 1">«</button>
-              <button class="page-btn" (click)="txnGoToPage(txnCurrentPage - 1)" [disabled]="txnCurrentPage === 1">‹</button>
-              <button *ngFor="let p of txnVisiblePages" class="page-btn" [class.active]="p === txnCurrentPage" (click)="txnGoToPage(p)">{{ p }}</button>
-              <button class="page-btn" (click)="txnGoToPage(txnCurrentPage + 1)" [disabled]="txnCurrentPage === txnTotalPages">›</button>
-              <button class="page-btn" (click)="txnGoToPage(txnTotalPages)" [disabled]="txnCurrentPage === txnTotalPages">»</button>
-            </div>
           </div>
         </div>
       </div>

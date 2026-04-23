@@ -1,4 +1,5 @@
-// Shared styles come from _global-components.scss
+// Shared styles (page-header, btn-back, btn-action, btn-download, loading-text)
+// come from _global-components.scss
 
 .page-header {
   display: flex;
@@ -23,21 +24,6 @@
 .header-actions {
   display: flex;
   gap: 8px;
-}
-
-.btn-download-output {
-  background: #000000;
-  color: white;
-  padding: 8px 16px;
-  border: none;
-  border-radius: 8px;
-  cursor: pointer;
-  font-size: 13px;
-  font-weight: 600;
-
-  &:hover {
-    background: #7a7a7b;
-  }
 }
 
 .pdf-viewer-container {

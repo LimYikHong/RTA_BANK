@@ -1,110 +1,95 @@
     <div class="page-header">
       <button class="btn-back" (click)="back()">&lt; Back</button>
-      <h1>View Merchant</h1>
+      <div class="header-top">
+        <div>
+          <h1>View Merchant</h1>
+        </div>
+        <div class="header-actions">
+          <button class="btn-action btn-edit" (click)="editMerchant()" title="Edit Merchant"></button>
+          <button class="btn-action btn-delete" (click)="openDeleteModal()" title="Delete Merchant"></button>
+        </div>
+      </div>
     </div>
 
     <div class="loading-text" *ngIf="isLoading">Loading merchant data...</div>
 
-    <div class="form-card" *ngIf="!isLoading">
+    <div *ngIf="!isLoading">
 
       <!-- Merchant Identity -->
-      <div class="form-section">
-        <h3>Merchant Identity</h3>
-        <div class="form-row">
-          <div class="detail-group">
-            <label class="detail-label">Merchant ID</label>
-            <div class="detail-value id-value">{{ merchant.merchantId || '-' }}</div>
+      <div class="detail-card">
+        <h2>Merchant Identity</h2>
+        <div class="details-grid">
+          <div class="detail-item">
+            <label>Merchant ID</label>
+            <span class="id-value">{{ merchant.merchantId || '-' }}</span>
           </div>
-          <div class="detail-group">
-            <label class="detail-label">Name</label>
-            <div class="detail-value">{{ merchant.name || '-' }}</div>
+          <div class="detail-item">
+            <label>Name</label>
+            <span>{{ merchant.name || '-' }}</span>
           </div>
-        </div>
-        <div class="form-row">
-          <div class="detail-group">
-            <label class="detail-label">Username</label>
-            <div class="detail-value">{{ merchant.username || '-' }}</div>
+          <div class="detail-item">
+            <label>Username</label>
+            <span>{{ merchant.username || '-' }}</span>
           </div>
-          <div class="detail-group">
-            <label class="detail-label">Password</label>
-            <div class="detail-value password-mask">••••••••</div>
+          <div class="detail-item">
+            <label>Password</label>
+            <span class="password-mask">••••••••</span>
           </div>
-        </div>
-        <div class="form-row">
-          <div class="detail-group">
-            <label class="detail-label">Email</label>
-            <div class="detail-value">{{ merchant.email || '-' }}</div>
+          <div class="detail-item">
+            <label>Email</label>
+            <span>{{ merchant.email || '-' }}</span>
           </div>
-          <div class="detail-group">
-            <label class="detail-label">Company</label>
-            <div class="detail-value">{{ merchant.company || '-' }}</div>
+          <div class="detail-item">
+            <label>Company</label>
+            <span>{{ merchant.company || '-' }}</span>
           </div>
         </div>
       </div>
 
       <!-- Contact Information -->
-      <div class="form-section">
-        <h3>Contact Information</h3>
-        <div class="form-row">
-          <div class="detail-group">
-            <label class="detail-label">Contact Person</label>
-            <div class="detail-value">{{ merchant.contact || '-' }}</div>
+      <div class="detail-card">
+        <h2>Contact Information</h2>
+        <div class="details-grid">
+          <div class="detail-item">
+            <label>Contact Person</label>
+            <span>{{ merchant.contact || '-' }}</span>
           </div>
-          <div class="detail-group">
-            <label class="detail-label">Phone Number</label>
-            <div class="detail-value">{{ merchant.phone || '-' }}</div>
+          <div class="detail-item">
+            <label>Phone Number</label>
+            <span>{{ merchant.phone || '-' }}</span>
           </div>
-        </div>
-        <div class="form-row">
-          <div class="detail-group full-width">
-            <label class="detail-label">Address</label>
-            <div class="detail-value">{{ merchant.address || '-' }}</div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Metadata -->
-      <div class="form-section">
-        <h3>Record Information</h3>
-        <div class="form-row">
-          <div class="detail-group">
-            <label class="detail-label">Created By</label>
-            <div class="detail-value">{{ merchant.createBy || '-' }}</div>
-          </div>
-          <div class="detail-group">
-            <label class="detail-label">Joined On</label>
-            <div class="detail-value">{{ merchant.createdAt ? (merchant.createdAt | date: 'mediumDate') : '-' }}</div>
+          <div class="detail-item">
+            <label>Address</label>
+            <span>{{ merchant.address || '-' }}</span>
           </div>
         </div>
       </div>
 
       <!-- File Format Configuration -->
-      <div class="form-section">
-        <h3>
+      <div class="detail-card">
+        <h2>
           File Format Configuration
           <span class="profile-badge" [class.configured]="hasFileProfile" [class.default]="!hasFileProfile">
             {{ hasFileProfile ? 'Configured' : 'Default / Not Set' }}
           </span>
-        </h3>
+        </h2>
         <p class="section-desc" *ngIf="!hasFileProfile">No file format profile has been saved for this merchant. Showing default field mapping layout.</p>
-        <div class="form-row">
-          <div class="detail-group">
-            <label class="detail-label">File Type</label>
-            <div class="detail-value">{{ merchant.fileType || '-' }}</div>
+        <div class="details-grid">
+          <div class="detail-item">
+            <label>File Type</label>
+            <span>{{ merchant.fileType || '-' }}</span>
           </div>
-          <div class="detail-group">
-            <label class="detail-label">Field Delimiter</label>
-            <div class="detail-value">{{ getDelimiterLabel(merchant.fieldDelimiter || '') }}</div>
+          <div class="detail-item">
+            <label>Field Delimiter</label>
+            <span>{{ getDelimiterLabel(merchant.fieldDelimiter || '') }}</span>
           </div>
-        </div>
-        <div class="form-row">
-          <div class="detail-group">
-            <label class="detail-label">Has Header Row</label>
-            <div class="detail-value">{{ merchant.hasHeader ? 'Yes' : 'No' }}</div>
+          <div class="detail-item">
+            <label>Has Header Row</label>
+            <span>{{ merchant.hasHeader ? 'Yes' : 'No' }}</span>
           </div>
-          <div class="detail-group">
-            <label class="detail-label">Date Format</label>
-            <div class="detail-value">{{ merchant.dateFormat || '-' }}</div>
+          <div class="detail-item">
+            <label>Date Format</label>
+            <span>{{ merchant.dateFormat || '-' }}</span>
           </div>
         </div>
 
@@ -141,7 +126,7 @@
 
         <!-- Recurring Fields -->
         <div class="mapping-section" *ngIf="recurringFields.length > 0">
-          <h4 class="recurring-header">🔁 Recurring Information Fields</h4>
+          <h4 class="recurring-header">Recurring Information Fields</h4>
           <div class="mapping-table-wrapper">
             <table class="mapping-table">
               <thead>
@@ -201,49 +186,43 @@
       </div>
 
       <!-- Merchant RSA Public Key -->
-      <div class="form-section">
-        <h3>🔐 Merchant RSA Public Key</h3>
+      <div class="detail-card">
+        <h2>Merchant RSA Public Key</h2>
         <p class="section-desc">RSA key pairs are exchanged automatically between systems on startup. The key below is used to encrypt return batch files.</p>
         <div class="rsa-key-info" *ngIf="rsaKeyLoading">Loading key status...</div>
         <div class="rsa-key-info" *ngIf="!rsaKeyLoading && rsaKeyStatus">
-          <div class="form-row">
-            <div class="detail-group">
-              <label class="detail-label">Key Status</label>
-              <div class="detail-value">
-                <span class="key-status-badge" [class.active]="rsaKeyStatus.status === 'ACTIVE'">{{ rsaKeyStatus.status || 'N/A' }}</span>
-              </div>
+          <div class="details-grid">
+            <div class="detail-item">
+              <label>Key Status</label>
+              <span><span class="key-status-badge" [class.active]="rsaKeyStatus.status === 'ACTIVE'">{{ rsaKeyStatus.status || 'N/A' }}</span></span>
             </div>
-            <div class="detail-group">
-              <label class="detail-label">Version</label>
-              <div class="detail-value">{{ rsaKeyStatus.version || 'N/A' }}</div>
+            <div class="detail-item">
+              <label>Version</label>
+              <span>{{ rsaKeyStatus.version || 'N/A' }}</span>
+            </div>
+            <div class="detail-item">
+              <label>Activated At</label>
+              <span>{{ rsaKeyStatus.activatedAt ? (rsaKeyStatus.activatedAt | date:'medium') : 'N/A' }}</span>
+            </div>
+            <div class="detail-item">
+              <label>Expires At</label>
+              <span>{{ rsaKeyStatus.expiresAt ? (rsaKeyStatus.expiresAt | date:'medium') : 'N/A' }}</span>
             </div>
           </div>
-          <div class="form-row">
-            <div class="detail-group">
-              <label class="detail-label">Activated At</label>
-              <div class="detail-value">{{ rsaKeyStatus.activatedAt ? (rsaKeyStatus.activatedAt | date:'medium') : 'N/A' }}</div>
-            </div>
-          <div class="detail-group">
-            <label class="detail-label">Expires At</label>
-            <div class="detail-value">{{ rsaKeyStatus.expiresAt ? (rsaKeyStatus.expiresAt | date:'medium') : 'N/A' }}</div>
-          </div>
-        </div>
-        <div class="form-row" *ngIf="rsaKeyStatus">
-          <div class="detail-group">
-            <label class="detail-label">Days Elapsed</label>
-            <div class="detail-value">
+          <div class="details-grid" *ngIf="rsaKeyStatus" style="margin-top: 15px;">
+            <div class="detail-item">
+              <label>Days Elapsed</label>
               <span [style.color]="rsaKeyDaysElapsed >= 30 ? '#dc2626' : rsaKeyDaysElapsed >= 25 ? '#d97706' : '#16a34a'">{{ rsaKeyDaysElapsed }} days</span>
             </div>
-          </div>
-          <div class="detail-group">
-            <label class="detail-label">Rotation Window</label>
-            <div class="detail-value">
-              <span *ngIf="rsaKeyDaysElapsed < 25" style="color:#64748b;">Available from day 25</span>
-              <span *ngIf="rsaKeyDaysElapsed >= 25 && rsaKeyDaysElapsed < 30" style="color:#d97706; font-weight:600;">⚠ Rotation available now</span>
-              <span *ngIf="rsaKeyDaysElapsed >= 30" style="color:#dc2626; font-weight:600;">❌ Expired — request new key</span>
+            <div class="detail-item">
+              <label>Rotation Window</label>
+              <span>
+                <span *ngIf="rsaKeyDaysElapsed < 25" style="color:#64748b;">Available from day 25</span>
+                <span *ngIf="rsaKeyDaysElapsed >= 25 && rsaKeyDaysElapsed < 30" style="color:#d97706; font-weight:600;">⚠ Rotation available now</span>
+                <span *ngIf="rsaKeyDaysElapsed >= 30" style="color:#dc2626; font-weight:600;">❌ Expired — request new key</span>
+              </span>
             </div>
           </div>
-        </div>
         </div>
         <div class="rsa-key-info" *ngIf="!rsaKeyLoading && !rsaKeyStatus">
           <p class="no-key-msg">No RSA public key received from this merchant yet.</p>
@@ -252,22 +231,56 @@
           <button class="btn btn-rsa" (click)="generateRsaKey()" 
                   [disabled]="rsaKeyGenerating || rsaKeyStatus"
                   [title]="rsaKeyStatus ? 'Key already exists — keys are exchanged automatically' : 'Request RSA key for this merchant'">
-            {{ rsaKeyGenerating ? 'Requesting...' : (rsaKeyStatus ? '✅ Key Active' : '🔑 Request Key from Merchant') }}
+            {{ rsaKeyGenerating ? 'Requesting...' : (rsaKeyStatus ? 'Key Active' : 'Request Key from Merchant') }}
           </button>
           <button class="btn btn-rsa btn-rotate" *ngIf="rsaKeyStatus" (click)="rotateRsaKey()" 
                   [disabled]="rsaKeyRotating || !canRotateKey"
                   [title]="rotateButtonTooltip"
                   [class.btn-disabled]="!canRotateKey">
-            {{ rsaKeyRotating ? 'Rotating...' : '🔁 Rotate RSA Key' }}
+            {{ rsaKeyRotating ? 'Rotating...' : 'Rotate RSA Key' }}
           </button>
         </div>
       </div>
 
-      <!-- Actions -->
-      <div class="form-actions">
-        <button type="button" class="btn btn-cancel" (click)="back()">Back</button>
-        <button type="button" class="btn btn-edit-nav" [routerLink]="['/edit-merchant', merchant.merchantId]">
-          Edit Merchant
-        </button>
+      <!-- Maintenance Information -->
+      <div class="detail-card">
+        <h2>Maintenance Information</h2>
+        <div class="details-grid">
+          <div class="detail-item">
+            <label>Created By</label>
+            <span>{{ merchant.createBy || '-' }}</span>
+          </div>
+          <div class="detail-item">
+            <label>Created At</label>
+            <span>{{ merchant.createdAt ? (merchant.createdAt | date: 'medium') : '-' }}</span>
+          </div>
+          <div class="detail-item">
+            <label>Last Modified By</label>
+            <span>{{ merchant.lastModifiedBy || '-' }}</span>
+          </div>
+          <div class="detail-item">
+            <label>Last Modified At</label>
+            <span>{{ merchant.updatedAt ? (merchant.updatedAt | date: 'medium') : '-' }}</span>
+          </div>
+        </div>
       </div>
+
     </div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal-overlay" *ngIf="showDeleteModal" (click)="closeDeleteModal()">
+  <div class="modal-box" (click)="$event.stopPropagation()">
+    <h3 class="modal-title">Confirm Delete</h3>
+    <p class="modal-body">
+      Are you sure you want to delete merchant
+      <strong>{{ merchant.merchantId }}</strong> ({{ merchant.name }})?
+      <br />This action cannot be undone.
+    </p>
+    <div class="modal-actions">
+      <button class="btn btn-cancel-modal" (click)="closeDeleteModal()" [disabled]="isDeleting">Cancel</button>
+      <button class="btn btn-confirm-delete" (click)="confirmDelete()" [disabled]="isDeleting">
+        {{ isDeleting ? 'Deleting...' : 'Yes, Delete' }}
+      </button>
+    </div>
+  </div>
+</div>

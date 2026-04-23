@@ -1,18 +1,19 @@
 package rta.service;
 
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-import rta.entity.MerchantKey;
-import rta.repository.MerchantKeyRepository;
-
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.NoSuchAlgorithmException;
 import java.time.LocalDateTime;
 import java.util.Base64;
 import java.util.Optional;
+
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import rta.entity.MerchantKey;
+import rta.repository.MerchantKeyRepository;
 
 /**
  * RsaKeyService — Generates and manages RSA key pairs for merchants.
@@ -111,7 +112,7 @@ public class RsaKeyService {
                     .privateKeyPem(privateKeyPem)
                     .status("ACTIVE")
                     .activatedAt(LocalDateTime.now())
-                    .expiresAt(LocalDateTime.now().plusYears(2))
+                    .expiresAt(LocalDateTime.now().plusDays(30))
                     .createdAt(LocalDateTime.now())
                     .build();
 

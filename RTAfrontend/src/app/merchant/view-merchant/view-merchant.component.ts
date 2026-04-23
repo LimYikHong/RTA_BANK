@@ -17,6 +17,8 @@ export interface MerchantViewData {
   address: string;
   createdAt?: string;
   createBy?: string;
+  updatedAt?: string;
+  lastModifiedBy?: string;
   fileType?: string;
   fieldDelimiter?: string;
   hasHeader?: boolean;
@@ -261,6 +263,39 @@ export class ViewMerchantComponent implements OnInit {
 
   back(): void {
     this.router.navigate(['/merchant-maintenance']);
+  }
+
+  editMerchant(): void {
+    this.router.navigate(['/edit-merchant', this.merchantId]);
+  }
+
+  // Delete modal
+  showDeleteModal = false;
+  isDeleting = false;
+
+  openDeleteModal(): void {
+    this.showDeleteModal = true;
+  }
+
+  closeDeleteModal(): void {
+    this.showDeleteModal = false;
+  }
+
+  confirmDelete(): void {
+    this.isDeleting = true;
+    this.profileService.deleteMerchant(this.merchantId).subscribe({
+      next: () => {
+        this.isDeleting = false;
+        this.showDeleteModal = false;
+        alert('Merchant deleted successfully.');
+        this.router.navigate(['/merchant-maintenance']);
+      },
+      error: (err: any) => {
+        this.isDeleting = false;
+        console.error('Failed to delete merchant:', err);
+        alert('Failed to delete merchant.');
+      }
+    });
   }
 
   logout(): void {

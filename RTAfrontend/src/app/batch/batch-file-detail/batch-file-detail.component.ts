@@ -231,9 +231,15 @@ export class BatchFileDetailComponent implements OnInit {
   }
 
   // ---- Summary helpers ----
-  getSuccessRate(): number {
+  getValidationRate(): number {
     if (!this.detail || !this.detail.totalRecordCount) return 0;
     return Math.round((this.detail.successCount / this.detail.totalRecordCount) * 100);
+  }
+
+  getApprovedRate(): number {
+    if (!this.detail || !this.detail.transactions || this.detail.totalRecordCount === 0) return 0;
+    const approvedCount = this.detail.transactions.filter(t => t.status === 'APPROVED').length;
+    return Math.round((approvedCount / this.detail.totalRecordCount) * 100);
   }
 
   formatFileSize(bytes: number): string {

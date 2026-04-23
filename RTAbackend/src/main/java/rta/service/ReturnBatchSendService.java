@@ -71,23 +71,24 @@ import rta.repository.MerchantKeyRepository;
 @Slf4j
 public class ReturnBatchSendService {
 
-    @Value("${rta.consumer.base-url}")
-    private String consumerBaseUrl;
+    @Value("${rta.merchant.base-url}")
+    private String merchantBaseUrl;
 
-    @Value("${rta.consumer.batch-return-path}")
+    @Value("${rta.merchant.batch-return-path}")
     private String batchReturnPath;
 
-    @Value("${rta.consumer.report-path}")
+    @Value("${rta.merchant.report-path}")
     private String reportPath;
 
-    @Value("${rta.consumer.api-key}")
-    private String apiKey;
+    @Value("${rta.merchant.api-key}")
+    private String merchantApiKey;
 
     private final ConsumerKeyService consumerKeyService;
     private final InternalKeyPairService keyPairService;
     private final ObjectMapper objectMapper;
     private final AuditLogService auditLogService;
     private final MerchantKeyRepository merchantKeyRepository;
+    private final rta.repository.MerchantInfoRepository merchantInfoRepository;
 
     private RestTemplate restTemplate;
 
@@ -102,12 +103,14 @@ public class ReturnBatchSendService {
             InternalKeyPairService keyPairService,
             ObjectMapper objectMapper,
             AuditLogService auditLogService,
-            MerchantKeyRepository merchantKeyRepository) {
+            MerchantKeyRepository merchantKeyRepository,
+            rta.repository.MerchantInfoRepository merchantInfoRepository) {
         this.consumerKeyService = consumerKeyService;
         this.keyPairService = keyPairService;
         this.objectMapper = objectMapper;
         this.auditLogService = auditLogService;
         this.merchantKeyRepository = merchantKeyRepository;
+        this.merchantInfoRepository = merchantInfoRepository;
     }
 
     @PostConstruct
@@ -223,9 +226,29 @@ public class ReturnBatchSendService {
             String encryptedAesKeyBase64, String ivBase64,
             String originalFileName, String remarks,
             int transactionCount) {
-        String url = consumerBaseUrl + batchReturnPath;
+        // Resolve merchant-specific URL from DB, fall back to rta.merchant.* config
+        String baseUrl = merchantBaseUrl;
+        String path = batchReturnPath;
+        String key = merchantApiKey;
+        try {
+            var merchantOpt = merchantInfoRepository.findByMerchantId(merchantId);
+            if (merchantOpt.isPresent()) {
+                var merchant = merchantOpt.get();
+                if (merchant.getApiBaseUrl() != null && !merchant.getApiBaseUrl().isBlank()) {
+                    baseUrl = merchant.getApiBaseUrl();
+                    path = merchant.getBatchReturnPath() != null ? merchant.getBatchReturnPath() : batchReturnPath;
+                    key = merchant.getApiKey() != null ? merchant.getApiKey() : merchantApiKey;
+                    log.info("[ReturnBatch] Using merchant DB URL for {}: {}{}", merchantId, baseUrl, path);
+                }
+            }
+        } catch (Exception e) {
+            log.warn("[ReturnBatch] Failed to resolve merchant URL for {}, using default: {}", merchantId, e.getMessage());
+        }
+        String url = baseUrl + path;
+        String finalApiKey = key;
 
         for (int attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+            long attemptStartMs = System.currentTimeMillis();
             log.info("[ReturnBatch] Sending return batch {} to consumer (attempt {}/{}): {}",
                     batchId, attempt, MAX_RETRIES, url);
 
@@ -252,7 +275,7 @@ public class ReturnBatchSendService {
 
                 HttpHeaders headers = new HttpHeaders();
                 headers.setContentType(MediaType.MULTIPART_FORM_DATA);
-                headers.set("X-API-Key", apiKey);
+                headers.set("X-API-Key", finalApiKey);
 
                 HttpEntity<MultiValueMap<String, Object>> request = new HttpEntity<>(body, headers);
 
@@ -265,7 +288,8 @@ public class ReturnBatchSendService {
                     result.setSuccess(true);
                     result.setBatchId(batchId);
                     result.setMessage((String) responseBody.getOrDefault("message", "Return batch received"));
-                    log.info("[ReturnBatch] Return batch {} sent successfully", batchId);
+                    log.info("[ReturnBatch] Return batch {} sent successfully on attempt {} in {}ms",
+                            batchId, attempt, System.currentTimeMillis() - attemptStartMs);
                     auditLogService.logSystemActivity("SEND_RETURN_BATCH",
                             merchantId,
                             String.format("Sent encrypted return batch to consumer | BatchId: %d | "
@@ -279,11 +303,15 @@ public class ReturnBatchSendService {
                     throw new RuntimeException("Consumer returned HTTP " + response.getStatusCode());
                 }
             } catch (Exception e) {
-                log.warn("[ReturnBatch] Attempt {}/{} failed for batch {}: {}",
-                        attempt, MAX_RETRIES, batchId, e.getMessage());
+                long attemptElapsed = System.currentTimeMillis() - attemptStartMs;
+                log.warn("[ReturnBatch] Attempt {}/{} failed for batch {} in {}ms: {}",
+                        attempt, MAX_RETRIES, batchId, attemptElapsed, e.getMessage());
                 if (attempt < MAX_RETRIES) {
+                    long sleepMs = RETRY_DELAY_MS * attempt;
+                    log.info("[ReturnBatch] Sleeping {}ms before retry attempt {} for batch {}",
+                            sleepMs, attempt + 1, batchId);
                     try {
-                        Thread.sleep(RETRY_DELAY_MS * attempt);
+                        Thread.sleep(sleepMs);
                     } catch (InterruptedException ie) {
                         Thread.currentThread().interrupt();
                         break;
@@ -436,9 +464,29 @@ public class ReturnBatchSendService {
             String encryptedContentBase64,
             String encryptedAesKeyBase64,
             String ivBase64) {
-        String url = consumerBaseUrl + reportPath;
+        // Resolve merchant-specific URL from DB, fall back to rta.merchant.* config
+        String baseUrl = merchantBaseUrl;
+        String path = reportPath;
+        String key = merchantApiKey;
+        try {
+            var merchantOpt = merchantInfoRepository.findByMerchantId(merchantId);
+            if (merchantOpt.isPresent()) {
+                var merchant = merchantOpt.get();
+                if (merchant.getApiBaseUrl() != null && !merchant.getApiBaseUrl().isBlank()) {
+                    baseUrl = merchant.getApiBaseUrl();
+                    path = merchant.getReportPath() != null ? merchant.getReportPath() : reportPath;
+                    key = merchant.getApiKey() != null ? merchant.getApiKey() : merchantApiKey;
+                    log.info("[ReturnBatch] Using merchant DB URL for report {}: {}{}", merchantId, baseUrl, path);
+                }
+            }
+        } catch (Exception e) {
+            log.warn("[ReturnBatch] Failed to resolve merchant URL for report {}, using default: {}", merchantId, e.getMessage());
+        }
+        String url = baseUrl + path;
+        String finalApiKey = key;
 
         for (int attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+            long attemptStartMs = System.currentTimeMillis();
             log.info("[ReturnBatch] Sending report for batch {} to consumer (attempt {}/{}): {}",
                     batchId, attempt, MAX_RETRIES, url);
 
@@ -454,7 +502,7 @@ public class ReturnBatchSendService {
 
                 HttpHeaders headers = new HttpHeaders();
                 headers.setContentType(MediaType.APPLICATION_JSON);
-                headers.set("X-API-Key", apiKey);
+                headers.set("X-API-Key", finalApiKey);
 
                 HttpEntity<Map<String, Object>> request = new HttpEntity<>(body, headers);
 
@@ -466,7 +514,8 @@ public class ReturnBatchSendService {
                     result.setSuccess(true);
                     result.setBatchId(batchId);
                     result.setMessage("Report sent successfully");
-                    log.info("[ReturnBatch] Report for batch {} sent successfully", batchId);
+                    log.info("[ReturnBatch] Report for batch {} sent successfully on attempt {} in {}ms",
+                            batchId, attempt, System.currentTimeMillis() - attemptStartMs);
                     auditLogService.logSystemActivity("SEND_REPORT_SUMMARY",
                             merchantId,
                             String.format("Sent encrypted report summary to consumer | BatchId: %d | Endpoint: %s",
@@ -477,11 +526,15 @@ public class ReturnBatchSendService {
                     throw new RuntimeException("Consumer returned HTTP " + response.getStatusCode());
                 }
             } catch (Exception e) {
-                log.warn("[ReturnBatch] Report attempt {}/{} failed for batch {}: {}",
-                        attempt, MAX_RETRIES, batchId, e.getMessage());
+                long attemptElapsed = System.currentTimeMillis() - attemptStartMs;
+                log.warn("[ReturnBatch] Report attempt {}/{} failed for batch {} in {}ms: {}",
+                        attempt, MAX_RETRIES, batchId, attemptElapsed, e.getMessage());
                 if (attempt < MAX_RETRIES) {
+                    long sleepMs = RETRY_DELAY_MS * attempt;
+                    log.info("[ReturnBatch] Sleeping {}ms before report retry attempt {} for batch {}",
+                            sleepMs, attempt + 1, batchId);
                     try {
-                        Thread.sleep(RETRY_DELAY_MS * attempt);
+                        Thread.sleep(sleepMs);
                     } catch (InterruptedException ie) {
                         Thread.currentThread().interrupt();
                         break;

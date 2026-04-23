@@ -40,7 +40,7 @@ export const superAdminGuard: CanActivateFn = (route, state): boolean | UrlTree 
     return true;
   }
 
-  return router.createUrlTree(['/batch-list']);
+  return router.createUrlTree(['/upload-batch-file']);
 };
 
 /**
@@ -57,6 +57,6 @@ export function permissionGuard(requiredPermission: string): CanActivateFn {
       return true;
     }
 
-    return router.createUrlTree(['/batch-list']);
+    return router.createUrlTree(['/upload-batch-file']);
   };
 }

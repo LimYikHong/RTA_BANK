@@ -42,6 +42,7 @@ export class BatchMaintenanceComponent implements OnInit {
 
   pagedItems: AuthBatchItem[] = [];
   isLoading = true;
+  isRunning = false;
 
   // Pagination
   currentPage = 1;
@@ -164,6 +165,21 @@ export class BatchMaintenanceComponent implements OnInit {
   formatAmount(cents: number): string {
     if (cents == null) return '–';
     return (cents / 100).toFixed(2);
+  }
+
+  triggerManualRun(): void {
+    this.isRunning = true;
+    this.http.post<any>(`${this.apiUrl}/run`, {}).subscribe({
+      next: () => {
+        this.isRunning = false;
+        this.loadPage();
+      },
+      error: (err) => {
+        this.isRunning = false;
+        console.error('Manual batch run failed:', err);
+        alert('Batch run failed: ' + (err.error?.error || err.message));
+      }
+    });
   }
 
   getStatusClass(status: string): string {

@@ -39,6 +39,12 @@ public interface RtaUploadedFileHashRepository extends JpaRepository<RtaUploaded
     List<RtaUploadedFileHash> findAllByOrderByUploadedAtDesc();
 
     /**
+     * List upload hash records excluding files received from external systems
+     * via internal API (where createdBy='merchant').
+     */
+    List<RtaUploadedFileHash> findByCreatedByNotOrderByUploadedAtDesc(String createdBy);
+
+    /**
      * Find all upload hash records with a given file hash, across all
      * merchants. Used to detect cross-merchant duplicate file uploads.
      */

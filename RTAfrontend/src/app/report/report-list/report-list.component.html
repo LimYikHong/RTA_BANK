@@ -23,7 +23,8 @@
             <th>Approved</th>
             <th>Declined</th>
             <th>Amount</th>
-            <th>Status</th>
+            <th>Validation</th>
+            <th>Auth Status</th>
             <th>Send</th>
             <th>Created</th>
             <th>Actions</th>
@@ -31,7 +32,7 @@
         </thead>
         <tbody>
           <tr *ngIf="reports.length === 0">
-            <td colspan="11" style="text-align:center; padding:40px; color:#94a3b8;">No batch file results found. Results are auto-generated when batches are processed.</td>
+            <td colspan="12" style="text-align:center; padding:40px; color:#94a3b8;">No batch file results found. Results are auto-generated when batches are processed.</td>
           </tr>
           <tr *ngFor="let report of reports" (click)="viewReport(report.reportId)" class="clickable-row">
             <td class="report-name">{{ report.reportName }}</td>
@@ -41,11 +42,15 @@
             <td class="count-cell success-text">{{ report.approvedCount }}</td>
             <td class="count-cell failed-text">{{ report.declinedCount + report.failCount }}</td>
             <td class="amount-cell">{{ formatAmount(report.totalAmount) }}</td>
-            <td><span class="status-badge" [ngClass]="getStatusClass(report.status)">{{ report.status }}</span></td>
+            <td><span class="status-badge" [ngClass]="getValidationStatusClass(report.validationStatus || '')">{{ report.validationStatus || '-' }}</span></td>
+            <td>
+              <span *ngIf="report.validationStatus?.toUpperCase() === 'FAILED'">-</span>
+              <span *ngIf="report.validationStatus?.toUpperCase() !== 'FAILED'" class="status-badge" [ngClass]="getAuthStatusClass(report.authStatus || '')">{{ report.authStatus || '-' }}</span>
+            </td>
             <td><span class="status-badge" [ngClass]="getSendStatusClass(report.sendStatus)">{{ report.sendStatus }}</span></td>
             <td class="date-cell">{{ report.createdAt | date:'yyyy-MM-dd HH:mm:ss' }}</td>
             <td class="action-cell">
-              <button class="btn-action btn-view" title="View Result" (click)="downloadReport(report.reportId, $event)"></button>
+              <button class="btn-action btn-view" title="View Result" (click)="viewReport(report.reportId); $event.stopPropagation()"></button>
               <button class="btn-action btn-download" title="Download Output" (click)="downloadOutput(report.reportId, $event)"></button>
               <button class="btn-action btn-retry" title="Retry Send" (click)="retrySend(report, $event)"
                       *ngIf="report.sendStatus === 'FAILED' || report.sendStatus === 'PENDING'"

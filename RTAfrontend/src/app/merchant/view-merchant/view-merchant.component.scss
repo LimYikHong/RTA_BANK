@@ -3,6 +3,58 @@
 // field-error, field-checking, field-warn, form-actions, btn, btn-cancel,
 // btn-submit, section-desc, required, page-header) are in _global-components.scss
 
+// View detail card (consistent with view-user)
+.detail-card {
+  background: white;
+  padding: 30px;
+  border-radius: 10px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  margin-bottom: 24px;
+
+  h2 {
+    font-size: 18px;
+    font-weight: 600;
+    color: #334155;
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid #e2e8f0;
+  }
+}
+
+.details-grid {
+  display: grid;
+  grid-template-columns: 400px 400px;
+  gap: 15px 50px;
+}
+
+.detail-item {
+  width: 400px;
+
+  label {
+    display: block;
+    font-weight: bold;
+    color: #334155;
+    font-size: 13px;
+  }
+
+  span {
+    display: block;
+    margin-top: 2px;
+    color: #1e293b;
+    font-size: 15px;
+  }
+}
+
+.id-value {
+  font-weight: 600;
+  color: #065f46 !important;
+}
+
+.password-mask {
+  color: #94a3b8 !important;
+  letter-spacing: 2px;
+}
+
 // Mapping table section — module-specific
 .mapping-section {
   margin-top: 20px;
@@ -144,7 +196,7 @@
 .recurring-header {
   margin-top: 24px;
   margin-bottom: 8px;
-  color: #16a34a;
+  color: #000000;
   font-size: 15px;
 }
 
@@ -157,7 +209,7 @@
 
 .canonical-badge.recurring-badge {
   background-color: #dcfce7;
-  color: #166534;
+  color: #000000;
   border-color: #86efac;
 }
 
@@ -184,8 +236,8 @@
   margin-top: 12px;
   padding: 8px 16px;
   background-color: #f0fdf4;
-  color: #16a34a;
-  border: 1px dashed #86efac;
+  color: #ffffff;
+  border: 1px dashed #000000;
   border-radius: 8px;
   font-size: 13px;
   font-weight: 600;

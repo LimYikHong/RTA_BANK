@@ -1,7 +1,9 @@
-import { Component, ViewEncapsulation } from '@angular/core';
+import { Component, ViewEncapsulation, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterModule } from '@angular/router';
+import { Router, RouterModule } from '@angular/router';
 import { TopBarComponent } from '../top-bar/top-bar.component';
+import { AuthService } from '../services/auth.service';
+import { ProfileService } from '../services/profile.service';
 
 @Component({
   selector: 'app-layout',
@@ -11,10 +13,31 @@ import { TopBarComponent } from '../top-bar/top-bar.component';
   styleUrl: './layout.component.scss',
   encapsulation: ViewEncapsulation.None
 })
-export class LayoutComponent {
+export class LayoutComponent implements OnInit {
   drawerOpen = true;
+  userId: string | null = null;
+
+  constructor(
+    private authService: AuthService,
+    private profileService: ProfileService,
+    private router: Router
+  ) {}
+
+  ngOnInit(): void {
+    const profile = this.profileService.getProfile();
+    this.userId = profile?.userId ?? null;
+  }
 
   toggleDrawer() {
     this.drawerOpen = !this.drawerOpen;
+  }
+
+  goToProfile(): void {
+    this.router.navigate(['/profile']);
+  }
+
+  logout(): void {
+    this.authService.logout();
+    this.router.navigate(['/login']);
   }
 }

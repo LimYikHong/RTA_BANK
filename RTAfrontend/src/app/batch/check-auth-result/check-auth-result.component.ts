@@ -4,7 +4,7 @@ import { RouterModule, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { AuthService } from '../../services/auth.service';
-import { MerchantFilterComponent, MerchantFilterValues } from '../../shared/merchant-filter/merchant-filter.component';
+
 interface AuthBatchSummary {
   authBatchId: number;
   batchReference: string;
@@ -20,35 +20,6 @@ interface AuthBatchSummary {
   remark: string;
 }
 
-interface TransactionResult {
-  transactionId: number;
-  batchFileId: number;
-  merchantId: string;
-  merchantCustomer: string;
-  maskedPan: string;
-  amount: number;
-  currency: string;
-  actualBillingDate: string;
-  status: string;
-  remark: string;
-  authorizationDatetime: string;
-  createdAt: string;
-}
-
-interface BatchDetailData {
-  authBatchId: number;
-  batchReference: string;
-  totalCount: number;
-  successCount: number;
-  failCount: number;
-  totalAmountCents: number;
-  batchStatus: string;
-  createdAt: string;
-  lastModifiedAt: string;
-  remark: string;
-  transactions: TransactionResult[];
-}
-
 interface PagedResponse {
   content: AuthBatchSummary[];
   totalElements: number;
@@ -60,7 +31,7 @@ interface PagedResponse {
 @Component({
   selector: 'app-check-auth-result',
   standalone: true,
-  imports: [CommonModule, RouterModule, FormsModule, MerchantFilterComponent],
+  imports: [CommonModule, RouterModule, FormsModule],
   templateUrl: './check-auth-result.component.html',
   styleUrl: './check-auth-result.component.scss'
 })
@@ -76,25 +47,9 @@ export class CheckAuthResultComponent implements OnInit {
   totalPages = 1;
   totalElements = 0;
 
-  // --- Selected batch detail ---
-  selectedBatch: BatchDetailData | null = null;
-  isLoadingDetail = false;
-  transactions: TransactionResult[] = [];
-
-  // --- Transaction table sort + pagination ---
-  sortKey = '';
-  sortDir: 'asc' | 'desc' = 'asc';
-  txnCurrentPage = 1;
-  txnPageSize = 10;
-  txnPageSizeOptions = [10, 25, 50, 100];
+  // --- Selected batch detail (now in separate component) ---
 
   // --- Filter ---
-  statusFilter: string = '';
-  merchantSelectedId = '';
-  merchantIds: string[] = [];
-  txnDateFrom = '';
-  txnDateTo = '';
-  txnSearched = false;
   dateFrom = '';
   dateTo = '';
   batchSearched = false;
@@ -159,129 +114,7 @@ export class CheckAuthResultComponent implements OnInit {
   }
 
   selectBatch(batch: AuthBatchSummary): void {
-    this.isLoadingDetail = true;
-    this.selectedBatch = null;
-    this.transactions = [];
-    this.txnCurrentPage = 1;
-    this.statusFilter = '';
-    this.merchantSelectedId = '';
-    this.txnDateFrom = '';
-    this.txnDateTo = '';
-    this.txnSearched = false;
-
-    this.http.get<BatchDetailData>(`${this.apiUrl}/detail/${batch.authBatchId}`).subscribe({
-      next: (data) => {
-        this.selectedBatch = data;
-        this.transactions = data.transactions || [];
-        // Build merchant ID list from transactions
-        this.merchantIds = [...new Set(this.transactions.map(t => t.merchantId).filter(Boolean))].sort();
-        this.isLoadingDetail = false;
-      },
-      error: (err) => {
-        console.error('Failed to load batch detail:', err);
-        this.isLoadingDetail = false;
-      }
-    });
-  }
-
-  clearSelection(): void {
-    this.selectedBatch = null;
-    this.transactions = [];
-  }
-
-  // ===================== Transaction Table =====================
-
-  get filteredTransactions(): TransactionResult[] {
-    let list = this.transactions;
-    if (this.statusFilter) {
-      list = list.filter(t => t.status === this.statusFilter);
-    }
-    if (this.txnSearched) {
-      if (this.merchantSelectedId) {
-        list = list.filter(t => t.merchantId === this.merchantSelectedId);
-      }
-      if (this.txnDateFrom) {
-        const from = new Date(this.txnDateFrom);
-        list = list.filter(t => t.createdAt && new Date(t.createdAt) >= from);
-      }
-      if (this.txnDateTo) {
-        const to = new Date(this.txnDateTo);
-        to.setHours(23, 59, 59, 999);
-        list = list.filter(t => t.createdAt && new Date(t.createdAt) <= to);
-      }
-    }
-    return list;
-  }
-
-  onTxnSearch(): void {
-    this.txnSearched = true;
-    this.txnCurrentPage = 1;
-  }
-
-  onStatusFilterChange(): void {
-    this.txnCurrentPage = 1;
-  }
-
-  onClearTxnFilters(): void {
-    this.merchantSelectedId = '';
-    this.txnDateFrom = '';
-    this.txnDateTo = '';
-    this.txnSearched = false;
-    this.txnCurrentPage = 1;
-  }
-
-  onFilterSearch(values: MerchantFilterValues): void {
-    this.merchantSelectedId = values.merchantId;
-    this.txnDateFrom = values.dateFrom;
-    this.txnDateTo = values.dateTo;
-    this.txnSearched = true;
-    this.txnCurrentPage = 1;
-  }
-
-  sortBy(key: string): void {
-    if (this.sortKey === key) {
-      this.sortDir = this.sortDir === 'asc' ? 'desc' : 'asc';
-    } else {
-      this.sortKey = key;
-      this.sortDir = 'asc';
-    }
-  }
-
-  get sortedTransactions(): TransactionResult[] {
-    let list = [...this.filteredTransactions];
-    if (this.sortKey) {
-      list.sort((a, b) => {
-        const av = (a as any)[this.sortKey] ?? '';
-        const bv = (b as any)[this.sortKey] ?? '';
-        const cmp = String(av).localeCompare(String(bv), undefined, { numeric: true });
-        return this.sortDir === 'asc' ? cmp : -cmp;
-      });
-    }
-    const start = (this.txnCurrentPage - 1) * this.txnPageSize;
-    return list.slice(start, start + this.txnPageSize);
-  }
-
-  get txnTotalElements(): number { return this.filteredTransactions.length; }
-  get txnTotalPages(): number { return Math.max(1, Math.ceil(this.filteredTransactions.length / this.txnPageSize)); }
-  get txnStartRecord(): number { return this.txnTotalElements === 0 ? 0 : (this.txnCurrentPage - 1) * this.txnPageSize + 1; }
-  get txnEndRecord(): number { return Math.min(this.txnCurrentPage * this.txnPageSize, this.txnTotalElements); }
-
-  get txnVisiblePages(): number[] {
-    const pages: number[] = [];
-    const maxVisible = 5;
-    let start = Math.max(1, this.txnCurrentPage - Math.floor(maxVisible / 2));
-    let end = start + maxVisible - 1;
-    if (end > this.txnTotalPages) { end = this.txnTotalPages; start = Math.max(1, end - maxVisible + 1); }
-    for (let i = start; i <= end; i++) pages.push(i);
-    return pages;
-  }
-
-  txnGoToPage(page: number): void {
-    if (page >= 1 && page <= this.txnTotalPages) this.txnCurrentPage = page;
-  }
-
-  txnOnPageSizeChange(): void {
-    this.txnCurrentPage = 1;
+    this.router.navigate(['/auth-result-detail', batch.authBatchId]);
   }
 
   // ===================== Pagination (batch list) =====================
@@ -301,18 +134,6 @@ export class CheckAuthResultComponent implements OnInit {
   }
 
   // ===================== Helpers =====================
-
-  get approvedCount(): number {
-    return this.transactions.filter(t => t.status === 'APPROVED').length;
-  }
-
-  get failedCount(): number {
-    return this.transactions.filter(t => t.status === 'FAILED').length;
-  }
-
-  get pendingCount(): number {
-    return this.transactions.filter(t => t.status === 'PENDING').length;
-  }
 
   formatAmount(cents: number): string {
     if (cents == null) return '–';

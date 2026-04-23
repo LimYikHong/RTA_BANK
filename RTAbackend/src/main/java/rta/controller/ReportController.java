@@ -1,18 +1,33 @@
 package rta.controller;
 
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.http.*;
-import org.springframework.web.bind.annotation.*;
-import rta.entity.RtaReport;
-import rta.repository.RtaReportRepository;
-import rta.service.ReportGenerationService;
-
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.http.ContentDisposition;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import rta.entity.RtaReport;
+import rta.entity.RtaTransaction;
+import rta.repository.RtaAuthorizationBatchRepository;
+import rta.repository.RtaIncomingBatchFileRepository;
+import rta.repository.RtaReportRepository;
+import rta.repository.RtaTransactionRepository;
+import rta.service.ReportGenerationService;
 
 /**
  * ReportController — REST endpoints for the Report module.
@@ -36,6 +51,9 @@ import java.util.Map;
 public class ReportController {
 
     private final RtaReportRepository reportRepository;
+    private final RtaTransactionRepository transactionRepository;
+    private final RtaIncomingBatchFileRepository incomingFileRepository;
+    private final RtaAuthorizationBatchRepository authBatchRepository;
     private final ReportGenerationService reportGenerationService;
 
     /**
@@ -62,7 +80,60 @@ public class ReportController {
         }
 
         Map<String, Object> response = new LinkedHashMap<>();
-        response.put("content", reportPage.getContent());
+
+        // Enrich each report with validationStatus and authStatus
+        List<Map<String, Object>> enrichedReports = new java.util.ArrayList<>();
+        for (RtaReport report : reportPage.getContent()) {
+            Map<String, Object> rMap = new LinkedHashMap<>();
+            rMap.put("reportId", report.getReportId());
+            rMap.put("merchantId", report.getMerchantId());
+            rMap.put("batchFileId", report.getBatchFileId());
+            rMap.put("batchId", report.getBatchId());
+            rMap.put("authBatchId", report.getAuthBatchId());
+            rMap.put("reportName", report.getReportName());
+            rMap.put("reportType", report.getReportType());
+            rMap.put("fileFormat", report.getFileFormat());
+            rMap.put("totalRecords", report.getTotalRecords());
+            rMap.put("successCount", report.getSuccessCount());
+            rMap.put("failCount", report.getFailCount());
+            rMap.put("approvedCount", report.getApprovedCount());
+            rMap.put("declinedCount", report.getDeclinedCount());
+            rMap.put("totalAmount", report.getTotalAmount());
+            rMap.put("status", report.getStatus());
+            rMap.put("sendStatus", report.getSendStatus());
+            rMap.put("sentAt", report.getSentAt());
+            rMap.put("createdAt", report.getCreatedAt());
+            rMap.put("createdBy", report.getCreatedBy());
+
+            // Resolve validation status from incoming batch file
+            String validationStatus = null;
+            if (report.getBatchFileId() != null) {
+                validationStatus = incomingFileRepository.findById(report.getBatchFileId())
+                        .map(f -> f.getFileStatus()).orElse(null);
+            }
+            rMap.put("validationStatus", validationStatus);
+
+            // Resolve auth status from auth batch
+            String authStatus = null;
+            Long authBatchId = report.getAuthBatchId();
+            if (authBatchId == null && report.getBatchFileId() != null) {
+                authBatchId = transactionRepository.findByBatchFileId(report.getBatchFileId()).stream()
+                        .map(RtaTransaction::getAuthBatchId)
+                        .filter(id -> id != null)
+                        .findFirst().orElse(null);
+            }
+            if (validationStatus != null && validationStatus.equalsIgnoreCase("FAILED")) {
+                authStatus = null; // validation failed, no auth
+            } else if (authBatchId != null) {
+                authStatus = authBatchRepository.findById(authBatchId)
+                        .map(b -> b.getBatchStatus()).orElse(null);
+            }
+            rMap.put("authStatus", authStatus);
+
+            enrichedReports.add(rMap);
+        }
+
+        response.put("content", enrichedReports);
         response.put("totalElements", reportPage.getTotalElements());
         response.put("totalPages", reportPage.getTotalPages());
         response.put("number", reportPage.getNumber());
@@ -77,7 +148,44 @@ public class ReportController {
     @GetMapping("/{reportId}")
     public ResponseEntity<?> getReport(@PathVariable Long reportId) {
         return reportRepository.findById(reportId)
-                .<ResponseEntity<?>>map(ResponseEntity::ok)
+                .<ResponseEntity<?>>map(report -> {
+                    Map<String, Object> result = new LinkedHashMap<>();
+                    result.put("reportId", report.getReportId());
+                    result.put("merchantId", report.getMerchantId());
+                    result.put("batchFileId", report.getBatchFileId());
+                    result.put("batchId", report.getBatchId());
+                    result.put("reportName", report.getReportName());
+                    result.put("reportType", report.getReportType());
+                    result.put("fileFormat", report.getFileFormat());
+                    result.put("storageUri", report.getStorageUri());
+                    result.put("outputFileUri", report.getOutputFileUri());
+                    result.put("totalRecords", report.getTotalRecords());
+                    result.put("successCount", report.getSuccessCount());
+                    result.put("failCount", report.getFailCount());
+                    result.put("approvedCount", report.getApprovedCount());
+                    result.put("declinedCount", report.getDeclinedCount());
+                    result.put("totalAmount", report.getTotalAmount());
+                    result.put("digitalSignature", report.getDigitalSignature());
+                    result.put("status", report.getStatus());
+                    result.put("sendStatus", report.getSendStatus());
+                    result.put("sentAt", report.getSentAt());
+                    result.put("createdAt", report.getCreatedAt());
+                    result.put("createdBy", report.getCreatedBy());
+
+                    // Resolve authBatchId: use entity value, or look up from transactions
+                    Long authBatchId = report.getAuthBatchId();
+                    if (authBatchId == null && report.getBatchFileId() != null) {
+                        List<RtaTransaction> txns = transactionRepository.findByBatchFileId(report.getBatchFileId());
+                        authBatchId = txns.stream()
+                                .map(RtaTransaction::getAuthBatchId)
+                                .filter(id -> id != null)
+                                .findFirst()
+                                .orElse(null);
+                    }
+                    result.put("authBatchId", authBatchId);
+
+                    return ResponseEntity.ok(result);
+                })
                 .orElse(ResponseEntity.notFound().build());
     }
 

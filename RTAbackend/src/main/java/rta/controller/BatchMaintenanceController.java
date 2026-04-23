@@ -19,6 +19,8 @@ import org.springframework.web.bind.annotation.RestController;
 import rta.entity.RtaAuthorizationBatch;
 import rta.entity.RtaBatch;
 import rta.entity.RtaTransaction;
+import rta.repository.MerchantBankAccRepository;
+import rta.repository.MerchantInfoRepository;
 import rta.repository.RtaAuthorizationBatchRepository;
 import rta.repository.RtaBatchRepository;
 import rta.repository.RtaIncomingBatchFileRepository;
@@ -38,17 +40,23 @@ public class BatchMaintenanceController {
     private final RtaBatchRepository batchRepository;
     private final RtaTransactionRepository transactionRepository;
     private final RtaIncomingBatchFileRepository incomingFileRepository;
+    private final MerchantInfoRepository merchantInfoRepository;
+    private final MerchantBankAccRepository merchantBankAccRepository;
     private final BatchMaintenanceScheduler batchScheduler;
 
     public BatchMaintenanceController(RtaAuthorizationBatchRepository authBatchRepository,
             RtaBatchRepository batchRepository,
             RtaTransactionRepository transactionRepository,
             RtaIncomingBatchFileRepository incomingFileRepository,
+            MerchantInfoRepository merchantInfoRepository,
+            MerchantBankAccRepository merchantBankAccRepository,
             BatchMaintenanceScheduler batchScheduler) {
         this.authBatchRepository = authBatchRepository;
         this.batchRepository = batchRepository;
         this.transactionRepository = transactionRepository;
         this.incomingFileRepository = incomingFileRepository;
+        this.merchantInfoRepository = merchantInfoRepository;
+        this.merchantBankAccRepository = merchantBankAccRepository;
         this.batchScheduler = batchScheduler;
     }
 
@@ -135,8 +143,28 @@ public class BatchMaintenanceController {
             }
             result.put("files", fileList);
 
-            // Get transactions in this batch
+            // Resolve merchant info from the incoming batch file via transaction's batchFileId
             List<RtaTransaction> transactions = transactionRepository.findByAuthBatchId(authBatchId);
+            if (!transactions.isEmpty()) {
+                Long firstBatchFileId = transactions.get(0).getBatchFileId();
+                incomingFileRepository.findById(firstBatchFileId).ifPresent(incomingFile -> {
+                    String merchantId = incomingFile.getMerchantId();
+                    if (merchantId != null) {
+                        merchantInfoRepository.findByMerchantId(merchantId).ifPresent(merchant -> {
+                            result.put("merchantId", merchant.getMerchantId());
+                            result.put("merchantName", merchant.getName());
+                            result.put("merchantContact", merchant.getContact());
+                            if (merchant.getAccountId() != null) {
+                                merchantBankAccRepository.findById(merchant.getAccountId()).ifPresent(acc -> {
+                                    result.put("merchantAccount", acc.getMerchantAccNum());
+                                });
+                            }
+                        });
+                    }
+                });
+            }
+
+            // Get transactions in this batch
             List<Map<String, Object>> txnList = new ArrayList<>();
             for (RtaTransaction txn : transactions) {
                 Map<String, Object> txnMap = new LinkedHashMap<>();

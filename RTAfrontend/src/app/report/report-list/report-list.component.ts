@@ -158,6 +158,27 @@ export class ReportListComponent implements OnInit {
     }
   }
 
+  getValidationStatusClass(status: string): string {
+    switch (status?.toUpperCase()) {
+      case 'VALIDATED': return 'status-completed';
+      case 'PROCESSING': return 'status-processing';
+      case 'FAILED': return 'status-failed';
+      case 'RECEIVED': return 'status-received';
+      default: return 'status-pending';
+    }
+  }
+
+  getAuthStatusClass(status: string): string {
+    switch (status?.toUpperCase()) {
+      case 'COMPLETED': return 'status-completed';
+      case 'SENT': return 'status-completed';
+      case 'PROCESSING': return 'status-processing';
+      case 'FAILED': return 'status-failed';
+      case 'PENDING': return 'status-pending';
+      default: return 'status-received';
+    }
+  }
+
   getSendStatusClass(status: string): string {
     switch (status?.toUpperCase()) {
       case 'SENT': return 'status-completed';
