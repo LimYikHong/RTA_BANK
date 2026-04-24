@@ -211,13 +211,33 @@
 }
 
 // ── RSA Key Management Card ──────────────────────────────────────────
+.system-info-row {
+  display: flex;
+  gap: 14px;
+  margin-bottom: 20px;
+  align-items: stretch;
+
+  @media (max-width: 700px) { flex-direction: column; }
+}
+
+.system-avg-card {
+  flex: 0 0 auto;
+  min-width: 180px;
+  padding: 18px 20px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  cursor: default;
+}
+
 .rsa-key-card {
   background: #ffffff;
   border: 1px solid #e2e8f0;
   border-left: 4px solid #1e40af;
   border-radius: 4px;
   padding: 18px 24px;
-  margin-bottom: 20px;
+  flex: 1;
+  margin-bottom: 0;
 }
 
 .rsa-key-header {

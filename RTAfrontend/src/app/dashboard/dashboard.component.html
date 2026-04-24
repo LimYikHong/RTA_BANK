@@ -39,14 +39,16 @@
                 <div class="kpi-value" [class.kpi-skeleton]="loading || !stats">{{ stats ? stats.adminUsers : '—' }}</div>
                 <div class="kpi-label">Admin Users</div>
             </div>
-            <div class="kpi-card kpi-green">
+        </div>
+
+        <!-- ── System Avg Time + RSA Key Status (same row) ───────── -->
+        <div class="system-info-row">
+            <div class="kpi-card kpi-green system-avg-card">
                 <div class="kpi-value" [class.kpi-skeleton]="loading || !stats">{{ stats ? formattedAvgProcessingTime : '—' }}</div>
                 <div class="kpi-label">Avg Processing Time</div>
             </div>
-        </div>
 
-        <!-- ── System RSA Key Status ─────────────────────────────── -->
-        <div class="rsa-key-card" *ngIf="isSuperAdmin">
+            <div class="rsa-key-card" *ngIf="isSuperAdmin">
             <div class="rsa-key-header">
                 <div class="rsa-key-info">
                     <h3>System RSA Key Status</h3>
@@ -78,6 +80,7 @@
             </div>
             <div *ngIf="rsaKeyStatus && !rsaKeyStatus.hasKey" style="color:#64748b; font-size:13px; padding:8px 0;">No system RSA key record yet — keys are auto-exchanged on first use.</div>
             <div *ngIf="!rsaKeyStatus" style="color:#64748b; font-size:13px; padding:8px 0;">Loading key status...</div>
+        </div>
         </div>
 
         <!-- ── Merchant Key Management ───────────────────────────────── -->
