@@ -133,6 +133,7 @@
                 <th class="th-sort" (click)="sortBy('currency')" [attr.data-sort]="sortKey==='currency' ? sortDir : ''">Currency</th>
                 <th class="th-sort" (click)="sortBy('actualBillingDate')" [attr.data-sort]="sortKey==='actualBillingDate' ? sortDir : ''">Billing Date</th>
                 <th class="th-sort" (click)="sortBy('recurringIndicator')" [attr.data-sort]="sortKey==='recurringIndicator' ? sortDir : ''">Recurring</th>
+                <th class="th-sort" (click)="sortBy('validationStatus')" [attr.data-sort]="sortKey==='validationStatus' ? sortDir : ''">Validation</th>
                 <th class="th-sort" (click)="sortBy('status')" [attr.data-sort]="sortKey==='status' ? sortDir : ''">Status</th>
                 <th class="th-sort" (click)="sortBy('remark')" [attr.data-sort]="sortKey==='remark' ? sortDir : ''">Remark</th>
               </tr>
@@ -151,12 +152,15 @@
                   <span *ngIf="!txn.isRecurring">—</span>
                 </td>
                 <td>
+                  <span class="status-badge" [ngClass]="getValidationStatusClass(txn.validationStatus)">{{ txn.validationStatus || '—' }}</span>
+                </td>
+                <td>
                   <span class="status-badge" [ngClass]="getTxnStatusClass(txn.status)">{{ txn.status }}</span>
                 </td>
                 <td class="remark-cell" [title]="txn.remark || ''">{{ txn.remark || '—' }}</td>
               </tr>
               <tr *ngIf="sortedTransactions.length === 0">
-                <td colspan="10" class="no-data-cell">
+                <td colspan="11" class="no-data-cell">
                   <div class="no-data"><p>No transactions found.</p></div>
                 </td>
               </tr>

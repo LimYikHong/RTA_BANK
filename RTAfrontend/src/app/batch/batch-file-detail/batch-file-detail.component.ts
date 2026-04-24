@@ -53,6 +53,7 @@ interface TransactionRecord {
   isRecurring: boolean;
   recurringReference: string;
   status: string;
+  validationStatus: string;
   remark: string;
   createdAt: string;
 }
@@ -255,6 +256,14 @@ export class BatchFileDetailComponent implements OnInit {
   }
 
   // ---- Status helpers ----
+  getValidationStatusClass(status: string): string {
+    switch (status?.toUpperCase()) {
+      case 'PASSED': return 'status-success';
+      case 'FAILED': return 'status-failed';
+      default: return '';
+    }
+  }
+
   getFileStatusClass(status: string): string {
     switch (status?.toUpperCase()) {
       case 'VALIDATED': return 'status-success';

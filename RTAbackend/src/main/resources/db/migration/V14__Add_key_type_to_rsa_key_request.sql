@@ -1,0 +1,1 @@
+ALTER TABLE system_rsa_key_request ADD COLUMN key_type VARCHAR(30) DEFAULT 'MANUAL_REQUEST';

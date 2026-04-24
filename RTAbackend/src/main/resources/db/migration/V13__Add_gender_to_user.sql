@@ -1,0 +1,1 @@
+ALTER TABLE rta_bank_user ADD COLUMN gender VARCHAR(10) DEFAULT NULL;

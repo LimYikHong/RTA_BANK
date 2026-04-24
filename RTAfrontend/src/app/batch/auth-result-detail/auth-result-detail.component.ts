@@ -17,6 +17,7 @@ interface TransactionResult {
   currency: string;
   actualBillingDate: string;
   status: string;
+  validationStatus: string;
   remark: string;
   authorizationDatetime: string;
   createdAt: string;
@@ -161,7 +162,7 @@ export class AuthResultDetailComponent implements OnInit, OnDestroy {
     y += 5;
 
     // Filter to only auth-processed transactions (exclude validation-failed)
-    const authTransactions = transactions.filter(t => t.authorizationDatetime != null);
+    const authTransactions = transactions.filter(t => t.validationStatus !== 'FAILED');
 
     const approvedCount = authTransactions.filter(t => t.status === 'APPROVED').length;
     const failedCount = authTransactions.filter(t => t.status === 'FAILED' || t.status === 'DECLINED').length;

@@ -18,6 +18,7 @@ interface TransactionResult {
   currency: string;
   actualBillingDate: string;
   status: string;
+  validationStatus: string;
   remark: string;
   authorizationDatetime: string;
   createdAt: string;
@@ -107,7 +108,7 @@ export class ReportDetailComponent implements OnInit, OnDestroy {
   }
 
   loadBatchAndGeneratePdf(authBatchId: number): void {
-    this.http.get<BatchDetailData>(`${this.batchApiUrl}/detail/${authBatchId}`).subscribe({
+    this.http.get<BatchDetailData>(`${this.batchApiUrl}/detail/${authBatchId}?includeAll=true`).subscribe({
       next: (data) => {
         this.batch = data;
         this.generatePdf(data);
@@ -185,8 +186,8 @@ export class ReportDetailComponent implements OnInit, OnDestroy {
     y += 5;
 
     const approvedCount = transactions.filter(t => t.status === 'APPROVED').length;
-    const validationFailedCount = transactions.filter(t => t.authorizationDatetime == null && t.status === 'FAILED').length;
-    const authFailedCount = transactions.filter(t => t.authorizationDatetime != null && (t.status === 'FAILED' || t.status === 'DECLINED')).length;
+    const validationFailedCount = transactions.filter(t => t.validationStatus === 'FAILED').length;
+    const authFailedCount = transactions.filter(t => t.validationStatus !== 'FAILED' && (t.status === 'FAILED' || t.status === 'DECLINED')).length;
     const pendingCount = transactions.filter(t => t.status === 'PENDING').length;
 
     doc.setFontSize(9);
@@ -204,8 +205,8 @@ export class ReportDetailComponent implements OnInit, OnDestroy {
 
     const tableHead = [['#', 'Txn ID', 'Merchant ID', 'Customer', 'Acc Number', 'Amount', 'Currency', 'Validation', 'Auth Status', 'Decision Reason', 'Auth Time']];
     const tableBody = transactions.map((txn, i) => {
-      const isValidationFailed = txn.authorizationDatetime == null && txn.status === 'FAILED';
-      const txnValidation = isValidationFailed ? 'FAILED' : 'PASSED';
+      const isValidationFailed = txn.validationStatus === 'FAILED';
+      const txnValidation = txn.validationStatus || 'PASSED';
       const txnAuthStatus = isValidationFailed ? '\u2013' : (txn.status || '\u2013');
       return [
         String(i + 1),

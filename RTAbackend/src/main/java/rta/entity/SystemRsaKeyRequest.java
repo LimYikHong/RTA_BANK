@@ -34,4 +34,7 @@ public class SystemRsaKeyRequest {
 
     @Column(name = "ip_address", length = 50)
     private String ipAddress;
+
+    @Column(name = "key_type", length = 30)
+    private String keyType;
 }

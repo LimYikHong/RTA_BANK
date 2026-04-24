@@ -293,9 +293,9 @@ export class BatchListComponent implements OnInit, OnDestroy {
       });
   }
 
-  // Navigate to batch file detail page (only for files that passed validation)
+  // Navigate to batch detail page (same view as incoming batch file detail)
   viewFileDetail(batchFileId: number): void {
-    this.router.navigate(['/batch-file-detail', batchFileId]);
+    this.router.navigate(['/batch-detail', batchFileId]);
   }
 
   /**

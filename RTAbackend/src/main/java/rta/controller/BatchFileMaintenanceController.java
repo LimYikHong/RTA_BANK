@@ -195,6 +195,7 @@ public class BatchFileMaintenanceController {
             txnMap.put("isRecurring", txn.getIsRecurring());
             txnMap.put("recurringReference", txn.getRecurringReference());
             txnMap.put("status", txn.getStatus());
+            txnMap.put("validationStatus", txn.getValidationStatus());
             txnMap.put("remark", txn.getRemark());
             txnMap.put("createdAt", txn.getCreatedAt());
             txnList.add(txnMap);

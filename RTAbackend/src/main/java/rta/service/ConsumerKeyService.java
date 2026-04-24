@@ -28,6 +28,8 @@ import org.springframework.web.client.RestTemplate;
 
 import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
+import rta.entity.SystemRsaKeyRequest;
+import rta.repository.SystemRsaKeyRequestRepository;
 
 /**
  * Fetches and caches the consumer system's RSA public key over HTTPS. Trusts
@@ -47,7 +49,12 @@ public class ConsumerKeyService {
     private String apiKey;
 
     private final AtomicReference<PublicKey> cachedPublicKey = new AtomicReference<>();
+    private final SystemRsaKeyRequestRepository rsaKeyRequestRepository;
     private RestTemplate restTemplate;
+
+    public ConsumerKeyService(SystemRsaKeyRequestRepository rsaKeyRequestRepository) {
+        this.rsaKeyRequestRepository = rsaKeyRequestRepository;
+    }
 
     @PostConstruct
     public void init() {
@@ -134,11 +141,31 @@ public class ConsumerKeyService {
                 cachedPublicKey.set(publicKey);
                 log.info("[ConsumerKey] Successfully cached consumer public key (algorithm={}, format={})",
                         publicKey.getAlgorithm(), publicKey.getFormat());
+                trackConsumerKeyFetch(pem);
             } else {
                 log.error("[ConsumerKey] Failed to fetch public key: HTTP {}", response.getStatusCode());
             }
         } catch (Exception e) {
             log.error("[ConsumerKey] Error fetching consumer public key: {}", e.getMessage(), e);
+        }
+    }
+
+    private void trackConsumerKeyFetch(String pem) {
+        try {
+            java.time.LocalDateTime now = java.time.LocalDateTime.now();
+            SystemRsaKeyRequest record = SystemRsaKeyRequest.builder()
+                    .requestedBy("SYSTEM")
+                    .publicKeyPem(pem)
+                    .status("ACTIVE")
+                    .requestedAt(now)
+                    .expiresAt(now.plusDays(30))
+                    .ipAddress("localhost")
+                    .keyType("CONSUMER_KEY_FETCH")
+                    .build();
+            rsaKeyRequestRepository.save(record);
+            log.info("[ConsumerKey] Consumer key fetch tracked in system_rsa_key_request");
+        } catch (Exception e) {
+            log.warn("[ConsumerKey] Failed to track consumer key fetch: {}", e.getMessage());
         }
     }
 

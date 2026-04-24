@@ -6,12 +6,15 @@ import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.SecureRandom;
+import java.time.LocalDateTime;
 import java.util.Base64;
 
 import org.springframework.stereotype.Service;
 
 import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
+import rta.entity.SystemRsaKeyRequest;
+import rta.repository.SystemRsaKeyRequestRepository;
 
 /**
  * Manages the system-level RSA key pair used for the internal channel.
@@ -26,6 +29,11 @@ public class InternalKeyPairService {
     private static final int RSA_KEY_SIZE = 2048;
 
     private KeyPair keyPair;
+    private final SystemRsaKeyRequestRepository rsaKeyRequestRepository;
+
+    public InternalKeyPairService(SystemRsaKeyRequestRepository rsaKeyRequestRepository) {
+        this.rsaKeyRequestRepository = rsaKeyRequestRepository;
+    }
 
     @PostConstruct
     public void init() {
@@ -38,8 +46,28 @@ public class InternalKeyPairService {
             generator.initialize(RSA_KEY_SIZE, new SecureRandom());
             this.keyPair = generator.generateKeyPair();
             log.info("[InternalKeyPair] RSA-{} key pair generated successfully", RSA_KEY_SIZE);
+            trackKeyGeneration();
         } catch (NoSuchAlgorithmException e) {
             throw new RuntimeException("Failed to generate RSA key pair", e);
+        }
+    }
+
+    private void trackKeyGeneration() {
+        try {
+            LocalDateTime now = LocalDateTime.now();
+            SystemRsaKeyRequest record = SystemRsaKeyRequest.builder()
+                    .requestedBy("SYSTEM")
+                    .publicKeyPem(getPublicKeyPem())
+                    .status("ACTIVE")
+                    .requestedAt(now)
+                    .expiresAt(now.plusDays(30))
+                    .ipAddress("localhost")
+                    .keyType("INTERNAL_KEY_PAIR")
+                    .build();
+            rsaKeyRequestRepository.save(record);
+            log.info("[InternalKeyPair] Key generation tracked in system_rsa_key_request");
+        } catch (Exception e) {
+            log.warn("[InternalKeyPair] Failed to track key generation: {}", e.getMessage());
         }
     }
 
@@ -72,6 +100,6 @@ public class InternalKeyPairService {
      */
     public void rotateKeyPair() {
         generateKeyPair();
-        log.info("[InternalKeyPair] Key pair rotated");
+        log.info("[InternalKeyPair] Key pair rotated (tracked in DB)");
     }
 }

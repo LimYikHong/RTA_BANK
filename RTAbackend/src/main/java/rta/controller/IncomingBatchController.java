@@ -170,7 +170,7 @@ public class IncomingBatchController {
             // Generate SHA-256 hash of file content to detect duplicates
             String fileHash = generateSHA256Hash(rawFileBytes);
 
-            // Statuses that indicate the file has valid/processed transactions — reject re-upload globally
+            // Statuses that indicate the file has valid/processed transactions â€” reject re-upload globally
             java.util.Set<String> BLOCKING_STATUSES = java.util.Set.of(
                     "PARTIAL", "PASS", "SUCCESS", "VALIDATED", "PARTIAL_SUCCESS", "PROCESSED");
 
@@ -179,7 +179,7 @@ public class IncomingBatchController {
             for (rta.entity.RtaUploadedFileHash anyRecord : allHashRecords) {
                 String anyStatus = anyRecord.getStatus() != null ? anyRecord.getStatus() : "";
                 if (BLOCKING_STATUSES.contains(anyStatus)) {
-                    // Same file content was already accepted (with valid transactions) by some merchant — reject
+                    // Same file content was already accepted (with valid transactions) by some merchant â€” reject
                     return ResponseEntity.badRequest().body(Map.of(
                             "error", "Duplicate file detected",
                             "detail", "This file has already been uploaded and accepted"
@@ -235,7 +235,7 @@ public class IncomingBatchController {
                     ));
                 }
 
-                // WRONG_FILE_FORMAT with count < 5 — allow re-upload (will update the existing row later)
+                // WRONG_FILE_FORMAT with count < 5 â€” allow re-upload (will update the existing row later)
             }
 
             // Generate stored filename: MERCHANTID_DATETIME.ext (e.g. M001_20260331143052.csv)
@@ -526,6 +526,7 @@ public class IncomingBatchController {
                                                 txn.setTransactionDescription(
                                                         "start=" + (startDateStr != null ? startDateStr.trim() : ""));
                                                 txn.setStatus(txnStatus);
+                                                txn.setValidationStatus("FAILED".equals(txnStatus) ? "FAILED" : "PASSED");
                                                 txn.setRemark(rowErrors.isEmpty() ? null : String.join("; ", rowErrors));
                                                 txn.setCreatedAt(LocalDateTime.now());
 
@@ -553,7 +554,7 @@ public class IncomingBatchController {
                                             if (failCount > 0) {
                                                 if (successCount == 0) {
                                                     validationStatus = "INVALID_FILE_CONTENT";
-                                                    validationRemark = "All " + totalRecordCount + " record(s) failed validation — no valid transactions";
+                                                    validationRemark = "All " + totalRecordCount + " record(s) failed validation â€” no valid transactions";
                                                 } else {
                                                     validationStatus = "PARTIAL";
                                                     validationRemark = failCount + " out of " + totalRecordCount + " records failed validation";
@@ -714,6 +715,7 @@ public class IncomingBatchController {
                                             txn.setRecurringReference(recurringRef);
                                             txn.setTransactionDescription("start=" + (startDateStr != null ? startDateStr.trim() : ""));
                                             txn.setStatus(txnStatus);
+                                            txn.setValidationStatus("FAILED".equals(txnStatus) ? "FAILED" : "PASSED");
                                             txn.setRemark(rowErrors.isEmpty() ? null : String.join("; ", rowErrors));
                                             txn.setCreatedAt(LocalDateTime.now());
 
@@ -739,7 +741,7 @@ public class IncomingBatchController {
                                         if (failCount > 0) {
                                             if (successCount == 0) {
                                                 validationStatus = "INVALID_FILE_CONTENT";
-                                                validationRemark = "All " + totalRecordCount + " record(s) failed validation — no valid transactions";
+                                                validationRemark = "All " + totalRecordCount + " record(s) failed validation â€” no valid transactions";
                                             } else {
                                                 validationStatus = "PARTIAL";
                                                 validationRemark = failCount + " out of " + totalRecordCount + " records failed validation";
@@ -973,6 +975,7 @@ public class IncomingBatchController {
                                                     txn.setTransactionDescription(
                                                             "start=" + (startDateStr != null ? startDateStr.trim() : ""));
                                                     txn.setStatus(txnStatus);
+                                                    txn.setValidationStatus("FAILED".equals(txnStatus) ? "FAILED" : "PASSED");
                                                     txn.setRemark(rowErrors.isEmpty() ? null : String.join("; ", rowErrors));
                                                     txn.setCreatedAt(LocalDateTime.now());
 
@@ -998,7 +1001,7 @@ public class IncomingBatchController {
                                                 if (failCount > 0) {
                                                     if (successCount == 0) {
                                                         validationStatus = "INVALID_FILE_CONTENT";
-                                                        validationRemark = "All " + totalRecordCount + " record(s) failed validation — no valid transactions";
+                                                        validationRemark = "All " + totalRecordCount + " record(s) failed validation â€” no valid transactions";
                                                     } else {
                                                         validationStatus = "PARTIAL";
                                                         validationRemark = failCount + " out of " + totalRecordCount + " records failed validation";
@@ -1176,6 +1179,7 @@ public class IncomingBatchController {
                                             txn.setRecurringReference(recurringRef);
                                             txn.setTransactionDescription("start=" + (startDateStr != null ? startDateStr.trim() : ""));
                                             txn.setStatus(txnStatus);
+                                            txn.setValidationStatus("FAILED".equals(txnStatus) ? "FAILED" : "PASSED");
                                             txn.setRemark(rowErrors.isEmpty() ? null : String.join("; ", rowErrors));
                                             txn.setCreatedAt(LocalDateTime.now());
 
@@ -1201,7 +1205,7 @@ public class IncomingBatchController {
                                         if (failCount > 0) {
                                             if (successCount == 0) {
                                                 validationStatus = "INVALID_FILE_CONTENT";
-                                                validationRemark = "All " + totalRecordCount + " record(s) failed validation — no valid transactions";
+                                                validationRemark = "All " + totalRecordCount + " record(s) failed validation â€” no valid transactions";
                                             } else {
                                                 validationStatus = "PARTIAL";
                                                 validationRemark = failCount + " out of " + totalRecordCount + " records failed validation";
@@ -1234,7 +1238,7 @@ public class IncomingBatchController {
                 uploadedFileHash.setValidationRemark(validationRemark);
                 uploadedFileHash.setCreatedBy(createdBy);
             } else {
-                // First upload — insert new record
+                // First upload â€” insert new record
                 uploadedFileHash = new RtaUploadedFileHash();
                 uploadedFileHash.setMerchantId(merchantId);
                 uploadedFileHash.setOriginalFilename(originalFilename);
@@ -1249,7 +1253,7 @@ public class IncomingBatchController {
             }
             uploadedFileHashRepository.save(uploadedFileHash);
 
-            // Determine if validation completely failed — no valid records to process
+            // Determine if validation completely failed â€” no valid records to process
             boolean isCompleteFailure = "NO_FILE_PROFILE".equals(validationStatus)
                     || "WRONG_FILE_FORMAT".equals(validationStatus)
                     || "NO_FIELD_MAPPING".equals(validationStatus)
@@ -1271,7 +1275,7 @@ public class IncomingBatchController {
                 // 2. Create RtaIncomingBatchFile record (NO batch_id assigned at upload time)
                 RtaIncomingBatchFile incomingFile = new RtaIncomingBatchFile();
                 incomingFile.setMerchantId(merchantId);
-                // batchId is left NULL — will be assigned when "run batch" executes
+                // batchId is left NULL â€” will be assigned when "run batch" executes
                 incomingFile.setOriginalFilename(originalFilename);
                 incomingFile.setStoredFilename(storedFileName);
                 incomingFile.setStorageUri(storageUri);
@@ -1304,7 +1308,7 @@ public class IncomingBatchController {
                     savedFile.setFailCount(failCount);
                     if (successCount == 0 && totalRecordCount > 0) {
                         validationStatus = "VALIDATION_FAILED";
-                        // All records failed after dedup — remove incoming file record
+                        // All records failed after dedup â€” remove incoming file record
                         incomingFileRepository.delete(savedFile);
                         savedBatchFileId = null;
                         // Update hash record status
@@ -1320,7 +1324,7 @@ public class IncomingBatchController {
                     }
                 }
 
-                // Mark insertion as COMPLETED — file is now eligible for batch scheduler
+                // Mark insertion as COMPLETED â€” file is now eligible for batch scheduler
                 if (savedBatchFileId != null) {
                     savedFile.setInsertionStatus("COMPLETED");
                     incomingFileRepository.save(savedFile);
@@ -1366,11 +1370,11 @@ public class IncomingBatchController {
             // --- Audit logging ---
             // Log user upload activity
             auditLogService.logUserActivity("UPLOAD_FILE", createdBy, renamedFilename,
-                    "User '" + createdBy + "' uploaded file '" + originalFilename + "' for merchant '" + merchantId + "' — Status: " + validationStatus,
+                    "User '" + createdBy + "' uploaded file '" + originalFilename + "' for merchant '" + merchantId + "' â€” Status: " + validationStatus,
                     validationStatus, null);
             // Log validation timing
             auditLogService.logSystemActivity("VALIDATION", merchantId,
-                    "Validated file '" + originalFilename + "' for merchant '" + merchantId + "' — "
+                    "Validated file '" + originalFilename + "' for merchant '" + merchantId + "' â€” "
                     + totalRecordCount + " records, " + successCount + " passed, " + failCount + " failed. "
                     + "Time: " + String.format("%.3f", validationSec) + "s",
                     validationStatus);
@@ -1383,7 +1387,7 @@ public class IncomingBatchController {
             }
             // Log system incoming-batch activity
             auditLogService.logSystemActivity("INCOMING_BATCH", merchantId,
-                    "Received batch file '" + originalFilename + "' from merchant '" + merchantId + "' — "
+                    "Received batch file '" + originalFilename + "' from merchant '" + merchantId + "' â€” "
                     + totalRecordCount + " records, status: " + validationStatus
                     + ". Validation: " + String.format("%.3f", validationSec) + "s, Insertion: " + String.format("%.3f", insertionSec) + "s",
                     validationStatus);
@@ -1466,6 +1470,15 @@ public class IncomingBatchController {
         // Exclude files received from external systems via internal API (createdBy='merchant')
         List<RtaUploadedFileHash> hashes = uploadedFileHashRepository.findByCreatedByNotOrderByUploadedAtDesc("merchant");
 
+        // Build a lookup map: storedFilename -> batchFileId from incoming batch files
+        List<RtaIncomingBatchFile> allIncomingFiles = incomingFileRepository.findAll();
+        Map<String, Long> filenameToBatchFileId = new LinkedHashMap<>();
+        for (RtaIncomingBatchFile f : allIncomingFiles) {
+            if (f.getStoredFilename() != null) {
+                filenameToBatchFileId.put(f.getStoredFilename(), f.getBatchFileId());
+            }
+        }
+
         List<Map<String, Object>> result = new ArrayList<>();
         for (RtaUploadedFileHash h : hashes) {
             Map<String, Object> dto = new LinkedHashMap<>();
@@ -1480,6 +1493,9 @@ public class IncomingBatchController {
             dto.put("validationRemark", h.getValidationRemark());
             dto.put("createdBy", h.getCreatedBy());
             dto.put("sizeBytes", h.getSizeBytes());
+            // Resolve batchFileId from incoming batch file table
+            Long batchFileId = filenameToBatchFileId.get(h.getStoredFilename());
+            dto.put("batchFileId", batchFileId);
             result.add(dto);
         }
         return ResponseEntity.ok(result);
@@ -1575,6 +1591,7 @@ public class IncomingBatchController {
             map.put("recurringType", txn.getRecurringIndicator());
             map.put("description", txn.getTransactionDescription());
             map.put("status", txn.getStatus());
+            map.put("validationStatus", txn.getValidationStatus());
             map.put("remark", txn.getRemark());
             map.put("createdAt", txn.getCreatedAt());
             result.add(map);
@@ -1670,6 +1687,7 @@ public class IncomingBatchController {
             map.put("recurringType", txn.getRecurringIndicator());
             map.put("description", txn.getTransactionDescription());
             map.put("status", txn.getStatus());
+            map.put("validationStatus", txn.getValidationStatus());
             map.put("remark", txn.getRemark());
             map.put("createdAt", txn.getCreatedAt());
             result.add(map);
@@ -1725,7 +1743,7 @@ public class IncomingBatchController {
                         "detail", "File has already been processed. Current status: " + incomingFile.getFileStatus()));
             }
 
-            // Find the associated batch (if any — may be null for files uploaded after V8)
+            // Find the associated batch (if any â€” may be null for files uploaded after V8)
             String merchantId = incomingFile.getMerchantId();
             String storagePath = incomingFile.getStorageUri();
 
@@ -1944,6 +1962,7 @@ public class IncomingBatchController {
                                 txn.setRecurringReference(recurringRef);
                                 txn.setTransactionDescription("start=" + (startDateStr != null ? startDateStr.trim() : ""));
                                 txn.setStatus(txnStatus);
+                                txn.setValidationStatus("FAILED".equals(txnStatus) ? "FAILED" : "PASSED");
                                 txn.setRemark(rowErrors.isEmpty() ? null : String.join("; ", rowErrors));
                                 txn.setCreatedAt(LocalDateTime.now());
 
@@ -1969,7 +1988,7 @@ public class IncomingBatchController {
                             if (failCount > 0) {
                                 if (successCount == 0) {
                                     validationStatus = "INVALID_FILE_CONTENT";
-                                    validationRemark = "All " + totalRecordCount + " record(s) failed validation — no valid transactions";
+                                    validationRemark = "All " + totalRecordCount + " record(s) failed validation â€” no valid transactions";
                                 } else {
                                     validationStatus = "PARTIAL";
                                     validationRemark = failCount + " out of " + totalRecordCount + " records failed validation";
@@ -2209,6 +2228,7 @@ public class IncomingBatchController {
                             txn.setRecurringReference(recurringRef);
                             txn.setTransactionDescription("start=" + (startDateStr != null ? startDateStr.trim() : ""));
                             txn.setStatus(txnStatus);
+                            txn.setValidationStatus("FAILED".equals(txnStatus) ? "FAILED" : "PASSED");
                             txn.setRemark(rowErrors.isEmpty() ? null : String.join("; ", rowErrors));
                             txn.setCreatedAt(LocalDateTime.now());
 
@@ -2234,7 +2254,7 @@ public class IncomingBatchController {
                         if (failCount > 0) {
                             if (successCount == 0) {
                                 validationStatus = "INVALID_FILE_CONTENT";
-                                validationRemark = "All " + totalRecordCount + " record(s) failed validation — no valid transactions";
+                                validationRemark = "All " + totalRecordCount + " record(s) failed validation â€” no valid transactions";
                             } else {
                                 validationStatus = "PARTIAL";
                                 validationRemark = failCount + " out of " + totalRecordCount + " records failed validation";

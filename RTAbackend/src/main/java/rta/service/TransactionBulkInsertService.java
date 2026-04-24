@@ -45,9 +45,9 @@ public class TransactionBulkInsertService {
                 transaction_description, recurring_indicator,
                 is_recurring, recurring_reference, frequency_value,
                 additional_data, amount_cents, currency,
-                actual_billing_date, status, remark, created_at,
+                actual_billing_date, validation_status, status, remark, created_at,
                 auth_batch_id, authorization_datetime
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """;
 
     /**
@@ -142,16 +142,17 @@ public class TransactionBulkInsertService {
                 } else {
                     ps.setNull(18, Types.DATE);
                 }
-                ps.setString(19, txn.getStatus());
-                ps.setString(20, txn.getRemark());
-                ps.setTimestamp(21, txn.getCreatedAt() != null
+                ps.setString(19, txn.getValidationStatus());
+                ps.setString(20, txn.getStatus());
+                ps.setString(21, txn.getRemark());
+                ps.setTimestamp(22, txn.getCreatedAt() != null
                         ? Timestamp.valueOf(txn.getCreatedAt())
                         : Timestamp.valueOf(java.time.LocalDateTime.now()));
-                setNullableLong(ps, 22, txn.getAuthBatchId());
+                setNullableLong(ps, 23, txn.getAuthBatchId());
                 if (txn.getAuthorizationDatetime() != null) {
-                    ps.setTimestamp(23, Timestamp.valueOf(txn.getAuthorizationDatetime()));
+                    ps.setTimestamp(24, Timestamp.valueOf(txn.getAuthorizationDatetime()));
                 } else {
-                    ps.setNull(23, Types.TIMESTAMP);
+                    ps.setNull(24, Types.TIMESTAMP);
                 }
             }
 

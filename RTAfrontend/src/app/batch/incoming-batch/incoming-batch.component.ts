@@ -126,8 +126,9 @@ export class IncomingBatchComponent implements OnInit {
     this.isLoading = true;
     this.http.get<IncomingBatchFile[]>(`${this.apiUrl}/files`).subscribe({
       next: (data) => {
-        this.incomingFiles = data;
-        this.filteredFiles = data;
+        // Only show files uploaded by merchant (external uploads)
+        this.incomingFiles = data.filter(f => f.createBy === 'merchant');
+        this.filteredFiles = this.incomingFiles;
         this.merchantIds = [...new Set(data.map(f => f.merchantId).filter(Boolean))].sort();
         this.isLoading = false;
       },

@@ -24,7 +24,8 @@ export class AddUserComponent implements OnInit {
     phone: '',
     firstName: '',
     lastName: '',
-    officeNumber: ''
+    officeNumber: '',
+    gender: ''
   };
   newUserRole: string = 'ADMIN';
   isSubmitting = false;

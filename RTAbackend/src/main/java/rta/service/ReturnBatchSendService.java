@@ -379,6 +379,7 @@ public class ReturnBatchSendService {
                 row.put("amount", String.valueOf(txn.getAmount()));
                 row.put("currency", txn.getCurrency());
                 row.put("status", txn.getStatus());
+                row.put("validationStatus", txn.getValidationStatus() != null ? txn.getValidationStatus() : "");
                 row.put("remark", txn.getRemark() != null ? txn.getRemark() : "");
                 return row;
             }).toList();

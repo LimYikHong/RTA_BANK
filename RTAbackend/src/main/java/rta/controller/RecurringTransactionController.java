@@ -283,6 +283,7 @@ public class RecurringTransactionController {
             txnMap.put("currency", txn.getCurrency());
             txnMap.put("actualBillingDate", txn.getActualBillingDate());
             txnMap.put("status", txn.getStatus());
+            txnMap.put("validationStatus", txn.getValidationStatus());
             txnMap.put("remark", txn.getRemark());
             txnMap.put("createdAt", txn.getCreatedAt());
             txnMap.put("batchId", txn.getBatch() != null ? txn.getBatch().getBatchId() : null);

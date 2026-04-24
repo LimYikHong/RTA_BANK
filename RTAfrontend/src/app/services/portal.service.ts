@@ -61,6 +61,7 @@ export interface UploadHistoryItem {
   validationRemark: string | null;
   createdBy: string;
   sizeBytes: number | null;
+  batchFileId?: number | null;
 }
 
 /**

@@ -110,7 +110,9 @@ public class BatchMaintenanceController {
      * batch info plus its transactions.
      */
     @GetMapping("/detail/{authBatchId}")
-    public ResponseEntity<Map<String, Object>> getBatchDetail(@PathVariable Long authBatchId) {
+    public ResponseEntity<Map<String, Object>> getBatchDetail(
+            @PathVariable Long authBatchId,
+            @RequestParam(value = "includeAll", required = false, defaultValue = "false") boolean includeAll) {
         return authBatchRepository.findById(authBatchId).map(batch -> {
             Map<String, Object> result = new LinkedHashMap<>();
             result.put("authBatchId", batch.getAuthBatchId());
@@ -164,9 +166,12 @@ public class BatchMaintenanceController {
                 });
             }
 
-            // Get transactions in this batch
+            // Get transactions in this batch (skip validation-failed unless includeAll)
             List<Map<String, Object>> txnList = new ArrayList<>();
             for (RtaTransaction txn : transactions) {
+                if (!includeAll && "FAILED".equals(txn.getValidationStatus())) {
+                    continue;
+                }
                 Map<String, Object> txnMap = new LinkedHashMap<>();
                 txnMap.put("transactionId", txn.getId());
                 txnMap.put("batchFileId", txn.getBatchFileId());
@@ -177,6 +182,7 @@ public class BatchMaintenanceController {
                 txnMap.put("currency", txn.getCurrency());
                 txnMap.put("actualBillingDate", txn.getActualBillingDate());
                 txnMap.put("status", txn.getStatus());
+                txnMap.put("validationStatus", txn.getValidationStatus());
                 txnMap.put("remark", txn.getRemark());
                 txnMap.put("authorizationDatetime", txn.getAuthorizationDatetime());
                 txnMap.put("createdAt", txn.getCreatedAt());

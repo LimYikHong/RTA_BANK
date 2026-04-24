@@ -25,5 +25,8 @@ CREATE TABLE IF NOT EXISTS rta_report (
     INDEX idx_report_merchant (merchant_id),
     INDEX idx_report_batch_file (batch_file_id),
     INDEX idx_report_name (report_name),
-    INDEX idx_report_created (created_at)
+    INDEX idx_report_created (created_at),
+    CONSTRAINT fk_report_batch_file FOREIGN KEY (batch_file_id) REFERENCES rta_incoming_batch_file(batch_file_id) ON DELETE SET NULL,
+    CONSTRAINT fk_report_batch FOREIGN KEY (batch_id) REFERENCES rta_batch(batch_id) ON DELETE SET NULL,
+    CONSTRAINT fk_report_auth_batch FOREIGN KEY (auth_batch_id) REFERENCES rta_authorization_batch(auth_batch_id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

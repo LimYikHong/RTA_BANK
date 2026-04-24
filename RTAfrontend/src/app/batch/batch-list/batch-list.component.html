@@ -25,6 +25,7 @@
             <th>Remark</th>
             <th class="th-sort" (click)="sortBy('createdBy')" [attr.data-sort]="sortKey==='createdBy' ? sortDir : ''">Uploaded By</th>
             <th class="th-sort" (click)="sortBy('uploadedAt')" [attr.data-sort]="sortKey==='uploadedAt' ? sortDir : ''">Uploaded At</th>
+            <th>Action</th>
           </tr>
         </thead>
         <tbody>
@@ -41,9 +42,17 @@
             <td class="remark-cell" [title]="file.validationRemark || ''">{{ file.validationRemark || '—' }}</td>
             <td>{{ file.createdBy }}</td>
             <td>{{ file.uploadedAt | date : 'short' }}</td>
+            <td class="action-cell">
+              <button
+                *ngIf="file.batchFileId"
+                class="btn-action btn-view"
+                (click)="viewFileDetail(file.batchFileId!)"
+                title="View"></button>
+              <span *ngIf="!file.batchFileId">—</span>
+            </td>
           </tr>
           <tr *ngIf="sortedFiles.length === 0">
-            <td colspan="8" class="no-data-cell">
+            <td colspan="9" class="no-data-cell">
               <div class="no-data">
                 <p>No uploaded files found.</p>
               </div>

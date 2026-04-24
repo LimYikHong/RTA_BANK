@@ -73,6 +73,9 @@ public class UserProfile {
     @Column(name = "contact")
     private String contact;
 
+    @Column(name = "gender")
+    private String gender;
+
     @Column(name = "two_factor_secret")
     private String twoFactorSecret;
 

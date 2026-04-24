@@ -1,5 +1,5 @@
 import { Component, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { CommonModule, Location } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule, Router, ActivatedRoute } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
@@ -126,7 +126,8 @@ export class BatchDetailComponent implements OnInit {
     private http: HttpClient,
     private route: ActivatedRoute,
     private router: Router,
-    private authService: AuthService
+    private authService: AuthService,
+    private location: Location
   ) {}
 
   ngOnInit(): void {
@@ -180,7 +181,7 @@ export class BatchDetailComponent implements OnInit {
   }
 
   goBack(): void {
-    this.router.navigate(['/incoming-batch']);
+    this.location.back();
   }
 
   logout(): void {

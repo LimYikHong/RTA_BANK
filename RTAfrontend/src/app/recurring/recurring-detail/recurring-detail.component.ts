@@ -12,6 +12,7 @@ interface TransactionItem {
   currency: string;
   actualBillingDate: string;
   status: string;
+  validationStatus: string;
   remark: string;
   createdAt: string;
   batchId: number;

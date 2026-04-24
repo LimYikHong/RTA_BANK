@@ -21,6 +21,7 @@ export interface UserProfile {
   firstName?: string;
   lastName?: string;
   officeNumber?: string;
+  gender?: string;
   status?: string;
   lastLoginAt?: string;
   failedAttempts?: number;
