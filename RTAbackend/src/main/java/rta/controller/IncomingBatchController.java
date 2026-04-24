@@ -2381,8 +2381,8 @@ public class IncomingBatchController {
     }
 
     /**
-     * Generate SHA-256 hash for a single transaction record based on key fields.
-     * Used for transaction-level duplicate detection across files.
+     * Generate SHA-256 hash for a single transaction record based on key
+     * fields. Used for transaction-level duplicate detection across files.
      */
     private String generateTransactionRecordHash(RtaTransaction txn) {
         try {
