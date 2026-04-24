@@ -99,6 +99,9 @@ public class RtaTransaction {
     @Column(name = "validation_status")
     private String validationStatus;
 
+    @Column(name = "record_hash", length = 64)
+    private String recordHash;
+
     @Column(name = "status", nullable = false)
     private String status;
 

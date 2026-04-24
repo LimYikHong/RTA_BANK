@@ -41,6 +41,13 @@ public interface RtaTransactionRepository extends JpaRepository<RtaTransaction, 
     long sumAmountByBatchFileIdAndStatusSuccess(@Param("batchFileId") Long batchFileId);
 
     /**
+     * Find existing record hashes that match any of the given hashes.
+     * Used for transaction-level duplicate detection before insertion.
+     */
+    @Query("SELECT t.recordHash FROM RtaTransaction t WHERE t.recordHash IN :hashes")
+    List<String> findExistingRecordHashes(@Param("hashes") List<String> hashes);
+
+    /**
      * Find transactions belonging to a batch file that have no batch assigned
      * yet.
      */

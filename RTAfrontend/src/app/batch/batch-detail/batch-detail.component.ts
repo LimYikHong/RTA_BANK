@@ -165,7 +165,7 @@ export class BatchDetailComponent implements OnInit {
     switch (status?.toUpperCase()) {
       case 'VALIDATED': return 'status-validated';
       case 'PARTIAL': return 'status-partial';
-      case 'VALIDATION_FAILED': return 'status-failed';
+      case 'VALIDATION_FAILED': case 'DUPLICATE_TRANSACTION': return 'status-failed';
       case 'VALIDATION_ERROR': return 'status-error';
       case 'RECEIVED': return 'status-received';
       case 'SUCCESS': case 'APPROVED': return 'status-success';

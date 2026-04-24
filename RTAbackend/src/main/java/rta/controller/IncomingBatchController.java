@@ -179,7 +179,10 @@ public class IncomingBatchController {
             for (rta.entity.RtaUploadedFileHash anyRecord : allHashRecords) {
                 String anyStatus = anyRecord.getStatus() != null ? anyRecord.getStatus() : "";
                 if (BLOCKING_STATUSES.contains(anyStatus)) {
-                    // Same file content was already accepted (with valid transactions) by some merchant â€” reject
+                    // Same file content was already accepted (with valid transactions) by some merchant -- reject
+                    auditLogService.logUserActivity("UPLOAD_FILE", createdBy, originalFilename,
+                            "User '" + createdBy + "' attempted to upload duplicate file '" + originalFilename + "' for merchant '" + merchantId + "' -- file already accepted by merchant '" + anyRecord.getMerchantId() + "'",
+                            "DUPLICATE", null);
                     return ResponseEntity.badRequest().body(Map.of(
                             "error", "Duplicate file detected",
                             "detail", "This file has already been uploaded and accepted"
@@ -207,6 +210,9 @@ public class IncomingBatchController {
 
                 // Only WRONG_FILE_FORMAT is allowed to re-upload
                 if (!"WRONG_FILE_FORMAT".equals(existingStatus)) {
+                    auditLogService.logUserActivity("UPLOAD_FILE", createdBy, originalFilename,
+                            "User '" + createdBy + "' attempted to upload duplicate file '" + originalFilename + "' for merchant '" + merchantId + "' -- file already uploaded (status: " + existingStatus + ")",
+                            "DUPLICATE", null);
                     return ResponseEntity.badRequest().body(Map.of(
                             "error", "Duplicate file detected",
                             "detail", "This file has already been uploaded.",
@@ -222,6 +228,9 @@ public class IncomingBatchController {
 
                 // Block if upload count has reached the maximum (5 attempts)
                 if (currentCount >= 5) {
+                    auditLogService.logUserActivity("UPLOAD_FILE", createdBy, originalFilename,
+                            "User '" + createdBy + "' attempted to upload file '" + originalFilename + "' for merchant '" + merchantId + "' -- upload limit reached (" + currentCount + " attempts)",
+                            "REJECTED", null);
                     return ResponseEntity.badRequest().body(Map.of(
                             "error", "Upload limit reached",
                             "detail", "This file has been uploaded " + currentCount + " times and all attempts failed. Maximum 5 attempts allowed. Please contact support or upload a different file.",
@@ -1253,8 +1262,44 @@ public class IncomingBatchController {
             }
             uploadedFileHashRepository.save(uploadedFileHash);
 
-            // Determine if validation completely failed â€” no valid records to process
-            boolean isCompleteFailure = "NO_FILE_PROFILE".equals(validationStatus)
+            // -- Transaction-level duplicate detection --
+            // Generate record hash for each transaction and check against existing DB records
+            boolean isDuplicateTransaction = false;
+            List<String> duplicatedRecordHashes = new ArrayList<>();
+            if (!transactionsToSave.isEmpty()) {
+                // Compute hash for each transaction
+                for (RtaTransaction txn : transactionsToSave) {
+                    String hash = generateTransactionRecordHash(txn);
+                    txn.setRecordHash(hash);
+                }
+
+                // Collect hashes of valid (non-FAILED) transactions for duplicate check
+                List<String> validHashes = transactionsToSave.stream()
+                        .filter(t -> !"FAILED".equals(t.getValidationStatus()))
+                        .map(RtaTransaction::getRecordHash)
+                        .filter(h -> h != null)
+                        .collect(java.util.stream.Collectors.toList());
+
+                if (!validHashes.isEmpty()) {
+                    // Query DB for any existing matching hashes
+                    List<String> existingHashes = transactionRepository.findExistingRecordHashes(validHashes);
+                    if (!existingHashes.isEmpty()) {
+                        isDuplicateTransaction = true;
+                        duplicatedRecordHashes.addAll(existingHashes);
+                        // Mark file as duplicate
+                        validationStatus = "DUPLICATE_TRANSACTION";
+                        uploadedFileHash.setStatus(validationStatus);
+                        String dupMsg = existingHashes.size() + " duplicate transaction record(s) detected -- entire file rejected";
+                        uploadedFileHash.setValidationRemark(
+                                validationRemark != null ? validationRemark + "; " + dupMsg : dupMsg);
+                        uploadedFileHashRepository.save(uploadedFileHash);
+                    }
+                }
+            }
+
+            // Determine if validation completely failed -- no valid records to process
+            boolean isCompleteFailure = isDuplicateTransaction
+                    || "NO_FILE_PROFILE".equals(validationStatus)
                     || "WRONG_FILE_FORMAT".equals(validationStatus)
                     || "NO_FIELD_MAPPING".equals(validationStatus)
                     || "MISSING_HEADER".equals(validationStatus)
@@ -1333,7 +1378,9 @@ public class IncomingBatchController {
 
             // Response
             Map<String, Object> response = new HashMap<>();
-            if (isCompleteFailure && duplicateCount == 0) {
+            if (isDuplicateTransaction) {
+                response.put("message", "File rejected: duplicate transaction record(s) detected. " + duplicatedRecordHashes.size() + " matching record(s) found in existing data.");
+            } else if (isCompleteFailure && duplicateCount == 0) {
                 response.put("message", "File uploaded but validation failed: " + validationRemark);
             } else if (failCount == 0) {
                 response.put("message", "File received and validated successfully");
@@ -1358,6 +1405,10 @@ public class IncomingBatchController {
             if (duplicateCount > 0) {
                 response.put("duplicateTransactionCount", duplicateCount);
                 response.put("duplicateTransactions", duplicateTransactions);
+            }
+            if (isDuplicateTransaction) {
+                response.put("isDuplicateTransaction", true);
+                response.put("duplicateRecordCount", duplicatedRecordHashes.size());
             }
             if (!validationErrors.isEmpty()) {
                 response.put("validationErrors", validationErrors);
@@ -2327,5 +2378,26 @@ public class IncomingBatchController {
             hexString.append(hex);
         }
         return hexString.toString();
+    }
+
+    /**
+     * Generate SHA-256 hash for a single transaction record based on key fields.
+     * Used for transaction-level duplicate detection across files.
+     */
+    private String generateTransactionRecordHash(RtaTransaction txn) {
+        try {
+            String raw = String.join("|",
+                    txn.getMerchantId() != null ? txn.getMerchantId() : "",
+                    txn.getMerchantCustomer() != null ? txn.getMerchantCustomer() : "",
+                    txn.getMaskedPan() != null ? txn.getMaskedPan() : "",
+                    txn.getAmount() != null ? txn.getAmount().toString() : "",
+                    txn.getCurrency() != null ? txn.getCurrency() : "",
+                    txn.getActualBillingDate() != null ? txn.getActualBillingDate().toString() : "",
+                    txn.getMerchantBillingRef() != null ? txn.getMerchantBillingRef() : ""
+            );
+            return generateSHA256Hash(raw.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+        } catch (NoSuchAlgorithmException e) {
+            throw new RuntimeException("SHA-256 not available", e);
+        }
     }
 }

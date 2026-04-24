@@ -180,7 +180,7 @@ export class IncomingBatchComponent implements OnInit {
       case 'PROCESSING': return 'status-processing';
       case 'VALIDATED': return 'status-validated';
       case 'PARTIAL': return 'status-partial';
-      case 'VALIDATION_FAILED': return 'status-failed';
+      case 'VALIDATION_FAILED': case 'DUPLICATE_TRANSACTION': return 'status-failed';
       case 'VALIDATION_ERROR': return 'status-error';
       case 'COMPLETED': return 'status-completed';
       case 'FAILED': return 'status-failed';

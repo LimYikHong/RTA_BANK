@@ -210,7 +210,7 @@ export class BatchFileMaintenanceComponent implements OnInit {
     switch (status?.toUpperCase()) {
       case 'VALIDATED': return 'status-success';
       case 'RECEIVED': return 'status-ready';
-      case 'FAILED': case 'VALIDATION_FAILED': return 'status-failed';
+      case 'FAILED': case 'VALIDATION_FAILED': case 'DUPLICATE_TRANSACTION': return 'status-failed';
       case 'PROCESSING': return 'status-processing';
       default: return '';
     }

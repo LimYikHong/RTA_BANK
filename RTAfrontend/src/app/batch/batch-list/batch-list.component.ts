@@ -336,6 +336,7 @@ export class BatchListComponent implements OnInit, OnDestroy {
       case 'VALIDATION_ERROR':
       case 'INVALID_FILE_CONTENT':
       case 'DUPLICATE':
+      case 'DUPLICATE_TRANSACTION':
         return 'status-failed';
       case 'PROCESSING': return 'status-processing';
       case 'UPLOADING': return 'status-uploading';
