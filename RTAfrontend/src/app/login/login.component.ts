@@ -99,6 +99,6 @@ export class LoginComponent {
   private handleLoginSuccess(profile: UserProfile) {
     this.profileService.setProfile(profile);
     localStorage.setItem('user', JSON.stringify(profile));
-    this.router.navigate(['/upload-batch-file']);
+    this.router.navigate(['/dashboard']);
   }
 }

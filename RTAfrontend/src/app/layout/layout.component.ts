@@ -1,20 +1,19 @@
 import { Component, ViewEncapsulation, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterModule } from '@angular/router';
-import { TopBarComponent } from '../top-bar/top-bar.component';
 import { AuthService } from '../services/auth.service';
 import { ProfileService } from '../services/profile.service';
 
 @Component({
   selector: 'app-layout',
   standalone: true,
-  imports: [CommonModule, RouterModule, TopBarComponent],
+  imports: [CommonModule, RouterModule],
   templateUrl: './layout.component.html',
   styleUrl: './layout.component.scss',
   encapsulation: ViewEncapsulation.None
 })
 export class LayoutComponent implements OnInit {
-  drawerOpen = true;
+  drawerOpen = false;
   userId: string | null = null;
 
   constructor(
