@@ -100,12 +100,35 @@ export class AuthResultDetailComponent implements OnInit, OnDestroy {
   private generatePdf(data: BatchDetailData): void {
     const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
     const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
     const margin = 15;
     const transactions = data.transactions || [];
     const files = data.files || [];
-    const originalFilename = files.length > 0 ? files[0].originalFilename : '–';
-    const validationStatus = files.length > 0 ? files[0].fileStatus : '–';
-    const authStatus = validationStatus?.toUpperCase() === 'FAILED' ? '–' : (data.batchStatus || '–');
+
+    // Filter to only auth-processed transactions (exclude validation-failed)
+    const authTransactions = transactions.filter(t => t.validationStatus !== 'FAILED' && t.validationStatus !== 'DUPLICATE');
+
+    // Group transactions by batchFileId
+    const grouped = new Map<number, TransactionResult[]>();
+    for (const txn of authTransactions) {
+      const key = txn.batchFileId;
+      if (!grouped.has(key)) grouped.set(key, []);
+      grouped.get(key)!.push(txn);
+    }
+
+    // Build ordered list of file sections (preserve file order)
+    const fileSections: { file: FileInfo | undefined; fileId: number; txns: TransactionResult[] }[] = [];
+    for (const file of files) {
+      const txns = grouped.get(file.batchFileId);
+      if (txns && txns.length > 0) {
+        fileSections.push({ file, fileId: file.batchFileId, txns });
+        grouped.delete(file.batchFileId);
+      }
+    }
+    // Any remaining groups without a matching file entry
+    for (const [fileId, txns] of grouped) {
+      fileSections.push({ file: undefined, fileId, txns });
+    }
 
     let y = 18;
 
@@ -116,138 +139,151 @@ export class AuthResultDetailComponent implements OnInit, OnDestroy {
     doc.text('AUTHORIZATION RESULT REPORT', pageWidth / 2, y, { align: 'center' });
     y += 6;
 
-    // Divider line
     doc.setDrawColor(0, 0, 0);
     doc.setLineWidth(0.5);
     doc.line(margin, y, pageWidth - margin, y);
     y += 8;
 
-    // ===== Batch & Merchant Information (two-column layout) =====
-    doc.setFontSize(10);
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(0, 0, 0);
-    doc.text('BATCH INFORMATION', margin, y);
-    doc.text('MERCHANT INFORMATION', pageWidth / 2 + 10, y);
-    y += 5;
-
-    const infoData = [
-      ['Batch Reference', data.batchReference, 'Merchant ID', data.merchantId || '–'],
-      ['Batch ID', String(data.authBatchId), 'Merchant Name', data.merchantName || '–'],
-      ['Validation Status', validationStatus, 'Merchant Account', data.merchantAccount || '–'],
-      ['Auth Status', authStatus, 'Merchant Contact', data.merchantContact || '–'],
-      ['Original File', originalFilename, 'Send Auth Datetime', this.formatDate(data.lastModifiedAt)],
-      ['Remark', data.remark || '–', '', ''],
-    ];
-
-    autoTable(doc, {
-      startY: y,
-      body: infoData,
-      theme: 'plain',
-      styles: { fontSize: 8.5, cellPadding: 2.5, textColor: [0, 0, 0] },
-      columnStyles: {
-        0: { fontStyle: 'bold', cellWidth: 35 },
-        1: { cellWidth: pageWidth / 2 - margin - 35 },
-        2: { fontStyle: 'bold', cellWidth: 40 },
-        3: { cellWidth: pageWidth / 2 - margin - 40 },
-      },
-      margin: { left: margin, right: margin },
-    });
-
-    y = (doc as any).lastAutoTable.finalY + 4;
-
-    // ===== Summary line =====
-    doc.setDrawColor(180, 180, 180);
-    doc.setLineWidth(0.3);
-    doc.line(margin, y, pageWidth - margin, y);
-    y += 5;
-
-    // Filter to only auth-processed transactions (exclude validation-failed)
-    const authTransactions = transactions.filter(t => t.validationStatus !== 'FAILED');
-
-    const approvedCount = authTransactions.filter(t => t.status === 'APPROVED').length;
-    const failedCount = authTransactions.filter(t => t.status === 'FAILED' || t.status === 'DECLINED').length;
-    const pendingCount = authTransactions.filter(t => t.status === 'PENDING').length;
-
-    doc.setFontSize(9);
-    doc.setFont('helvetica', 'normal');
-    doc.setTextColor(0, 0, 0);
-    doc.text(`Total: ${authTransactions.length}    |    Approved: ${approvedCount}    |    Failed: ${failedCount}    |    Pending: ${pendingCount}`, margin, y);
-    y += 7;
-
-    // ===== Transaction Table (grouped by Batch File ID) =====
-    doc.setFontSize(10);
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(0, 0, 0);
-    doc.text('TRANSACTION DETAILS', margin, y);
-    y += 3;
-
-    // Group transactions by batchFileId
-    const grouped = new Map<number, TransactionResult[]>();
-    for (const txn of authTransactions) {
-      const key = txn.batchFileId;
-      if (!grouped.has(key)) grouped.set(key, []);
-      grouped.get(key)!.push(txn);
-    }
-
     const tableHead = [['#', 'Txn ID', 'Merchant ID', 'Customer', 'Acc Number', 'Amount', 'Currency', 'Auth Result', 'Decision Reason', 'Auth Time']];
 
-    let rowNum = 0;
-    const tableBody: any[][] = [];
-    for (const [fileId, groupTxns] of grouped) {
-      // Group header row
-      const file = files.find(f => f.batchFileId === fileId);
-      const groupLabel = file ? `File: ${file.originalFilename} (ID: ${fileId})` : `Batch File ID: ${fileId}`;
-      tableBody.push([{ content: groupLabel, colSpan: 10, styles: { fontStyle: 'bold', fillColor: [220, 220, 220], fontSize: 7.5 } }]);
-      for (const txn of groupTxns) {
-        rowNum++;
-        tableBody.push([
-          String(rowNum),
-          String(txn.transactionId),
-          txn.merchantId || '–',
-          txn.merchantCustomer || '–',
-          txn.maskedPan || '–',
-          this.formatAmount(txn.amount),
-          txn.currency || '–',
-          txn.status || '–',
-          txn.remark || '–',
-          this.formatDate(txn.authorizationDatetime),
-        ]);
-      }
-    }
+    // ===== Render each file section =====
+    fileSections.forEach((section, sectionIdx) => {
+      const file = section.file;
+      const fileTxns = section.txns;
+      const originalFilename = file ? file.originalFilename : '\u2013';
+      const validationStatus = file ? file.fileStatus : '\u2013';
+      const authStatus = validationStatus?.toUpperCase() === 'FAILED' ? '\u2013' : (data.batchStatus || '\u2013');
 
-    autoTable(doc, {
-      startY: y,
-      head: tableHead,
-      body: tableBody,
-      theme: 'grid',
-      headStyles: {
-        fillColor: [50, 50, 50],
-        textColor: [255, 255, 255],
-        fontStyle: 'bold',
-        fontSize: 7.5,
-        halign: 'center',
-      },
-      bodyStyles: {
-        fontSize: 7,
-        textColor: [0, 0, 0],
-        cellPadding: 2,
-      },
-      alternateRowStyles: {
-        fillColor: [245, 245, 245],
-      },
-      columnStyles: {
-        0: { cellWidth: 8, halign: 'center' },
-        1: { cellWidth: 18, halign: 'center' },
-        2: { cellWidth: 25 },
-        3: { cellWidth: 28 },
-        4: { cellWidth: 30, font: 'courier' },
-        5: { cellWidth: 22, halign: 'right' },
-        6: { cellWidth: 16, halign: 'center' },
-        7: { cellWidth: 22, halign: 'center' },
-        8: { cellWidth: 45 },
-        9: { cellWidth: 35 },
-      },
-      margin: { left: margin, right: margin },
+      // Check if we need a new page (if not enough room for info table header)
+      if (sectionIdx > 0) {
+        doc.addPage();
+        y = 18;
+      }
+
+      // ===== Section Header =====
+      doc.setFontSize(11);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(0, 0, 0);
+      doc.text(`FILE ${sectionIdx + 1} OF ${fileSections.length}:  ${originalFilename}`, margin, y);
+      y += 6;
+
+      doc.setDrawColor(180, 180, 180);
+      doc.setLineWidth(0.3);
+      doc.line(margin, y, pageWidth - margin, y);
+      y += 5;
+
+      // ===== Batch & Merchant Info as a clean table =====
+      const halfWidth = (pageWidth - margin * 2) / 2;
+      const infoLeft = [
+        ['Batch Reference', data.batchReference || '\u2013'],
+        ['Batch ID', String(data.authBatchId)],
+        ['Batch File ID', String(section.fileId)],
+        ['Original File', originalFilename],
+        ['Validation Status', validationStatus],
+        ['Auth Status', authStatus],
+        ['Remark', data.remark || '\u2013'],
+      ];
+      const approvedCount = fileTxns.filter(t => t.status === 'APPROVED').length;
+      const failedCount = fileTxns.filter(t => t.status === 'FAILED' || t.status === 'DECLINED').length;
+      const pendingCount = fileTxns.filter(t => t.status === 'PENDING').length;
+
+      const infoRight = [
+        ['Merchant ID', data.merchantId || '\u2013'],
+        ['Merchant Name', data.merchantName || '\u2013'],
+        ['Merchant Account', data.merchantAccount || '\u2013'],
+        ['Merchant Contact', data.merchantContact || '\u2013'],
+        ['Send Auth Datetime', this.formatDate(data.lastModifiedAt)],
+        ['Total', String(fileTxns.length)],
+        ['Approved / Failed / Pending', `${approvedCount} / ${failedCount} / ${pendingCount}`],
+      ];
+
+      // Combine into 4-column table
+      const infoRows = infoLeft.map((left, i) => [left[0], left[1], infoRight[i][0], infoRight[i][1]]);
+
+      autoTable(doc, {
+        startY: y,
+        head: [['BATCH INFORMATION', '', 'MERCHANT INFORMATION', '']],
+        body: infoRows,
+        theme: 'grid',
+        headStyles: {
+          fillColor: [50, 50, 50],
+          textColor: [255, 255, 255],
+          lineColor: [255, 255, 255],
+          lineWidth: 0.5,
+          fontStyle: 'bold',
+          fontSize: 8.5,
+          cellPadding: 3,
+        },
+        styles: { fontSize: 8, cellPadding: 2.5, textColor: [0, 0, 0] },
+        columnStyles: {
+          0: { fontStyle: 'bold', cellWidth: 35, fillColor: [240, 240, 240] },
+          1: { cellWidth: halfWidth - 35 },
+          2: { fontStyle: 'bold', cellWidth: 40, fillColor: [240, 240, 240] },
+          3: { cellWidth: halfWidth - 40 },
+        },
+        margin: { left: margin, right: margin },
+      });
+
+      y = (doc as any).lastAutoTable.finalY + 5;
+
+      // ===== Transaction Table for this file =====
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(0, 0, 0);
+      doc.text('TRANSACTION DETAILS', margin, y);
+      y += 3;
+
+      const tableBody = fileTxns.map((txn, i) => [
+        String(i + 1),
+        String(txn.transactionId),
+        txn.merchantId || '\u2013',
+        txn.merchantCustomer || '\u2013',
+        txn.maskedPan || '\u2013',
+        this.formatAmount(txn.amount),
+        txn.currency || '\u2013',
+        txn.status || '\u2013',
+        txn.remark || '\u2013',
+        this.formatDate(txn.authorizationDatetime),
+      ]);
+
+      autoTable(doc, {
+        startY: y,
+        head: tableHead,
+        body: tableBody,
+        theme: 'grid',
+        headStyles: {
+          fillColor: [50, 50, 50],
+          textColor: [255, 255, 255],
+          lineColor: [255, 255, 255],
+          lineWidth: 0.5,
+          fontStyle: 'bold',
+          fontSize: 7.5,
+          halign: 'center',
+        },
+        bodyStyles: {
+          fontSize: 7,
+          textColor: [0, 0, 0],
+          cellPadding: 2,
+        },
+        alternateRowStyles: {
+          fillColor: [245, 245, 245],
+        },
+        columnStyles: {
+          0: { cellWidth: 8, halign: 'center' },
+          1: { cellWidth: 18, halign: 'center' },
+          2: { cellWidth: 25 },
+          3: { cellWidth: 28 },
+          4: { cellWidth: 30, font: 'courier' },
+          5: { cellWidth: 22, halign: 'right' },
+          6: { cellWidth: 16, halign: 'center' },
+          7: { cellWidth: 22, halign: 'center' },
+          8: { cellWidth: 45 },
+          9: { cellWidth: 35 },
+        },
+        margin: { left: margin, right: margin },
+      });
+
+      y = (doc as any).lastAutoTable.finalY + 10;
     });
 
     // ===== Footer on each page =====

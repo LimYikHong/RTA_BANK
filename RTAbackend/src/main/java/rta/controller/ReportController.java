@@ -93,11 +93,58 @@ public class ReportController {
             rMap.put("reportName", report.getReportName());
             rMap.put("reportType", report.getReportType());
             rMap.put("fileFormat", report.getFileFormat());
-            rMap.put("totalRecords", report.getTotalRecords());
-            rMap.put("successCount", report.getSuccessCount());
-            rMap.put("failCount", report.getFailCount());
-            rMap.put("approvedCount", report.getApprovedCount());
-            rMap.put("declinedCount", report.getDeclinedCount());
+            // Recompute counts from transactions if stored approvedCount is 0
+            // (fixes stale counts for batches with multiple files)
+            int approvedCount = report.getApprovedCount() != null ? report.getApprovedCount() : 0;
+            int declinedCount = report.getDeclinedCount() != null ? report.getDeclinedCount() : 0;
+            int failCount = report.getFailCount() != null ? report.getFailCount() : 0;
+            int totalRecords = report.getTotalRecords() != null ? report.getTotalRecords() : 0;
+            int successCount = report.getSuccessCount() != null ? report.getSuccessCount() : 0;
+
+            if (approvedCount == 0 && report.getBatchFileId() != null) {
+                List<RtaTransaction> txns = transactionRepository.findByBatchFileId(report.getBatchFileId());
+                if (!txns.isEmpty()) {
+                    int recomputedApproved = 0, recomputedDeclined = 0, recomputedFail = 0, recomputedSuccess = 0;
+                    for (RtaTransaction txn : txns) {
+                        String st = txn.getStatus() != null ? txn.getStatus().toUpperCase() : "";
+                        switch (st) {
+                            case "APPROVED" -> {
+                                recomputedApproved++;
+                                recomputedSuccess++;
+                            }
+                            case "DECLINED" -> {
+                                recomputedDeclined++;
+                                recomputedFail++;
+                            }
+                            case "FAILED" ->
+                                recomputedFail++;
+                            default ->
+                                recomputedSuccess++;
+                        }
+                    }
+                    if (recomputedApproved > 0) {
+                        approvedCount = recomputedApproved;
+                        declinedCount = recomputedDeclined;
+                        failCount = recomputedFail;
+                        successCount = recomputedSuccess;
+                        totalRecords = txns.size();
+
+                        // Also update the stored report so future queries are correct
+                        report.setApprovedCount(approvedCount);
+                        report.setDeclinedCount(declinedCount);
+                        report.setFailCount(failCount);
+                        report.setSuccessCount(successCount);
+                        report.setTotalRecords(totalRecords);
+                        reportRepository.save(report);
+                    }
+                }
+            }
+
+            rMap.put("totalRecords", totalRecords);
+            rMap.put("successCount", successCount);
+            rMap.put("failCount", failCount);
+            rMap.put("approvedCount", approvedCount);
+            rMap.put("declinedCount", declinedCount);
             rMap.put("totalAmount", report.getTotalAmount());
             rMap.put("status", report.getStatus());
             rMap.put("sendStatus", report.getSendStatus());

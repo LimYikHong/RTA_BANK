@@ -1,0 +1,147 @@
+<!-- Page Header -->
+<div class="page-header">
+    <button class="btn-back" (click)="back()">&lt; Back</button>
+    <div>
+        <h1>Merchant RSA Key Detail</h1>
+    </div>
+</div>
+
+<!-- Action Buttons -->
+<div class="key-actions" *ngIf="!loading && keyDetail">
+    <button class="btn btn-primary" (click)="rotateKeys()"
+            [disabled]="rotating || !canRotateKeys"
+            [class.btn-disabled]="!canRotateKeys">
+        {{ rotating ? 'Rotating...' : 'Rotate Keys' }}
+    </button>
+    <button class="btn btn-primary" (click)="loadKeyDetail()" style="margin-left: 8px;">Refresh</button>
+</div>
+
+<!-- Merchant Info -->
+<div class="detail-card" *ngIf="merchantId">
+    <h2>Merchant Information</h2>
+    <div class="details-grid">
+        <div class="detail-item">
+            <label>Merchant ID</label>
+            <span class="id-value">{{ merchantId }}</span>
+        </div>
+        <div class="detail-item">
+            <label>Merchant Name</label>
+            <span>{{ merchantName || '-' }}</span>
+        </div>
+    </div>
+</div>
+
+<!-- Loading -->
+<div class="loading-text" *ngIf="loading">Loading key details...</div>
+
+<!-- Error -->
+<div *ngIf="!loading && !keyDetail" class="empty-state">
+    Failed to load key details for merchant {{ merchantId }}.
+</div>
+
+<!-- Key Details -->
+<div *ngIf="!loading && keyDetail">
+
+    <!-- Inbound Key -->
+    <div class="detail-card">
+        <h2>Inbound Key</h2>
+        <p class="section-desc">Merchant uses this public key to encrypt batch file uploads. The bank holds the private key to decrypt incoming files.</p>
+        <div *ngIf="keyDetail.inbound.hasKey">
+            <div class="details-grid">
+                <div class="detail-item">
+                    <label>Key ID</label>
+                    <span>{{ keyDetail.inbound.keyId }}</span>
+                </div>
+                <div class="detail-item">
+                    <label>Version</label>
+                    <span>v{{ keyDetail.inbound.version }}</span>
+                </div>
+                <div class="detail-item">
+                    <label>Status</label>
+                    <span>
+                        <span class="status-badge" [ngClass]="getStatusClass(keyDetail.inbound)">{{ keyDetail.inbound.status }}</span>
+                    </span>
+                </div>
+                <div class="detail-item">
+                    <label>Activated At</label>
+                    <span>{{ keyDetail.inbound.activatedAt ? (keyDetail.inbound.activatedAt | date:'yyyy-MM-dd HH:mm:ss') : '-' }}</span>
+                </div>
+                <div class="detail-item">
+                    <label>Expires At</label>
+                    <span>{{ keyDetail.inbound.expiresAt ? (keyDetail.inbound.expiresAt | date:'yyyy-MM-dd HH:mm:ss') : '-' }}</span>
+                </div>
+                <div class="detail-item">
+                    <label>Days Elapsed</label>
+                    <span>{{ keyDetail.inbound.daysElapsed }} days</span>
+                </div>
+                <div class="detail-item">
+                    <label>Days Remaining</label>
+                    <span>{{ keyDetail.inbound.daysRemaining }} days</span>
+                </div>
+                <div class="detail-item">
+                    <label>Rotation Window</label>
+                    <span>
+                        <span *ngIf="keyDetail.inbound.expired" style="color:#dc2626; font-weight:600;">❌ Expired</span>
+                        <span *ngIf="keyDetail.inbound.canRotate && !keyDetail.inbound.expired" style="color:#d97706; font-weight:600;">⚠ Available now</span>
+                        <span *ngIf="!keyDetail.inbound.canRotate && !keyDetail.inbound.expired" style="color:#64748b;">Day 25–30</span>
+                    </span>
+                </div>
+            </div>
+        </div>
+        <div *ngIf="!keyDetail.inbound.hasKey" class="no-key-msg">
+            No active inbound key found for this merchant. Keys are auto-generated when the merchant is created.
+        </div>
+    </div>
+
+    <!-- Outbound Key -->
+    <div class="detail-card">
+        <h2>Outbound Key</h2>
+        <p class="section-desc">Bank uses this public key to encrypt return batch result files. The merchant holds the private key to decrypt.</p>
+        <div *ngIf="keyDetail.outbound.hasKey">
+            <div class="details-grid">
+                <div class="detail-item">
+                    <label>Key ID</label>
+                    <span>{{ keyDetail.outbound.keyId }}</span>
+                </div>
+                <div class="detail-item">
+                    <label>Version</label>
+                    <span>v{{ keyDetail.outbound.version }}</span>
+                </div>
+                <div class="detail-item">
+                    <label>Status</label>
+                    <span>
+                        <span class="status-badge" [ngClass]="getStatusClass(keyDetail.outbound)">{{ keyDetail.outbound.status }}</span>
+                    </span>
+                </div>
+                <div class="detail-item">
+                    <label>Activated At</label>
+                    <span>{{ keyDetail.outbound.activatedAt ? (keyDetail.outbound.activatedAt | date:'yyyy-MM-dd HH:mm:ss') : '-' }}</span>
+                </div>
+                <div class="detail-item">
+                    <label>Expires At</label>
+                    <span>{{ keyDetail.outbound.expiresAt ? (keyDetail.outbound.expiresAt | date:'yyyy-MM-dd HH:mm:ss') : '-' }}</span>
+                </div>
+                <div class="detail-item">
+                    <label>Days Elapsed</label>
+                    <span>{{ keyDetail.outbound.daysElapsed }} days</span>
+                </div>
+                <div class="detail-item">
+                    <label>Days Remaining</label>
+                    <span>{{ keyDetail.outbound.daysRemaining }} days</span>
+                </div>
+                <div class="detail-item">
+                    <label>Rotation Window</label>
+                    <span>
+                        <span *ngIf="keyDetail.outbound.expired" style="color:#dc2626; font-weight:600;">❌ Expired</span>
+                        <span *ngIf="keyDetail.outbound.canRotate && !keyDetail.outbound.expired" style="color:#d97706; font-weight:600;">⚠ Available now</span>
+                        <span *ngIf="!keyDetail.outbound.canRotate && !keyDetail.outbound.expired" style="color:#64748b;">Day 25–30</span>
+                    </span>
+                </div>
+            </div>
+        </div>
+        <div *ngIf="!keyDetail.outbound.hasKey" class="no-key-msg">
+            No active outbound key found for this merchant. Keys are auto-generated when the merchant is created.
+        </div>
+    </div>
+
+</div>

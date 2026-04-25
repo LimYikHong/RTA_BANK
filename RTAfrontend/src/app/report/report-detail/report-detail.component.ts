@@ -125,10 +125,20 @@ export class ReportDetailComponent implements OnInit, OnDestroy {
     const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
     const pageWidth = doc.internal.pageSize.getWidth();
     const margin = 15;
-    const transactions = data.transactions || [];
+    const allTransactions = data.transactions || [];
     const files = data.files || [];
-    const originalFilename = files.length > 0 ? files[0].originalFilename : '\u2013';
-    const validationStatus = files.length > 0 ? files[0].fileStatus : '\u2013';
+
+    // Filter by this report's batchFileId
+    const reportBatchFileId = this.report?.batchFileId;
+    const transactions = reportBatchFileId
+      ? allTransactions.filter(t => t.batchFileId === reportBatchFileId)
+      : allTransactions;
+    const matchedFile = reportBatchFileId
+      ? files.find(f => f.batchFileId === reportBatchFileId)
+      : files[0];
+
+    const originalFilename = matchedFile ? matchedFile.originalFilename : '\u2013';
+    const validationStatus = matchedFile ? matchedFile.fileStatus : '\u2013';
     const authStatus = validationStatus?.toUpperCase() === 'FAILED' ? '\u2013' : (data.batchStatus || '\u2013');
 
     let y = 18;
@@ -231,6 +241,8 @@ export class ReportDetailComponent implements OnInit, OnDestroy {
       headStyles: {
         fillColor: [50, 50, 50],
         textColor: [255, 255, 255],
+        lineColor: [255, 255, 255],
+        lineWidth: 0.01,
         fontStyle: 'bold',
         fontSize: 7.5,
         halign: 'center',

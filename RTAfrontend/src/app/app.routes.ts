@@ -16,6 +16,8 @@ import { BatchFileMaintenanceComponent } from './batch/batch-file-maintenance/ba
 import { BatchFileDetailComponent } from './batch/batch-file-detail/batch-file-detail.component';
 import { UserManagementComponent } from './user/user-management/user-management.component';
 import { MerchantMaintenanceComponent } from './merchant/merchant-maintenance/merchant-maintenance.component';
+import { MerchantKeyManagementComponent } from './merchant/merchant-key-management/merchant-key-management.component';
+import { MerchantKeyDetailComponent } from './merchant/merchant-key-detail/merchant-key-detail.component';
 import { RecurringListComponent } from './recurring/recurring-list/recurring-list.component';
 import { RecurringDetailComponent } from './recurring/recurring-detail/recurring-detail.component';
 import { AuditLogComponent } from './audit-log/audit-log.component';
@@ -50,6 +52,8 @@ export const routes: Routes = [
       { path: 'view-user/:userId', component: ViewUserComponent },
       { path: 'edit-user/:userId', component: EditUserComponent, canActivate: [permissionGuard('USER_EDIT')] },
       { path: 'merchant-maintenance', component: MerchantMaintenanceComponent },
+      { path: 'merchant-key-management', component: MerchantKeyManagementComponent },
+      { path: 'merchant-key-detail/:merchantId', component: MerchantKeyDetailComponent },
       { path: 'recurring-list', component: RecurringListComponent },
       { path: 'recurring-detail/:recurringReference', component: RecurringDetailComponent },
       { path: 'add-user', component: AddUserComponent, canActivate: [permissionGuard('USER_CREATE')] },

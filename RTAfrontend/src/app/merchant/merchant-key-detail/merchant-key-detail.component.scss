@@ -1,0 +1,78 @@
+.id-value {
+  font-weight: 600;
+  color: #065f46 !important;
+}
+
+.key-actions {
+  display: flex;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.btn-disabled {
+  opacity: 0.4;
+  cursor: not-allowed !important;
+  background-color: #94a3b8 !important;
+
+  &:hover {
+    background-color: #94a3b8 !important;
+  }
+}
+
+// View detail card (consistent with view-merchant / view-user)
+.detail-card {
+  background: white;
+  padding: 30px;
+  border-radius: 10px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  margin-bottom: 24px;
+
+  h2 {
+    font-size: 18px;
+    font-weight: 600;
+    color: #334155;
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid #e2e8f0;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+}
+
+.details-grid {
+  display: grid;
+  grid-template-columns: 400px 400px;
+  gap: 15px 50px;
+}
+
+.detail-item {
+  width: 400px;
+
+  label {
+    display: block;
+    font-weight: bold;
+    color: #334155;
+    font-size: 13px;
+  }
+
+  span {
+    display: block;
+    margin-top: 2px;
+    color: #1e293b;
+    font-size: 15px;
+  }
+}
+
+.empty-state {
+  padding: 40px;
+  text-align: center;
+  color: #64748b;
+  font-size: 14px;
+}
+
+.no-key-msg {
+  padding: 20px 0;
+  color: #94a3b8;
+  font-size: 14px;
+}

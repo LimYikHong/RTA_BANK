@@ -679,7 +679,8 @@
 // STATUS BADGES
 // =============================================
 .status-badge {
-  display: inline-block;
+  display: inline-block !important;
+  width: auto !important;
   padding: 3px 12px;
   border-radius: 12px;
   font-size: 12px;

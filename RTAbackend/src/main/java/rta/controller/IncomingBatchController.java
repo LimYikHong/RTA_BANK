@@ -364,7 +364,7 @@ public class IncomingBatchController {
 
                                         if (!missingColumns.isEmpty()) {
                                             validationStatus = "MISSING_HEADER";
-                                            validationRemark = "Missing required columns in header: " + String.join(", ", missingColumns);
+                                            validationRemark = "Expected header is missing. Required columns not found: " + String.join(", ", missingColumns);
                                         } else {
                                             // Header is valid, proceed with data validation
                                             List<String[]> dataRows = new ArrayList<>();
@@ -572,190 +572,214 @@ public class IncomingBatchController {
                                         }
                                     } else {
                                         // Profile doesn't expect header, use column index based mapping
-                                        List<String[]> dataRows = new ArrayList<>();
-                                        for (int i = 0; i < allLines.size(); i++) {
-                                            if (!allLines.get(i).trim().isEmpty()) {
-                                                dataRows.add(allLines.get(i).split(
-                                                        java.util.regex.Pattern.quote(delimiter), -1));
+                                        // But first, detect if the file actually has a header row (mismatch)
+                                        String[] firstRow = allLines.get(0).split(
+                                                java.util.regex.Pattern.quote(delimiter), -1);
+                                        java.util.Set<String> mappingColumnNames = new java.util.HashSet<>();
+                                        for (RtaFieldMapping m : mappings) {
+                                            if (m.getSourceColumnName() != null) {
+                                                mappingColumnNames.add(m.getSourceColumnName().trim().toLowerCase());
+                                            }
+                                            mappingColumnNames.add(m.getCanonicalField().trim().toLowerCase());
+                                        }
+                                        int headerMatchCount = 0;
+                                        for (String cell : firstRow) {
+                                            if (cell != null && mappingColumnNames.contains(cell.trim().toLowerCase())) {
+                                                headerMatchCount++;
                                             }
                                         }
+                                        // If >=2 cells match known column names, the file likely has a header
+                                        if (headerMatchCount >= 2) {
+                                            validationStatus = "WRONG_FILE_FORMAT";
+                                            validationRemark = "Unexpected header detected. ";
+                                        }
 
-                                        totalRecordCount = dataRows.size();
-                                        validationStatus = "VALIDATED";
-                                        Map<String, Integer> headerMap = new HashMap<>(); // empty for index-based
-
-                                        ObjectMapper objectMapper = new ObjectMapper();
-
-                                        for (int rowIdx = 0; rowIdx < dataRows.size(); rowIdx++) {
-                                            String[] row = dataRows.get(rowIdx);
-                                            List<String> rowErrors = new ArrayList<>();
-                                            String txnStatus = "PENDING";
-
-                                            String customerRef = getFieldValue(row, headerMap, mappings, "customer_reference");
-                                            String accountNum = getFieldValue(row, headerMap, mappings, "account_num");
-                                            String bankCode = getFieldValue(row, headerMap, mappings, "bank_code");
-                                            String amountStr = getFieldValue(row, headerMap, mappings, "amount");
-                                            String currencyVal = getFieldValue(row, headerMap, mappings, "currency");
-                                            String txnDateStr = getFieldValue(row, headerMap, mappings, "transaction_date");
-                                            String startDateStr = getFieldValue(row, headerMap, mappings, "start_date");
-                                            String isRecurringStr = getFieldValue(row, headerMap, mappings, "is_recurring");
-                                            String recurringType = getFieldValue(row, headerMap, mappings, "recurring_type");
-                                            String freqValueStr = getFieldValue(row, headerMap, mappings, "frequency_value");
-                                            String recurringRef = getFieldValue(row, headerMap, mappings, "recurring_reference");
-
-                                            Map<String, String> additionalData = new LinkedHashMap<>();
-                                            for (RtaFieldMapping mapping : mappings) {
-                                                String fieldName = mapping.getCanonicalField();
-                                                if (!FileProfileService.REQUIRED_CANONICAL_FIELDS.contains(fieldName)) {
-                                                    String value = getFieldValue(row, headerMap, mappings, fieldName);
-                                                    if (value != null && !value.trim().isEmpty()) {
-                                                        additionalData.put(fieldName, value.trim());
-                                                    }
+                                        if (!"WRONG_FILE_FORMAT".equals(validationStatus)) {
+                                            List<String[]> dataRows = new ArrayList<>();
+                                            for (int i = 0; i < allLines.size(); i++) {
+                                                if (!allLines.get(i).trim().isEmpty()) {
+                                                    dataRows.add(allLines.get(i).split(
+                                                            java.util.regex.Pattern.quote(delimiter), -1));
                                                 }
                                             }
 
-                                            boolean rowIsNonRecurring = isRecurringStr != null
-                                                    && !isRecurringStr.trim().isEmpty()
-                                                    && ("false".equals(isRecurringStr.trim().toLowerCase())
-                                                    || "0".equals(isRecurringStr.trim())
-                                                    || "no".equals(isRecurringStr.trim().toLowerCase())
-                                                    || "n".equals(isRecurringStr.trim().toLowerCase()));
-                                            java.util.Set<String> RECURRING_ONLY_FIELDS = java.util.Set.of(
-                                                    "recurring_reference", "recurring_type", "frequency_value");
-                                            for (RtaFieldMapping mapping : mappings) {
-                                                if (Boolean.TRUE.equals(mapping.getRequired())) {
-                                                    if (rowIsNonRecurring && RECURRING_ONLY_FIELDS.contains(mapping.getCanonicalField())) {
-                                                        continue;
+                                            totalRecordCount = dataRows.size();
+                                            validationStatus = "VALIDATED";
+                                            Map<String, Integer> headerMap = new HashMap<>(); // empty for index-based
+
+                                            ObjectMapper objectMapper = new ObjectMapper();
+
+                                            for (int rowIdx = 0; rowIdx < dataRows.size(); rowIdx++) {
+                                                String[] row = dataRows.get(rowIdx);
+                                                List<String> rowErrors = new ArrayList<>();
+                                                String txnStatus = "PENDING";
+
+                                                String customerRef = getFieldValue(row, headerMap, mappings, "customer_reference");
+                                                String accountNum = getFieldValue(row, headerMap, mappings, "account_num");
+                                                String bankCode = getFieldValue(row, headerMap, mappings, "bank_code");
+                                                String amountStr = getFieldValue(row, headerMap, mappings, "amount");
+                                                String currencyVal = getFieldValue(row, headerMap, mappings, "currency");
+                                                String txnDateStr = getFieldValue(row, headerMap, mappings, "transaction_date");
+                                                String startDateStr = getFieldValue(row, headerMap, mappings, "start_date");
+                                                String isRecurringStr = getFieldValue(row, headerMap, mappings, "is_recurring");
+                                                String recurringType = getFieldValue(row, headerMap, mappings, "recurring_type");
+                                                String freqValueStr = getFieldValue(row, headerMap, mappings, "frequency_value");
+                                                String recurringRef = getFieldValue(row, headerMap, mappings, "recurring_reference");
+
+                                                Map<String, String> additionalData = new LinkedHashMap<>();
+                                                for (RtaFieldMapping mapping : mappings) {
+                                                    String fieldName = mapping.getCanonicalField();
+                                                    if (!FileProfileService.REQUIRED_CANONICAL_FIELDS.contains(fieldName)) {
+                                                        String value = getFieldValue(row, headerMap, mappings, fieldName);
+                                                        if (value != null && !value.trim().isEmpty()) {
+                                                            additionalData.put(fieldName, value.trim());
+                                                        }
                                                     }
-                                                    String val = getFieldValue(row, headerMap, mappings, mapping.getCanonicalField());
-                                                    if (val == null || val.trim().isEmpty()) {
-                                                        rowErrors.add("Empty value for required field '" + mapping.getCanonicalField() + "'");
-                                                        txnStatus = "FAILED";
-                                                    } else {
-                                                        if (mapping.getDataType() != null) {
-                                                            switch (mapping.getDataType().toUpperCase()) {
-                                                                case "INTEGER":
-                                                                    try {
-                                                                        Long.parseLong(val.trim());
-                                                                    } catch (NumberFormatException e) {
-                                                                        rowErrors.add("Invalid integer for '" + mapping.getCanonicalField() + "': " + val);
-                                                                        txnStatus = "FAILED";
-                                                                    }
-                                                                    break;
-                                                                case "DECIMAL":
-                                                                    try {
-                                                                        Double.parseDouble(val.trim());
-                                                                    } catch (NumberFormatException e) {
-                                                                        rowErrors.add("Invalid decimal for '" + mapping.getCanonicalField() + "': " + val);
-                                                                        txnStatus = "FAILED";
-                                                                    }
-                                                                    break;
-                                                                case "DATE":
-                                                                    if (profile.getDateFormat() != null) {
+                                                }
+
+                                                boolean rowIsNonRecurring = isRecurringStr != null
+                                                        && !isRecurringStr.trim().isEmpty()
+                                                        && ("false".equals(isRecurringStr.trim().toLowerCase())
+                                                        || "0".equals(isRecurringStr.trim())
+                                                        || "no".equals(isRecurringStr.trim().toLowerCase())
+                                                        || "n".equals(isRecurringStr.trim().toLowerCase()));
+                                                java.util.Set<String> RECURRING_ONLY_FIELDS = java.util.Set.of(
+                                                        "recurring_reference", "recurring_type", "frequency_value");
+                                                for (RtaFieldMapping mapping : mappings) {
+                                                    if (Boolean.TRUE.equals(mapping.getRequired())) {
+                                                        if (rowIsNonRecurring && RECURRING_ONLY_FIELDS.contains(mapping.getCanonicalField())) {
+                                                            continue;
+                                                        }
+                                                        String val = getFieldValue(row, headerMap, mappings, mapping.getCanonicalField());
+                                                        if (val == null || val.trim().isEmpty()) {
+                                                            rowErrors.add("Empty value for required field '" + mapping.getCanonicalField() + "'");
+                                                            txnStatus = "FAILED";
+                                                        } else {
+                                                            if (mapping.getDataType() != null) {
+                                                                switch (mapping.getDataType().toUpperCase()) {
+                                                                    case "INTEGER":
                                                                         try {
-                                                                            DateTimeFormatter fmt = DateTimeFormatter.ofPattern(profile.getDateFormat());
-                                                                            LocalDate.parse(val.trim(), fmt);
-                                                                        } catch (Exception e) {
-                                                                            rowErrors.add("Invalid date for '" + mapping.getCanonicalField() + "': " + val);
+                                                                            Long.parseLong(val.trim());
+                                                                        } catch (NumberFormatException e) {
+                                                                            rowErrors.add("Invalid integer for '" + mapping.getCanonicalField() + "': " + val);
                                                                             txnStatus = "FAILED";
                                                                         }
-                                                                    }
-                                                                    break;
-                                                                case "BOOLEAN":
-                                                                    String boolVal = val.trim().toLowerCase();
-                                                                    if (!boolVal.equals("true") && !boolVal.equals("false")
-                                                                            && !boolVal.equals("1") && !boolVal.equals("0")
-                                                                            && !boolVal.equals("yes") && !boolVal.equals("no")
-                                                                            && !boolVal.equals("y") && !boolVal.equals("n")) {
-                                                                        rowErrors.add("Invalid boolean for '" + mapping.getCanonicalField() + "': " + val);
-                                                                        txnStatus = "FAILED";
-                                                                    }
-                                                                    break;
+                                                                        break;
+                                                                    case "DECIMAL":
+                                                                        try {
+                                                                            Double.parseDouble(val.trim());
+                                                                        } catch (NumberFormatException e) {
+                                                                            rowErrors.add("Invalid decimal for '" + mapping.getCanonicalField() + "': " + val);
+                                                                            txnStatus = "FAILED";
+                                                                        }
+                                                                        break;
+                                                                    case "DATE":
+                                                                        if (profile.getDateFormat() != null) {
+                                                                            try {
+                                                                                DateTimeFormatter fmt = DateTimeFormatter.ofPattern(profile.getDateFormat());
+                                                                                LocalDate.parse(val.trim(), fmt);
+                                                                            } catch (Exception e) {
+                                                                                rowErrors.add("Invalid date for '" + mapping.getCanonicalField() + "': " + val);
+                                                                                txnStatus = "FAILED";
+                                                                            }
+                                                                        }
+                                                                        break;
+                                                                    case "BOOLEAN":
+                                                                        String boolVal = val.trim().toLowerCase();
+                                                                        if (!boolVal.equals("true") && !boolVal.equals("false")
+                                                                                && !boolVal.equals("1") && !boolVal.equals("0")
+                                                                                && !boolVal.equals("yes") && !boolVal.equals("no")
+                                                                                && !boolVal.equals("y") && !boolVal.equals("n")) {
+                                                                            rowErrors.add("Invalid boolean for '" + mapping.getCanonicalField() + "': " + val);
+                                                                            txnStatus = "FAILED";
+                                                                        }
+                                                                        break;
+                                                                }
                                                             }
                                                         }
                                                     }
                                                 }
-                                            }
 
-                                            Long amountCents = null;
-                                            if (amountStr != null && !amountStr.trim().isEmpty()) {
-                                                try {
-                                                    double amt = Double.parseDouble(amountStr.trim());
-                                                    amountCents = Math.round(amt * 100);
-                                                } catch (NumberFormatException ignored) {
+                                                Long amountCents = null;
+                                                if (amountStr != null && !amountStr.trim().isEmpty()) {
+                                                    try {
+                                                        double amt = Double.parseDouble(amountStr.trim());
+                                                        amountCents = Math.round(amt * 100);
+                                                    } catch (NumberFormatException ignored) {
+                                                    }
+                                                }
+
+                                                LocalDate txnDate = null;
+                                                if (txnDateStr != null && !txnDateStr.trim().isEmpty() && profile.getDateFormat() != null) {
+                                                    try {
+                                                        DateTimeFormatter fmt = DateTimeFormatter.ofPattern(profile.getDateFormat());
+                                                        txnDate = LocalDate.parse(txnDateStr.trim(), fmt);
+                                                    } catch (Exception ignored) {
+                                                    }
+                                                }
+
+                                                Boolean isRecurring = null;
+                                                if (isRecurringStr != null && !isRecurringStr.trim().isEmpty()) {
+                                                    String val = isRecurringStr.trim().toLowerCase();
+                                                    isRecurring = "true".equals(val) || "1".equals(val) || "yes".equals(val) || "y".equals(val);
+                                                }
+
+                                                Integer freqValue = null;
+                                                if (freqValueStr != null && !freqValueStr.trim().isEmpty()) {
+                                                    try {
+                                                        freqValue = Integer.parseInt(freqValueStr.trim());
+                                                    } catch (NumberFormatException ignored) {
+                                                    }
+                                                }
+
+                                                RtaTransaction txn = new RtaTransaction();
+                                                txn.setMerchantId(merchantId);
+                                                txn.setBatchSeq(rowIdx + 1);
+                                                txn.setMerchantCustomer(customerRef);
+                                                txn.setMaskedPan(accountNum);
+                                                txn.setMerchantBillingRef(bankCode);
+                                                txn.setAmount(amountCents);
+                                                txn.setCurrency(currencyVal != null ? currencyVal.trim() : "");
+                                                txn.setActualBillingDate(txnDate);
+                                                txn.setIsRecurring(isRecurring);
+                                                txn.setRecurringIndicator(recurringType);
+                                                txn.setFrequencyValue(freqValue);
+                                                txn.setRecurringReference(recurringRef);
+                                                txn.setTransactionDescription("start=" + (startDateStr != null ? startDateStr.trim() : ""));
+                                                txn.setStatus(txnStatus);
+                                                txn.setValidationStatus("FAILED".equals(txnStatus) ? "FAILED" : "PASSED");
+                                                txn.setRemark(rowErrors.isEmpty() ? null : String.join("; ", rowErrors));
+                                                txn.setCreatedAt(LocalDateTime.now());
+
+                                                if (!additionalData.isEmpty()) {
+                                                    try {
+                                                        txn.setAdditionalData(objectMapper.writeValueAsString(additionalData));
+                                                    } catch (Exception ignored) {
+                                                    }
+                                                }
+
+                                                transactionsToSave.add(txn);
+
+                                                if ("PENDING".equals(txnStatus)) {
+                                                    successCount++;
+                                                    if (amountCents != null) {
+                                                        totalAmountCents += amountCents;
+                                                    }
+                                                } else {
+                                                    failCount++;
                                                 }
                                             }
 
-                                            LocalDate txnDate = null;
-                                            if (txnDateStr != null && !txnDateStr.trim().isEmpty() && profile.getDateFormat() != null) {
-                                                try {
-                                                    DateTimeFormatter fmt = DateTimeFormatter.ofPattern(profile.getDateFormat());
-                                                    txnDate = LocalDate.parse(txnDateStr.trim(), fmt);
-                                                } catch (Exception ignored) {
+                                            if (failCount > 0) {
+                                                if (successCount == 0) {
+                                                    validationStatus = "INVALID_FILE_CONTENT";
+                                                    validationRemark = "All " + totalRecordCount + " record(s) failed validation -- no valid transactions";
+                                                } else {
+                                                    validationStatus = "PARTIAL";
+                                                    validationRemark = failCount + " out of " + totalRecordCount + " records failed validation";
                                                 }
                                             }
-
-                                            Boolean isRecurring = null;
-                                            if (isRecurringStr != null && !isRecurringStr.trim().isEmpty()) {
-                                                String val = isRecurringStr.trim().toLowerCase();
-                                                isRecurring = "true".equals(val) || "1".equals(val) || "yes".equals(val) || "y".equals(val);
-                                            }
-
-                                            Integer freqValue = null;
-                                            if (freqValueStr != null && !freqValueStr.trim().isEmpty()) {
-                                                try {
-                                                    freqValue = Integer.parseInt(freqValueStr.trim());
-                                                } catch (NumberFormatException ignored) {
-                                                }
-                                            }
-
-                                            RtaTransaction txn = new RtaTransaction();
-                                            txn.setMerchantId(merchantId);
-                                            txn.setBatchSeq(rowIdx + 1);
-                                            txn.setMerchantCustomer(customerRef);
-                                            txn.setMaskedPan(accountNum);
-                                            txn.setMerchantBillingRef(bankCode);
-                                            txn.setAmount(amountCents);
-                                            txn.setCurrency(currencyVal != null ? currencyVal.trim() : "");
-                                            txn.setActualBillingDate(txnDate);
-                                            txn.setIsRecurring(isRecurring);
-                                            txn.setRecurringIndicator(recurringType);
-                                            txn.setFrequencyValue(freqValue);
-                                            txn.setRecurringReference(recurringRef);
-                                            txn.setTransactionDescription("start=" + (startDateStr != null ? startDateStr.trim() : ""));
-                                            txn.setStatus(txnStatus);
-                                            txn.setValidationStatus("FAILED".equals(txnStatus) ? "FAILED" : "PASSED");
-                                            txn.setRemark(rowErrors.isEmpty() ? null : String.join("; ", rowErrors));
-                                            txn.setCreatedAt(LocalDateTime.now());
-
-                                            if (!additionalData.isEmpty()) {
-                                                try {
-                                                    txn.setAdditionalData(objectMapper.writeValueAsString(additionalData));
-                                                } catch (Exception ignored) {
-                                                }
-                                            }
-
-                                            transactionsToSave.add(txn);
-
-                                            if ("PENDING".equals(txnStatus)) {
-                                                successCount++;
-                                                if (amountCents != null) {
-                                                    totalAmountCents += amountCents;
-                                                }
-                                            } else {
-                                                failCount++;
-                                            }
-                                        }
-
-                                        if (failCount > 0) {
-                                            if (successCount == 0) {
-                                                validationStatus = "INVALID_FILE_CONTENT";
-                                                validationRemark = "All " + totalRecordCount + " record(s) failed validation â€” no valid transactions";
-                                            } else {
-                                                validationStatus = "PARTIAL";
-                                                validationRemark = failCount + " out of " + totalRecordCount + " records failed validation";
-                                            }
-                                        }
+                                        } // end CSV no-header data processing
                                     }
                                 }
                             } catch (Exception e) {
@@ -781,7 +805,7 @@ public class IncomingBatchController {
                                     if (profileExpectsHeader) {
                                         if (headerRow == null) {
                                             validationStatus = "MISSING_HEADER";
-                                            validationRemark = "Excel file has no header row but profile expects headers";
+                                            validationRemark = "Expected header is missing.";
                                         } else {
                                             // Build header array and map
                                             int headerCellCount = headerRow.getLastCellNum();
@@ -810,7 +834,7 @@ public class IncomingBatchController {
 
                                             if (!missingColumns.isEmpty()) {
                                                 validationStatus = "MISSING_HEADER";
-                                                validationRemark = "Missing required columns in header: " + String.join(", ", missingColumns);
+                                                validationRemark = "Expected header is missing. Required columns not found: " + String.join(", ", missingColumns);
                                             } else {
                                                 // Build data rows
                                                 List<String[]> dataRows = new ArrayList<>();
@@ -1020,206 +1044,234 @@ public class IncomingBatchController {
                                         }
                                     } else {
                                         // Profile doesn't expect header, use column index based mapping
-                                        int colCount = headerRow != null ? headerRow.getLastCellNum() : 0;
-                                        if (colCount == 0 && sheet.getRow(0) != null) {
-                                            colCount = sheet.getRow(0).getLastCellNum();
-                                        }
-
-                                        List<String[]> dataRows = new ArrayList<>();
-                                        for (int rowIdx = 0; rowIdx <= sheet.getLastRowNum(); rowIdx++) {
-                                            Row row = sheet.getRow(rowIdx);
-                                            if (row != null) {
-                                                String[] rowData = new String[colCount];
-                                                boolean hasData = false;
-                                                for (int colIdx = 0; colIdx < colCount; colIdx++) {
-                                                    Cell cell = row.getCell(colIdx);
-                                                    String val = (cell != null) ? formatter.formatCellValue(cell).trim() : "";
-                                                    rowData[colIdx] = val;
-                                                    if (!val.isEmpty()) {
-                                                        hasData = true;
+                                        // But first, detect if the file actually has a header row (mismatch)
+                                        Row firstDataRow = sheet.getRow(0);
+                                        if (firstDataRow != null) {
+                                            java.util.Set<String> mappingColNames = new java.util.HashSet<>();
+                                            for (RtaFieldMapping m : mappings) {
+                                                if (m.getSourceColumnName() != null) {
+                                                    mappingColNames.add(m.getSourceColumnName().trim().toLowerCase());
+                                                }
+                                                mappingColNames.add(m.getCanonicalField().trim().toLowerCase());
+                                            }
+                                            int headerMatchCount = 0;
+                                            for (int ci = 0; ci < firstDataRow.getLastCellNum(); ci++) {
+                                                Cell c = firstDataRow.getCell(ci);
+                                                if (c != null) {
+                                                    String cv = formatter.formatCellValue(c).trim().toLowerCase();
+                                                    if (mappingColNames.contains(cv)) {
+                                                        headerMatchCount++;
                                                     }
                                                 }
-                                                if (hasData) {
-                                                    dataRows.add(rowData);
-                                                }
+                                            }
+                                            if (headerMatchCount >= 2) {
+                                                validationStatus = "WRONG_FILE_FORMAT";
+                                                validationRemark = "Unexpected header detected. ";
                                             }
                                         }
 
-                                        totalRecordCount = dataRows.size();
-                                        validationStatus = "VALIDATED";
-                                        Map<String, Integer> headerMap = new HashMap<>(); // empty for index-based
-                                        ObjectMapper objectMapper = new ObjectMapper();
+                                        if (!"WRONG_FILE_FORMAT".equals(validationStatus)) {
+                                            int colCount = headerRow != null ? headerRow.getLastCellNum() : 0;
+                                            if (colCount == 0 && sheet.getRow(0) != null) {
+                                                colCount = sheet.getRow(0).getLastCellNum();
+                                            }
 
-                                        for (int rowIdx = 0; rowIdx < dataRows.size(); rowIdx++) {
-                                            String[] row = dataRows.get(rowIdx);
-                                            List<String> rowErrors = new ArrayList<>();
-                                            String txnStatus = "PENDING";
-
-                                            String customerRef = getFieldValue(row, headerMap, mappings, "customer_reference");
-                                            String accountNum = getFieldValue(row, headerMap, mappings, "account_num");
-                                            String bankCode = getFieldValue(row, headerMap, mappings, "bank_code");
-                                            String amountStr = getFieldValue(row, headerMap, mappings, "amount");
-                                            String currencyVal = getFieldValue(row, headerMap, mappings, "currency");
-                                            String txnDateStr = getFieldValue(row, headerMap, mappings, "transaction_date");
-                                            String startDateStr = getFieldValue(row, headerMap, mappings, "start_date");
-                                            String isRecurringStr = getFieldValue(row, headerMap, mappings, "is_recurring");
-                                            String recurringType = getFieldValue(row, headerMap, mappings, "recurring_type");
-                                            String freqValueStr = getFieldValue(row, headerMap, mappings, "frequency_value");
-                                            String recurringRef = getFieldValue(row, headerMap, mappings, "recurring_reference");
-
-                                            Map<String, String> additionalData = new LinkedHashMap<>();
-                                            for (RtaFieldMapping mapping : mappings) {
-                                                String fieldName = mapping.getCanonicalField();
-                                                if (!FileProfileService.REQUIRED_CANONICAL_FIELDS.contains(fieldName)) {
-                                                    String value = getFieldValue(row, headerMap, mappings, fieldName);
-                                                    if (value != null && !value.trim().isEmpty()) {
-                                                        additionalData.put(fieldName, value.trim());
+                                            List<String[]> dataRows = new ArrayList<>();
+                                            for (int rowIdx = 0; rowIdx <= sheet.getLastRowNum(); rowIdx++) {
+                                                Row row = sheet.getRow(rowIdx);
+                                                if (row != null) {
+                                                    String[] rowData = new String[colCount];
+                                                    boolean hasData = false;
+                                                    for (int colIdx = 0; colIdx < colCount; colIdx++) {
+                                                        Cell cell = row.getCell(colIdx);
+                                                        String val = (cell != null) ? formatter.formatCellValue(cell).trim() : "";
+                                                        rowData[colIdx] = val;
+                                                        if (!val.isEmpty()) {
+                                                            hasData = true;
+                                                        }
+                                                    }
+                                                    if (hasData) {
+                                                        dataRows.add(rowData);
                                                     }
                                                 }
                                             }
 
-                                            boolean rowIsNonRecurring = isRecurringStr != null
-                                                    && !isRecurringStr.trim().isEmpty()
-                                                    && ("false".equals(isRecurringStr.trim().toLowerCase())
-                                                    || "0".equals(isRecurringStr.trim())
-                                                    || "no".equals(isRecurringStr.trim().toLowerCase())
-                                                    || "n".equals(isRecurringStr.trim().toLowerCase()));
-                                            java.util.Set<String> RECURRING_ONLY_FIELDS = java.util.Set.of(
-                                                    "recurring_reference", "recurring_type", "frequency_value");
-                                            for (RtaFieldMapping mapping : mappings) {
-                                                if (Boolean.TRUE.equals(mapping.getRequired())) {
-                                                    if (rowIsNonRecurring && RECURRING_ONLY_FIELDS.contains(mapping.getCanonicalField())) {
-                                                        continue;
+                                            totalRecordCount = dataRows.size();
+                                            validationStatus = "VALIDATED";
+                                            Map<String, Integer> headerMap = new HashMap<>(); // empty for index-based
+                                            ObjectMapper objectMapper = new ObjectMapper();
+
+                                            for (int rowIdx = 0; rowIdx < dataRows.size(); rowIdx++) {
+                                                String[] row = dataRows.get(rowIdx);
+                                                List<String> rowErrors = new ArrayList<>();
+                                                String txnStatus = "PENDING";
+
+                                                String customerRef = getFieldValue(row, headerMap, mappings, "customer_reference");
+                                                String accountNum = getFieldValue(row, headerMap, mappings, "account_num");
+                                                String bankCode = getFieldValue(row, headerMap, mappings, "bank_code");
+                                                String amountStr = getFieldValue(row, headerMap, mappings, "amount");
+                                                String currencyVal = getFieldValue(row, headerMap, mappings, "currency");
+                                                String txnDateStr = getFieldValue(row, headerMap, mappings, "transaction_date");
+                                                String startDateStr = getFieldValue(row, headerMap, mappings, "start_date");
+                                                String isRecurringStr = getFieldValue(row, headerMap, mappings, "is_recurring");
+                                                String recurringType = getFieldValue(row, headerMap, mappings, "recurring_type");
+                                                String freqValueStr = getFieldValue(row, headerMap, mappings, "frequency_value");
+                                                String recurringRef = getFieldValue(row, headerMap, mappings, "recurring_reference");
+
+                                                Map<String, String> additionalData = new LinkedHashMap<>();
+                                                for (RtaFieldMapping mapping : mappings) {
+                                                    String fieldName = mapping.getCanonicalField();
+                                                    if (!FileProfileService.REQUIRED_CANONICAL_FIELDS.contains(fieldName)) {
+                                                        String value = getFieldValue(row, headerMap, mappings, fieldName);
+                                                        if (value != null && !value.trim().isEmpty()) {
+                                                            additionalData.put(fieldName, value.trim());
+                                                        }
                                                     }
-                                                    String val = getFieldValue(row, headerMap, mappings, mapping.getCanonicalField());
-                                                    if (val == null || val.trim().isEmpty()) {
-                                                        rowErrors.add("Empty value for required field '" + mapping.getCanonicalField() + "'");
-                                                        txnStatus = "FAILED";
-                                                    } else {
-                                                        if (mapping.getDataType() != null) {
-                                                            switch (mapping.getDataType().toUpperCase()) {
-                                                                case "INTEGER":
-                                                                    try {
-                                                                        Long.parseLong(val.trim());
-                                                                    } catch (NumberFormatException e) {
-                                                                        rowErrors.add("Invalid integer for '" + mapping.getCanonicalField() + "': " + val);
-                                                                        txnStatus = "FAILED";
-                                                                    }
-                                                                    break;
-                                                                case "DECIMAL":
-                                                                    try {
-                                                                        Double.parseDouble(val.trim());
-                                                                    } catch (NumberFormatException e) {
-                                                                        rowErrors.add("Invalid decimal for '" + mapping.getCanonicalField() + "': " + val);
-                                                                        txnStatus = "FAILED";
-                                                                    }
-                                                                    break;
-                                                                case "DATE":
-                                                                    if (profile.getDateFormat() != null) {
+                                                }
+
+                                                boolean rowIsNonRecurring = isRecurringStr != null
+                                                        && !isRecurringStr.trim().isEmpty()
+                                                        && ("false".equals(isRecurringStr.trim().toLowerCase())
+                                                        || "0".equals(isRecurringStr.trim())
+                                                        || "no".equals(isRecurringStr.trim().toLowerCase())
+                                                        || "n".equals(isRecurringStr.trim().toLowerCase()));
+                                                java.util.Set<String> RECURRING_ONLY_FIELDS = java.util.Set.of(
+                                                        "recurring_reference", "recurring_type", "frequency_value");
+                                                for (RtaFieldMapping mapping : mappings) {
+                                                    if (Boolean.TRUE.equals(mapping.getRequired())) {
+                                                        if (rowIsNonRecurring && RECURRING_ONLY_FIELDS.contains(mapping.getCanonicalField())) {
+                                                            continue;
+                                                        }
+                                                        String val = getFieldValue(row, headerMap, mappings, mapping.getCanonicalField());
+                                                        if (val == null || val.trim().isEmpty()) {
+                                                            rowErrors.add("Empty value for required field '" + mapping.getCanonicalField() + "'");
+                                                            txnStatus = "FAILED";
+                                                        } else {
+                                                            if (mapping.getDataType() != null) {
+                                                                switch (mapping.getDataType().toUpperCase()) {
+                                                                    case "INTEGER":
                                                                         try {
-                                                                            DateTimeFormatter fmt = DateTimeFormatter.ofPattern(profile.getDateFormat());
-                                                                            LocalDate.parse(val.trim(), fmt);
-                                                                        } catch (Exception e) {
-                                                                            rowErrors.add("Invalid date for '" + mapping.getCanonicalField() + "': " + val);
+                                                                            Long.parseLong(val.trim());
+                                                                        } catch (NumberFormatException e) {
+                                                                            rowErrors.add("Invalid integer for '" + mapping.getCanonicalField() + "': " + val);
                                                                             txnStatus = "FAILED";
                                                                         }
-                                                                    }
-                                                                    break;
-                                                                case "BOOLEAN":
-                                                                    String boolVal = val.trim().toLowerCase();
-                                                                    if (!boolVal.equals("true") && !boolVal.equals("false")
-                                                                            && !boolVal.equals("1") && !boolVal.equals("0")
-                                                                            && !boolVal.equals("yes") && !boolVal.equals("no")
-                                                                            && !boolVal.equals("y") && !boolVal.equals("n")) {
-                                                                        rowErrors.add("Invalid boolean for '" + mapping.getCanonicalField() + "': " + val);
-                                                                        txnStatus = "FAILED";
-                                                                    }
-                                                                    break;
+                                                                        break;
+                                                                    case "DECIMAL":
+                                                                        try {
+                                                                            Double.parseDouble(val.trim());
+                                                                        } catch (NumberFormatException e) {
+                                                                            rowErrors.add("Invalid decimal for '" + mapping.getCanonicalField() + "': " + val);
+                                                                            txnStatus = "FAILED";
+                                                                        }
+                                                                        break;
+                                                                    case "DATE":
+                                                                        if (profile.getDateFormat() != null) {
+                                                                            try {
+                                                                                DateTimeFormatter fmt = DateTimeFormatter.ofPattern(profile.getDateFormat());
+                                                                                LocalDate.parse(val.trim(), fmt);
+                                                                            } catch (Exception e) {
+                                                                                rowErrors.add("Invalid date for '" + mapping.getCanonicalField() + "': " + val);
+                                                                                txnStatus = "FAILED";
+                                                                            }
+                                                                        }
+                                                                        break;
+                                                                    case "BOOLEAN":
+                                                                        String boolVal = val.trim().toLowerCase();
+                                                                        if (!boolVal.equals("true") && !boolVal.equals("false")
+                                                                                && !boolVal.equals("1") && !boolVal.equals("0")
+                                                                                && !boolVal.equals("yes") && !boolVal.equals("no")
+                                                                                && !boolVal.equals("y") && !boolVal.equals("n")) {
+                                                                            rowErrors.add("Invalid boolean for '" + mapping.getCanonicalField() + "': " + val);
+                                                                            txnStatus = "FAILED";
+                                                                        }
+                                                                        break;
+                                                                }
                                                             }
                                                         }
                                                     }
                                                 }
-                                            }
 
-                                            Long amountCents = null;
-                                            if (amountStr != null && !amountStr.trim().isEmpty()) {
-                                                try {
-                                                    double amt = Double.parseDouble(amountStr.trim());
-                                                    amountCents = Math.round(amt * 100);
-                                                } catch (NumberFormatException ignored) {
+                                                Long amountCents = null;
+                                                if (amountStr != null && !amountStr.trim().isEmpty()) {
+                                                    try {
+                                                        double amt = Double.parseDouble(amountStr.trim());
+                                                        amountCents = Math.round(amt * 100);
+                                                    } catch (NumberFormatException ignored) {
+                                                    }
+                                                }
+
+                                                LocalDate txnDate = null;
+                                                if (txnDateStr != null && !txnDateStr.trim().isEmpty() && profile.getDateFormat() != null) {
+                                                    try {
+                                                        DateTimeFormatter fmt = DateTimeFormatter.ofPattern(profile.getDateFormat());
+                                                        txnDate = LocalDate.parse(txnDateStr.trim(), fmt);
+                                                    } catch (Exception ignored) {
+                                                    }
+                                                }
+
+                                                Boolean isRecurring = null;
+                                                if (isRecurringStr != null && !isRecurringStr.trim().isEmpty()) {
+                                                    String val = isRecurringStr.trim().toLowerCase();
+                                                    isRecurring = "true".equals(val) || "1".equals(val) || "yes".equals(val) || "y".equals(val);
+                                                }
+
+                                                Integer freqValue = null;
+                                                if (freqValueStr != null && !freqValueStr.trim().isEmpty()) {
+                                                    try {
+                                                        freqValue = Integer.parseInt(freqValueStr.trim());
+                                                    } catch (NumberFormatException ignored) {
+                                                    }
+                                                }
+
+                                                RtaTransaction txn = new RtaTransaction();
+                                                txn.setMerchantId(merchantId);
+                                                txn.setBatchSeq(rowIdx + 1);
+                                                txn.setMerchantCustomer(customerRef);
+                                                txn.setMaskedPan(accountNum);
+                                                txn.setMerchantBillingRef(bankCode);
+                                                txn.setAmount(amountCents);
+                                                txn.setCurrency(currencyVal != null ? currencyVal.trim() : "");
+                                                txn.setActualBillingDate(txnDate);
+                                                txn.setIsRecurring(isRecurring);
+                                                txn.setRecurringIndicator(recurringType);
+                                                txn.setFrequencyValue(freqValue);
+                                                txn.setRecurringReference(recurringRef);
+                                                txn.setTransactionDescription("start=" + (startDateStr != null ? startDateStr.trim() : ""));
+                                                txn.setStatus(txnStatus);
+                                                txn.setValidationStatus("FAILED".equals(txnStatus) ? "FAILED" : "PASSED");
+                                                txn.setRemark(rowErrors.isEmpty() ? null : String.join("; ", rowErrors));
+                                                txn.setCreatedAt(LocalDateTime.now());
+
+                                                if (!additionalData.isEmpty()) {
+                                                    try {
+                                                        txn.setAdditionalData(objectMapper.writeValueAsString(additionalData));
+                                                    } catch (Exception ignored) {
+                                                    }
+                                                }
+
+                                                transactionsToSave.add(txn);
+
+                                                if ("PENDING".equals(txnStatus)) {
+                                                    successCount++;
+                                                    if (amountCents != null) {
+                                                        totalAmountCents += amountCents;
+                                                    }
+                                                } else {
+                                                    failCount++;
                                                 }
                                             }
 
-                                            LocalDate txnDate = null;
-                                            if (txnDateStr != null && !txnDateStr.trim().isEmpty() && profile.getDateFormat() != null) {
-                                                try {
-                                                    DateTimeFormatter fmt = DateTimeFormatter.ofPattern(profile.getDateFormat());
-                                                    txnDate = LocalDate.parse(txnDateStr.trim(), fmt);
-                                                } catch (Exception ignored) {
+                                            if (failCount > 0) {
+                                                if (successCount == 0) {
+                                                    validationStatus = "INVALID_FILE_CONTENT";
+                                                    validationRemark = "All " + totalRecordCount + " record(s) failed validation -- no valid transactions";
+                                                } else {
+                                                    validationStatus = "PARTIAL";
+                                                    validationRemark = failCount + " out of " + totalRecordCount + " records failed validation";
                                                 }
                                             }
-
-                                            Boolean isRecurring = null;
-                                            if (isRecurringStr != null && !isRecurringStr.trim().isEmpty()) {
-                                                String val = isRecurringStr.trim().toLowerCase();
-                                                isRecurring = "true".equals(val) || "1".equals(val) || "yes".equals(val) || "y".equals(val);
-                                            }
-
-                                            Integer freqValue = null;
-                                            if (freqValueStr != null && !freqValueStr.trim().isEmpty()) {
-                                                try {
-                                                    freqValue = Integer.parseInt(freqValueStr.trim());
-                                                } catch (NumberFormatException ignored) {
-                                                }
-                                            }
-
-                                            RtaTransaction txn = new RtaTransaction();
-                                            txn.setMerchantId(merchantId);
-                                            txn.setBatchSeq(rowIdx + 1);
-                                            txn.setMerchantCustomer(customerRef);
-                                            txn.setMaskedPan(accountNum);
-                                            txn.setMerchantBillingRef(bankCode);
-                                            txn.setAmount(amountCents);
-                                            txn.setCurrency(currencyVal != null ? currencyVal.trim() : "");
-                                            txn.setActualBillingDate(txnDate);
-                                            txn.setIsRecurring(isRecurring);
-                                            txn.setRecurringIndicator(recurringType);
-                                            txn.setFrequencyValue(freqValue);
-                                            txn.setRecurringReference(recurringRef);
-                                            txn.setTransactionDescription("start=" + (startDateStr != null ? startDateStr.trim() : ""));
-                                            txn.setStatus(txnStatus);
-                                            txn.setValidationStatus("FAILED".equals(txnStatus) ? "FAILED" : "PASSED");
-                                            txn.setRemark(rowErrors.isEmpty() ? null : String.join("; ", rowErrors));
-                                            txn.setCreatedAt(LocalDateTime.now());
-
-                                            if (!additionalData.isEmpty()) {
-                                                try {
-                                                    txn.setAdditionalData(objectMapper.writeValueAsString(additionalData));
-                                                } catch (Exception ignored) {
-                                                }
-                                            }
-
-                                            transactionsToSave.add(txn);
-
-                                            if ("PENDING".equals(txnStatus)) {
-                                                successCount++;
-                                                if (amountCents != null) {
-                                                    totalAmountCents += amountCents;
-                                                }
-                                            } else {
-                                                failCount++;
-                                            }
-                                        }
-
-                                        if (failCount > 0) {
-                                            if (successCount == 0) {
-                                                validationStatus = "INVALID_FILE_CONTENT";
-                                                validationRemark = "All " + totalRecordCount + " record(s) failed validation â€” no valid transactions";
-                                            } else {
-                                                validationStatus = "PARTIAL";
-                                                validationRemark = failCount + " out of " + totalRecordCount + " records failed validation";
-                                            }
-                                        }
+                                        } // end XLSX no-header data processing
                                     }
                                 }
                             } catch (Exception e) {
@@ -1264,8 +1316,9 @@ public class IncomingBatchController {
 
             // -- Transaction-level duplicate detection --
             // Generate record hash for each transaction and check against existing DB records
-            boolean isDuplicateTransaction = false;
-            List<String> duplicatedRecordHashes = new ArrayList<>();
+            // Duplicate records are marked individually (not whole-file rejection)
+            int duplicateRecordCount = 0;
+            List<String> duplicatedRecordDetails = new ArrayList<>();
             if (!transactionsToSave.isEmpty()) {
                 // Compute hash for each transaction
                 for (RtaTransaction txn : transactionsToSave) {
@@ -1282,24 +1335,49 @@ public class IncomingBatchController {
 
                 if (!validHashes.isEmpty()) {
                     // Query DB for any existing matching hashes
-                    List<String> existingHashes = transactionRepository.findExistingRecordHashes(validHashes);
-                    if (!existingHashes.isEmpty()) {
-                        isDuplicateTransaction = true;
-                        duplicatedRecordHashes.addAll(existingHashes);
-                        // Mark file as duplicate
-                        validationStatus = "DUPLICATE_TRANSACTION";
+                    java.util.Set<String> existingHashSet = new java.util.HashSet<>(
+                            transactionRepository.findExistingRecordHashes(validHashes));
+
+                    if (!existingHashSet.isEmpty()) {
+                        // Mark each duplicate transaction individually
+                        for (RtaTransaction txn : transactionsToSave) {
+                            if (txn.getRecordHash() != null && existingHashSet.contains(txn.getRecordHash())
+                                    && !"FAILED".equals(txn.getValidationStatus())) {
+                                txn.setValidationStatus("DUPLICATE");
+                                txn.setStatus("FAILED");
+                                txn.setRemark(txn.getRemark() != null
+                                        ? txn.getRemark() + "; Duplicate transaction record"
+                                        : "Duplicate transaction record");
+                                duplicateRecordCount++;
+                                duplicatedRecordDetails.add("Row " + txn.getBatchSeq() + ": "
+                                        + txn.getMerchantCustomer() + " / "
+                                        + (txn.getAmount() != null ? txn.getAmount() / 100.0 : "N/A")
+                                        + " / " + txn.getActualBillingDate());
+                                successCount--;
+                                failCount++;
+                                if (txn.getAmount() != null) {
+                                    totalAmountCents -= txn.getAmount();
+                                }
+                            }
+                        }
+
+                        // Update validation status and remark
+                        String dupMsg = duplicateRecordCount + " duplicate transaction record(s) detected and skipped";
+                        validationRemark = validationRemark != null ? validationRemark + "; " + dupMsg : dupMsg;
+                        if (successCount == 0) {
+                            validationStatus = "VALIDATION_FAILED";
+                        } else if (failCount > 0) {
+                            validationStatus = "PARTIAL";
+                        }
                         uploadedFileHash.setStatus(validationStatus);
-                        String dupMsg = existingHashes.size() + " duplicate transaction record(s) detected -- entire file rejected";
-                        uploadedFileHash.setValidationRemark(
-                                validationRemark != null ? validationRemark + "; " + dupMsg : dupMsg);
+                        uploadedFileHash.setValidationRemark(validationRemark);
                         uploadedFileHashRepository.save(uploadedFileHash);
                     }
                 }
             }
 
             // Determine if validation completely failed -- no valid records to process
-            boolean isCompleteFailure = isDuplicateTransaction
-                    || "NO_FILE_PROFILE".equals(validationStatus)
+            boolean isCompleteFailure = "NO_FILE_PROFILE".equals(validationStatus)
                     || "WRONG_FILE_FORMAT".equals(validationStatus)
                     || "NO_FIELD_MAPPING".equals(validationStatus)
                     || "MISSING_HEADER".equals(validationStatus)
@@ -1378,9 +1456,7 @@ public class IncomingBatchController {
 
             // Response
             Map<String, Object> response = new HashMap<>();
-            if (isDuplicateTransaction) {
-                response.put("message", "File rejected: duplicate transaction record(s) detected. " + duplicatedRecordHashes.size() + " matching record(s) found in existing data.");
-            } else if (isCompleteFailure && duplicateCount == 0) {
+            if (isCompleteFailure && duplicateCount == 0) {
                 response.put("message", "File uploaded but validation failed: " + validationRemark);
             } else if (failCount == 0) {
                 response.put("message", "File received and validated successfully");
@@ -1406,9 +1482,9 @@ public class IncomingBatchController {
                 response.put("duplicateTransactionCount", duplicateCount);
                 response.put("duplicateTransactions", duplicateTransactions);
             }
-            if (isDuplicateTransaction) {
-                response.put("isDuplicateTransaction", true);
-                response.put("duplicateRecordCount", duplicatedRecordHashes.size());
+            if (duplicateRecordCount > 0) {
+                response.put("duplicateRecordCount", duplicateRecordCount);
+                response.put("duplicateRecordDetails", duplicatedRecordDetails);
             }
             if (!validationErrors.isEmpty()) {
                 response.put("validationErrors", validationErrors);

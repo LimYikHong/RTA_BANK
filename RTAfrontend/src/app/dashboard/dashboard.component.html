@@ -83,65 +83,7 @@
         </div>
         </div>
 
-        <!-- ── Merchant Key Management ───────────────────────────────── -->
-        <div class="mk-overview-card">
-            <div class="mk-header">
-                <h3>Merchant Key Management</h3>
-                <span class="mk-badge mk-badge-alert" *ngIf="merchantKeysNeedingAction.length > 0">
-                    {{ merchantKeysNeedingAction.length }} need{{ merchantKeysNeedingAction.length === 1 ? 's' : '' }} attention
-                </span>
-            </div>
-            <div class="mk-loading" *ngIf="merchantKeysLoading">Loading merchant keys...</div>
-            <div class="mk-empty" *ngIf="!merchantKeysLoading && merchantKeys.length === 0">
-                No merchants found.
-            </div>
-            <div class="mk-table-wrapper" *ngIf="!merchantKeysLoading && merchantKeys.length > 0">
-                <table class="mk-table">
-                    <thead>
-                        <tr>
-                            <th>Merchant ID</th>
-                            <th>Name</th>
-                            <th>Key Status</th>
-                            <th>Version</th>
-                            <th>Days Elapsed</th>
-                            <th>Rotation Window</th>
-                            <th>Action</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr *ngFor="let mk of merchantKeys" [class]="getMerchantKeyStatusClass(mk)">
-                            <td>
-                                <a [routerLink]="['/view-merchant', mk.merchantId]" class="mk-link">{{ mk.merchantId }}</a>
-                            </td>
-                            <td>{{ mk.merchantName || '-' }}</td>
-                            <td>
-                                <span class="mk-status-badge" [ngClass]="getMerchantKeyStatusClass(mk)">
-                                    {{ getMerchantKeyStatusLabel(mk) }}
-                                </span>
-                            </td>
-                            <td>{{ mk.hasKey ? ('v' + mk.keyVersion) : '-' }}</td>
-                            <td>
-                                <span *ngIf="mk.hasKey" [style.color]="mk.daysElapsed >= 30 ? '#dc2626' : mk.daysElapsed >= 25 ? '#d97706' : '#16a34a'">
-                                    {{ mk.daysElapsed }} days
-                                </span>
-                                <span *ngIf="!mk.hasKey" style="color:#94a3b8;">-</span>
-                            </td>
-                            <td>
-                                <span *ngIf="!mk.hasKey" class="mk-action-hint">Request new key</span>
-                                <span *ngIf="mk.hasKey && mk.daysElapsed < 25" style="color:#64748b;">Day 25-30</span>
-                                <span *ngIf="mk.canRotate" style="color:#d97706; font-weight:600;">⚠ Available now</span>
-                                <span *ngIf="mk.expired" style="color:#dc2626; font-weight:600;">❌ Expired</span>
-                            </td>
-                            <td>
-                                <a [routerLink]="['/view-merchant', mk.merchantId]" class="mk-action-btn">
-                                    {{ !mk.hasKey ? 'Need Request' : mk.canRotate ? 'Rotate' : 'View' }}
-                                </a>
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-        </div>
+
 
         <!-- ── Row 1: Transaction Trend (wide) + Transaction Status donut (narrow) ── -->
         <div class="chart-row">

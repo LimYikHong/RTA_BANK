@@ -218,12 +218,12 @@
 }
 
 .remark-cell {
-  max-width: 200px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  max-width: 320px;
+  white-space: normal;
+  word-break: break-word;
   color: #64748b;
   font-size: 12px;
+  line-height: 1.4;
 }
 
 .no-data-cell {

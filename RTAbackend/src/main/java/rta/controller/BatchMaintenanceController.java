@@ -169,7 +169,7 @@ public class BatchMaintenanceController {
             // Get transactions in this batch (skip validation-failed unless includeAll)
             List<Map<String, Object>> txnList = new ArrayList<>();
             for (RtaTransaction txn : transactions) {
-                if (!includeAll && "FAILED".equals(txn.getValidationStatus())) {
+                if (!includeAll && ("FAILED".equals(txn.getValidationStatus()) || "DUPLICATE".equals(txn.getValidationStatus()))) {
                     continue;
                 }
                 Map<String, Object> txnMap = new LinkedHashMap<>();

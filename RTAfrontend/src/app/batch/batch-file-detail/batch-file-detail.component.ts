@@ -260,6 +260,7 @@ export class BatchFileDetailComponent implements OnInit {
     switch (status?.toUpperCase()) {
       case 'PASSED': return 'status-success';
       case 'FAILED': return 'status-failed';
+      case 'DUPLICATE': return 'status-failed';
       default: return '';
     }
   }

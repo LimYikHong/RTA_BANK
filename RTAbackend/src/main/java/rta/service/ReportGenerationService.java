@@ -26,6 +26,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import rta.entity.MerchantKey;
@@ -67,6 +68,7 @@ public class ReportGenerationService {
     private final InternalKeyPairService internalKeyPairService;
     private final AuditLogService auditLogService;
     private final ObjectMapper objectMapper;
+    private final EntityManager entityManager;
 
     private static final String RSA_SIGNATURE_ALGORITHM = "SHA256withRSA";
     private static final String REPORT_DIR = "reports";
@@ -135,7 +137,10 @@ public class ReportGenerationService {
         Long batchFileId = batchFile.getBatchFileId();
         log.info("[ReportGen] Generating report for merchant={}, batchFileId={}", merchantId, batchFileId);
 
-        // 1. Retrieve transactions
+        // 1. Clear JPA cache to ensure fresh data (auth status may have been updated via JDBC)
+        entityManager.clear();
+
+        // Retrieve transactions
         List<RtaTransaction> transactions = transactionRepository.findByBatchFileId(batchFileId);
         if (transactions.isEmpty()) {
             log.warn("[ReportGen] No transactions found for batchFileId={}", batchFileId);

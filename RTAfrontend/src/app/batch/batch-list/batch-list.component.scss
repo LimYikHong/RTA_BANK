@@ -272,10 +272,10 @@
 
 // Remark / validation message cell
 .remark-cell {
-  max-width: 240px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  max-width: 400px;
+  white-space: normal;
+  word-break: break-word;
   font-size: 13px;
   color: #64748b;
+  line-height: 1.4;
 }

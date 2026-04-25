@@ -1,49 +1,141 @@
-<div class="login-container">
-  <div class="login-card">
-    <h2>Login</h2>
-
-    <!-- Step 1: Username/Password -->
-    <form (ngSubmit)="onLogin()" *ngIf="step === 1">
-      <input
-        type="text"
-        placeholder="Username"
-        [(ngModel)]="username"
-        name="username"
-        required
-      />
-      <input
-        type="password"
-        placeholder="Password"
-        [(ngModel)]="password"
-        name="password"
-        required
-      />
-      <button type="submit">Next</button>
-    </form>
-
-    <!-- Step 2; 2FA Setup (First time) -->
-    <div *ngIf="step === 2" class="step-container">
-      <h3>Setup 2FA</h3>
-      <p>Scan this QR code with Google Authenticator:</p>
-      <img *ngIf="qrCodeUrl" [src]="qrCodeUrl" alt="QR Code" />
-      <p class="secret-text">Secret: {{ tempData.secret }}</p>
-      
-      <div class="code-input">
-         <input type="text" placeholder="Enter 6-digit code" [(ngModel)]="twoFaCode" maxlength="6" />
+<div class="login-page">
+  <!-- Left panel — branding -->
+  <div class="brand-panel">
+    <div class="brand-content">
+      <div class="brand-icon">
+        <img src="assets/logo.png" alt="RTA Bank Logo" class="brand-logo">
       </div>
-      <button (click)="verify2FA()">Verify & Login</button>
+      <h1>RTA Bank</h1>
+      <p class="tagline">Recurring Transaction Authorization Portal</p>
+
+      <div class="feature-list">
+        <div class="feature-item">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+               stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="22" height="22">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+          </svg>
+          <div>
+            <strong>Secure Access</strong>
+          </div>
+        </div>
+        <div class="feature-item">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+               stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="22" height="22">
+            <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/>
+            <line x1="8" y1="21" x2="16" y2="21"/>
+            <line x1="12" y1="17" x2="12" y2="21"/>
+          </svg>
+          <div>
+            <strong>Batch Processing</strong>
+          </div>
+        </div>
+        <div class="feature-item">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+               stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="22" height="22">
+            <line x1="18" y1="20" x2="18" y2="10"/>
+            <line x1="12" y1="20" x2="12" y2="4"/>
+            <line x1="6" y1="20" x2="6" y2="14"/>
+          </svg>
+          <div>
+            <strong>Real-Time Reports</strong>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Right panel — login form -->
+  <div class="form-panel">
+    <div class="login-card">
+
+      <!-- Step 1: Credentials -->
+      <ng-container *ngIf="step === 1">
+        <h2>Sign In</h2>
+
+        <form (ngSubmit)="onLogin()" class="login-form">
+          <label for="username">Username</label>
+          <div class="input-wrapper">
+            <svg class="input-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+                 stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+              <circle cx="12" cy="7" r="4"/>
+            </svg>
+            <input id="username" type="text" placeholder="Enter your username"
+                   [(ngModel)]="username" name="username" required autocomplete="username">
+          </div>
+
+          <label for="password">Password</label>
+          <div class="input-wrapper">
+            <svg class="input-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+                 stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+              <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+            </svg>
+            <input id="password" type="password" placeholder="Enter your password"
+                   [(ngModel)]="password" name="password" required autocomplete="current-password">
+          </div>
+
+          <button type="submit" class="btn-primary">
+            Sign In
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+                 stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                 width="18" height="18">
+              <line x1="5" y1="12" x2="19" y2="12"/>
+              <polyline points="12 5 19 12 12 19"/>
+            </svg>
+          </button>
+        </form>
+      </ng-container>
+
+      <!-- Step 2: 2FA Setup (first-time) -->
+      <ng-container *ngIf="step === 2">
+        <div class="two-fa-section">
+          <div class="step-badge">Step 2 of 2</div>
+          <h2>Set Up Two-Factor Auth</h2>
+
+          <div class="qr-wrapper">
+            <img *ngIf="qrCodeUrl" [src]="qrCodeUrl" alt="QR Code" class="qr-code">
+          </div>
+          <div class="secret-box">
+            <span class="secret-label">Manual entry key</span>
+            <code>{{ tempData.secret }}</code>
+          </div>
+
+          <label for="code2fa-setup">Verification Code</label>
+          <div class="input-wrapper code-input">
+            <input id="code2fa-setup" type="text" placeholder="000 000"
+                   [(ngModel)]="twoFaCode" maxlength="6" autocomplete="one-time-code">
+          </div>
+          <button (click)="verify2FA()" class="btn-primary">Verify &amp; Sign In</button>
+        </div>
+      </ng-container>
+
+      <!-- Step 3: 2FA Verify (returning user) -->
+      <ng-container *ngIf="step === 3">
+        <div class="two-fa-section">
+          <h2>Two-Factor Authentication</h2>
+
+          <label for="code2fa-verify">Verification Code</label>
+          <div class="input-wrapper code-input">
+            <input id="code2fa-verify" type="text" placeholder="000 000"
+                   [(ngModel)]="twoFaCode" maxlength="6" autocomplete="one-time-code">
+          </div>
+          <button (click)="verify2FA()" class="btn-primary">Verify</button>
+        </div>
+      </ng-container>
+
+      <!-- Error -->
+      <div *ngIf="errorMessage" class="error-toast">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+             stroke="currentColor" stroke-width="2" width="18" height="18">
+          <circle cx="12" cy="12" r="10"/>
+          <line x1="15" y1="9" x2="9" y2="15"/>
+          <line x1="9" y1="9" x2="15" y2="15"/>
+        </svg>
+        {{ errorMessage }}
+      </div>
     </div>
 
-    <!-- Step 3: 2FA Verify (Returning) -->
-    <div *ngIf="step === 3" class="step-container">
-       <h3>Two-Factor Authentication</h3>
-       <p>Enter the code from your app</p>
-       <div class="code-input">
-         <input type="text" placeholder="000 000" [(ngModel)]="twoFaCode" maxlength="6" />
-      </div>
-      <button (click)="verify2FA()">Verify</button>
-    </div>
-
-    <p *ngIf="errorMessage" class="error">{{ errorMessage }}</p>
+    <p class="footer">&copy; 2026 RTA Bank &middot; All Rights Reserved</p>
   </div>
 </div>
