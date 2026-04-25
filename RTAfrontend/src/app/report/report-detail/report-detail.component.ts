@@ -157,54 +157,57 @@ export class ReportDetailComponent implements OnInit, OnDestroy {
     y += 8;
 
     // ===== Batch & Merchant Information =====
-    doc.setFontSize(10);
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(0, 0, 0);
-    doc.text('BATCH INFORMATION', margin, y);
-    doc.text('MERCHANT INFORMATION', pageWidth / 2 + 10, y);
-    y += 5;
+    const approvedCount = transactions.filter(t => t.status === 'APPROVED').length;
+    const authFailedCount = transactions.filter(t => t.validationStatus !== 'FAILED' && (t.status === 'FAILED' || t.status === 'DECLINED')).length;
+    const pendingCount = transactions.filter(t => t.status === 'PENDING').length;
+    const halfWidth = (pageWidth - margin * 2) / 2;
 
-    const infoData = [
-      ['Batch Reference', data.batchReference, 'Merchant ID', data.merchantId || '\u2013'],
-      ['Batch ID', String(data.authBatchId), 'Merchant Name', data.merchantName || '\u2013'],
-      ['Validation Status', validationStatus, 'Merchant Account', data.merchantAccount || '\u2013'],
-      ['Auth Status', authStatus, 'Merchant Contact', data.merchantContact || '\u2013'],
-      ['Original File', originalFilename, 'Send Auth Datetime', this.formatDate(data.lastModifiedAt)],
-      ['Remark', data.remark || '\u2013', '', ''],
+    const infoLeft = [
+      ['Batch Reference', data.batchReference || '\u2013'],
+      ['Batch ID', String(data.authBatchId)],
+      ['Batch File ID', String(reportBatchFileId ?? '\u2013')],
+      ['Original File', originalFilename],
+      ['Validation Status', validationStatus],
+      ['Auth Status', authStatus],
+      ['Remark', data.remark || '\u2013'],
     ];
+    const infoRight = [
+      ['Merchant ID', data.merchantId || '\u2013'],
+      ['Merchant Name', data.merchantName || '\u2013'],
+      ['Merchant Account', data.merchantAccount || '\u2013'],
+      ['Merchant Contact', data.merchantContact || '\u2013'],
+      ['Send Auth Datetime', this.formatDate(data.lastModifiedAt)],
+      ['Total', String(transactions.length)],
+      ['Approved / Auth Failed / Pending', `${approvedCount} / ${authFailedCount} / ${pendingCount}`],
+    ];
+
+    const infoRows = infoLeft.map((left, i) => [left[0], left[1], infoRight[i][0], infoRight[i][1]]);
 
     autoTable(doc, {
       startY: y,
-      body: infoData,
-      theme: 'plain',
-      styles: { fontSize: 8.5, cellPadding: 2.5, textColor: [0, 0, 0] },
+      head: [['BATCH INFORMATION', '', 'MERCHANT INFORMATION', '']],
+      body: infoRows,
+      theme: 'grid',
+      headStyles: {
+        fillColor: [50, 50, 50],
+        textColor: [255, 255, 255],
+        lineColor: [255, 255, 255],
+        lineWidth: 0.5,
+        fontStyle: 'bold',
+        fontSize: 8.5,
+        cellPadding: 3,
+      },
+      styles: { fontSize: 8, cellPadding: 2.5, textColor: [0, 0, 0] },
       columnStyles: {
-        0: { fontStyle: 'bold', cellWidth: 35 },
-        1: { cellWidth: pageWidth / 2 - margin - 35 },
-        2: { fontStyle: 'bold', cellWidth: 40 },
-        3: { cellWidth: pageWidth / 2 - margin - 40 },
+        0: { fontStyle: 'bold', cellWidth: 35, fillColor: [240, 240, 240] },
+        1: { cellWidth: halfWidth - 35 },
+        2: { fontStyle: 'bold', cellWidth: 40, fillColor: [240, 240, 240] },
+        3: { cellWidth: halfWidth - 40 },
       },
       margin: { left: margin, right: margin },
     });
 
-    y = (doc as any).lastAutoTable.finalY + 4;
-
-    // ===== Summary line =====
-    doc.setDrawColor(180, 180, 180);
-    doc.setLineWidth(0.3);
-    doc.line(margin, y, pageWidth - margin, y);
-    y += 5;
-
-    const approvedCount = transactions.filter(t => t.status === 'APPROVED').length;
-    const validationFailedCount = transactions.filter(t => t.validationStatus === 'FAILED').length;
-    const authFailedCount = transactions.filter(t => t.validationStatus !== 'FAILED' && (t.status === 'FAILED' || t.status === 'DECLINED')).length;
-    const pendingCount = transactions.filter(t => t.status === 'PENDING').length;
-
-    doc.setFontSize(9);
-    doc.setFont('helvetica', 'normal');
-    doc.setTextColor(0, 0, 0);
-    doc.text(`Total: ${transactions.length}    |    Approved: ${approvedCount}    |    Validation Failed: ${validationFailedCount}    |    Auth Failed: ${authFailedCount}    |    Pending: ${pendingCount}`, margin, y);
-    y += 7;
+    y = (doc as any).lastAutoTable.finalY + 8;
 
     // ===== Transaction Table =====
     doc.setFontSize(10);

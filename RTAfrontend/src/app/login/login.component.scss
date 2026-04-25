@@ -264,7 +264,13 @@ label {
     display: block;
     font-size: 11px;
     color: $muted;
-    margin-bottom: 4px;
+    cursor: pointer;
+    list-style: none;
+    &::-webkit-details-marker { display: none; }
+  }
+
+  &[open] .secret-label {
+    margin-bottom: 6px;
   }
 
   code {

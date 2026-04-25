@@ -1,39 +1,15 @@
 // Shared styles from _global-components.scss
 
-// Profile header with avatar (own profile mode)
-.profile-header {
+// Avatar row inside a detail-card
+.profile-avatar-row {
   display: flex;
   align-items: center;
-  background: white;
-  padding: 30px;
-  border-radius: 10px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-  margin-bottom: 30px;
+  gap: 28px;
 }
 
-.header-info {
+.avatar-info {
   display: flex;
   flex-direction: column;
-
-  h1 {
-    margin: 0 0 4px 0;
-    font-size: 26px;
-    font-weight: 700;
-    color: #1e293b;
-  }
-
-  .email {
-    margin: 0 0 2px 0;
-    color: #64748b;
-    font-size: 14px;
-  }
-}
-
-.username-display {
-  margin: 0 0 12px 0;
-  color: #94a3b8;
-  font-size: 13px;
-  font-style: italic;
 }
 
 .avatar {
@@ -79,20 +55,7 @@
   object-fit: cover;
 }
 
-.edit-btn {
-  background-color: #3b82f6;
-  color: white;
-  border: none;
-  padding: 8px 16px;
-  border-radius: 5px;
-  cursor: pointer;
-
-  &:hover {
-    background-color: #2563eb;
-  }
-}
-
-// View user detail card
+// Detail card (consistent with view-merchant)
 .detail-card {
   background: white;
   padding: 30px;
@@ -131,12 +94,17 @@
     margin-top: 2px;
     color: #1e293b;
     font-size: 15px;
-
-    &.status-badge,
-    &.role-badge {
-      display: inline-block;
-    }
   }
+}
+
+.id-value {
+  font-weight: 600;
+  color: #065f46 !important;
+}
+
+.role-badge {
+  display: inline-block !important;
+  width: auto !important;
 }
 
 // Role badges (same as user-management)

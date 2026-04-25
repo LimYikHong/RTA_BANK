@@ -1,5 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { RouterModule, Router, ActivatedRoute } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
 interface TransactionItem {
@@ -35,7 +36,7 @@ interface RecurringDetail {
 @Component({
   selector: 'app-recurring-detail',
   standalone: true,
-  imports: [CommonModule, RouterModule],
+  imports: [CommonModule, RouterModule, FormsModule],
   templateUrl: './recurring-detail.component.html',
   styleUrl: './recurring-detail.component.scss'
 })
@@ -46,6 +47,11 @@ export class RecurringDetailComponent implements OnInit {
   detail: RecurringDetail | null = null;
   isLoading = true;
   errorMessage = '';
+
+  // Pagination
+  currentPage = 1;
+  pageSize = 10;
+  pageSizeOptions = [10, 25, 50, 100];
 
   constructor(
     private http: HttpClient,
@@ -77,6 +83,41 @@ export class RecurringDetailComponent implements OnInit {
 
   goBack(): void {
     this.router.navigate(['/recurring-list']);
+  }
+
+  get pagedTransactions() {
+    const txns = this.detail?.transactions ?? [];
+    const start = (this.currentPage - 1) * this.pageSize;
+    return txns.slice(start, start + this.pageSize);
+  }
+
+  get totalPages(): number {
+    return Math.max(1, Math.ceil((this.detail?.transactions.length ?? 0) / this.pageSize));
+  }
+
+  get startRecord(): number {
+    return (this.detail?.transactions.length ?? 0) === 0 ? 0 : (this.currentPage - 1) * this.pageSize + 1;
+  }
+
+  get endRecord(): number {
+    return Math.min(this.currentPage * this.pageSize, this.detail?.transactions.length ?? 0);
+  }
+
+  get visiblePages(): number[] {
+    const pages: number[] = [];
+    const start = Math.max(1, this.currentPage - 2);
+    const end = Math.min(this.totalPages, start + 4);
+    for (let i = start; i <= end; i++) pages.push(i);
+    return pages;
+  }
+
+  goToPage(page: number): void {
+    if (page < 1 || page > this.totalPages) return;
+    this.currentPage = page;
+  }
+
+  onPageSizeChange(): void {
+    this.currentPage = 1;
   }
 
   formatAmount(amountCents: number | null, currency: string): string {

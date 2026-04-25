@@ -96,10 +96,10 @@
           <div class="qr-wrapper">
             <img *ngIf="qrCodeUrl" [src]="qrCodeUrl" alt="QR Code" class="qr-code">
           </div>
-          <div class="secret-box">
-            <span class="secret-label">Manual entry key</span>
+          <details class="secret-box">
+            <summary class="secret-label">Manual entry key ▸</summary>
             <code>{{ tempData.secret }}</code>
-          </div>
+          </details>
 
           <label for="code2fa-setup">Verification Code</label>
           <div class="input-wrapper code-input">

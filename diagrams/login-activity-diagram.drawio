@@ -1,0 +1,262 @@
+<mxfile host="app.diagrams.net" modified="2026-04-25T00:00:00.000Z" type="device">
+  <diagram name="Login Activity Diagram" id="login-activity">
+    <mxGraphModel dx="1422" dy="762" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1400" pageHeight="1600" math="0" shadow="0">
+      <root>
+        <mxCell id="0"/>
+        <mxCell id="1" parent="0"/>
+
+        <!-- Swimlane: User -->
+        <mxCell id="lane1" value="User" style="shape=swimlane;startSize=30;horizontal=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1;fontSize=14;swimlaneHead=1;swimlaneBody=1;collapsible=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="40" y="40" width="280" height="1500" as="geometry"/>
+        </mxCell>
+
+        <!-- Swimlane: Angular Frontend -->
+        <mxCell id="lane2" value="Angular Frontend" style="shape=swimlane;startSize=30;horizontal=1;fillColor=#d5e8d4;strokeColor=#82b366;fontStyle=1;fontSize=14;collapsible=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="320" y="40" width="280" height="1500" as="geometry"/>
+        </mxCell>
+
+        <!-- Swimlane: Spring Boot Backend -->
+        <mxCell id="lane3" value="Spring Boot Backend" style="shape=swimlane;startSize=30;horizontal=1;fillColor=#fff2cc;strokeColor=#d6b656;fontStyle=1;fontSize=14;collapsible=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="600" y="40" width="280" height="1500" as="geometry"/>
+        </mxCell>
+
+        <!-- Swimlane: MySQL Database -->
+        <mxCell id="lane4" value="MySQL Database" style="shape=swimlane;startSize=30;horizontal=1;fillColor=#f8cecc;strokeColor=#b85450;fontStyle=1;fontSize=14;collapsible=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="880" y="40" width="280" height="1500" as="geometry"/>
+        </mxCell>
+
+        <!-- Start Node -->
+        <mxCell id="start" value="" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;fillColor=#000000;strokeColor=#000000;" vertex="1" parent="lane1">
+          <mxGeometry x="125" y="50" width="30" height="30" as="geometry"/>
+        </mxCell>
+
+        <!-- Action: Enter Username & Password -->
+        <mxCell id="a1" value="Enter Username &amp; Password" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;fontSize=12;" vertex="1" parent="lane1">
+          <mxGeometry x="60" y="120" width="160" height="50" as="geometry"/>
+        </mxCell>
+        <mxCell id="e1" value="" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="start" target="a1" parent="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- Action: Submit Login Request -->
+        <mxCell id="a2" value="Submit login request&#xa;POST /api/auth/login" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;fontSize=12;" vertex="1" parent="lane2">
+          <mxGeometry x="60" y="120" width="160" height="50" as="geometry"/>
+        </mxCell>
+        <mxCell id="e2" value="" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="a1" target="a2" parent="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- Action: Validate Credentials -->
+        <mxCell id="a3" value="Validate credentials" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;fontSize=12;" vertex="1" parent="lane3">
+          <mxGeometry x="60" y="120" width="160" height="50" as="geometry"/>
+        </mxCell>
+        <mxCell id="e3" value="" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="a2" target="a3" parent="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- Action: Query User Record -->
+        <mxCell id="a4" value="Query user record" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;fontSize=12;" vertex="1" parent="lane4">
+          <mxGeometry x="60" y="120" width="160" height="50" as="geometry"/>
+        </mxCell>
+        <mxCell id="e4" value="" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="a3" target="a4" parent="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- Decision: Credentials Valid? -->
+        <mxCell id="d1" value="Credentials&#xa;valid?" style="rhombus;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;fontSize=11;" vertex="1" parent="lane3">
+          <mxGeometry x="70" y="230" width="120" height="80" as="geometry"/>
+        </mxCell>
+        <mxCell id="e5" value="" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="a4" target="d1" parent="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- Decision: Account Disabled? -->
+        <mxCell id="d1b" value="Account&#xa;disabled?" style="rhombus;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;fontSize=11;" vertex="1" parent="lane3">
+          <mxGeometry x="70" y="350" width="120" height="80" as="geometry"/>
+        </mxCell>
+        <mxCell id="e5b" value="No" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="d1" target="d1b" parent="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- Action: Log failed attempt -->
+        <mxCell id="a5" value="Log failed login&#xa;in Audit Log" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;fontSize=12;" vertex="1" parent="lane3">
+          <mxGeometry x="70" y="480" width="160" height="50" as="geometry"/>
+        </mxCell>
+        <mxCell id="e5c" value="Yes" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="d1b" target="a5" parent="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- Action: Show error -->
+        <mxCell id="a5f" value="Display error message&#xa;(401 or 403)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;fontSize=12;" vertex="1" parent="lane2">
+          <mxGeometry x="60" y="480" width="160" height="50" as="geometry"/>
+        </mxCell>
+        <mxCell id="e5d" value="" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="a5" target="a5f" parent="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- End Node 1 (login fail) -->
+        <mxCell id="end1" value="" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;fillColor=#000000;strokeColor=#000000;" vertex="1" parent="lane2">
+          <mxGeometry x="125" y="570" width="30" height="30" as="geometry"/>
+        </mxCell>
+        <mxCell id="end1ring" value="" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;fillColor=#FFFFFF;strokeColor=#000000;strokeWidth=3;" vertex="1" parent="lane2">
+          <mxGeometry x="120" y="565" width="40" height="40" as="geometry"/>
+        </mxCell>
+        <mxCell id="e5e" value="" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="a5f" target="end1ring" parent="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- Decision: 2FA Enabled? -->
+        <mxCell id="d2" value="2FA&#xa;enabled?" style="rhombus;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;fontSize=11;" vertex="1" parent="lane3">
+          <mxGeometry x="70" y="640" width="120" height="80" as="geometry"/>
+        </mxCell>
+        <mxCell id="e6" value="Yes (valid)" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="d1" target="d2" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="850" y="310"/>
+              <mxPoint x="850" y="620"/>
+              <mxPoint x="730" y="620"/>
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e6b" value="No (disabled)" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="d1b" target="d2" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="770" y="430"/>
+              <mxPoint x="770" y="620"/>
+              <mxPoint x="730" y="620"/>
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+        <!-- Action: Generate 2FA Secret + QR -->
+        <mxCell id="a6" value="Generate 2FA secret&#xa;&amp; QR code URL" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;fontSize=12;" vertex="1" parent="lane3">
+          <mxGeometry x="60" y="780" width="160" height="50" as="geometry"/>
+        </mxCell>
+        <mxCell id="e7" value="No" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="d2" target="a6" parent="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- Action: Display QR Code -->
+        <mxCell id="a6b" value="Display QR code&#xa;for 2FA setup" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;fontSize=12;" vertex="1" parent="lane2">
+          <mxGeometry x="60" y="780" width="160" height="50" as="geometry"/>
+        </mxCell>
+        <mxCell id="e7b" value="" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="a6" target="a6b" parent="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- Action: Scan QR & Enter OTP -->
+        <mxCell id="a6c" value="Scan QR code &amp;&#xa;enter OTP" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;fontSize=12;" vertex="1" parent="lane1">
+          <mxGeometry x="60" y="780" width="160" height="50" as="geometry"/>
+        </mxCell>
+        <mxCell id="e7c" value="" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="a6b" target="a6c" parent="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- Action: Prompt for OTP (2FA already enabled) -->
+        <mxCell id="a7" value="Prompt user&#xa;for OTP code" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;fontSize=12;" vertex="1" parent="lane2">
+          <mxGeometry x="60" y="880" width="160" height="50" as="geometry"/>
+        </mxCell>
+        <mxCell id="e8" value="Yes" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="d2" target="a7" parent="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- Action: User enters OTP -->
+        <mxCell id="a8" value="Enter OTP code" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;fontSize=12;" vertex="1" parent="lane1">
+          <mxGeometry x="60" y="880" width="160" height="50" as="geometry"/>
+        </mxCell>
+        <mxCell id="e9" value="" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="a7" target="a8" parent="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- Action: Submit 2FA verification -->
+        <mxCell id="a9" value="Submit OTP verification&#xa;POST /api/auth/verify-2fa" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;fontSize=12;" vertex="1" parent="lane2">
+          <mxGeometry x="60" y="990" width="180" height="50" as="geometry"/>
+        </mxCell>
+        <mxCell id="e10a" value="" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="a8" target="a9" parent="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e10b" value="" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="a6c" target="a9" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="180" y="870"/>
+              <mxPoint x="300" y="870"/>
+              <mxPoint x="300" y="1015"/>
+              <mxPoint x="380" y="1015"/>
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+        <!-- Action: Verify OTP -->
+        <mxCell id="a10" value="Verify OTP code" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;fontSize=12;" vertex="1" parent="lane3">
+          <mxGeometry x="60" y="990" width="160" height="50" as="geometry"/>
+        </mxCell>
+        <mxCell id="e11" value="" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="a9" target="a10" parent="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- Decision: OTP Valid? -->
+        <mxCell id="d3" value="OTP&#xa;valid?" style="rhombus;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;fontSize=11;" vertex="1" parent="lane3">
+          <mxGeometry x="70" y="1090" width="120" height="80" as="geometry"/>
+        </mxCell>
+        <mxCell id="e12" value="" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="a10" target="d3" parent="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- Action: Issue JWT Token -->
+        <mxCell id="a11" value="Generate JWT token&#xa;with user role &amp; permissions" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;fontSize=12;" vertex="1" parent="lane3">
+          <mxGeometry x="50" y="1220" width="180" height="50" as="geometry"/>
+        </mxCell>
+        <mxCell id="e13" value="Yes" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="d3" target="a11" parent="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- Action: Log success -->
+        <mxCell id="a11b" value="Log successful login&#xa;in Audit Log" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;fontSize=12;" vertex="1" parent="lane4">
+          <mxGeometry x="60" y="1220" width="160" height="50" as="geometry"/>
+        </mxCell>
+        <mxCell id="e13b" value="" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="a11" target="a11b" parent="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- Action: Store JWT & redirect -->
+        <mxCell id="a12" value="Store JWT in localStorage&#xa;&amp; redirect to Dashboard" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;fontSize=12;" vertex="1" parent="lane2">
+          <mxGeometry x="50" y="1340" width="180" height="50" as="geometry"/>
+        </mxCell>
+        <mxCell id="e14" value="" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="a11b" target="a12" parent="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- OTP Invalid path -->
+        <mxCell id="a13" value="Display OTP error" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;fontSize=12;" vertex="1" parent="lane2">
+          <mxGeometry x="60" y="1100" width="160" height="50" as="geometry"/>
+        </mxCell>
+        <mxCell id="e15" value="No" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="d3" target="a13" parent="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- End Node 2 (OTP fail) -->
+        <mxCell id="end2ring" value="" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;fillColor=#FFFFFF;strokeColor=#000000;strokeWidth=3;" vertex="1" parent="lane1">
+          <mxGeometry x="120" y="1100" width="40" height="40" as="geometry"/>
+        </mxCell>
+        <mxCell id="end2" value="" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;fillColor=#000000;strokeColor=#000000;" vertex="1" parent="lane1">
+          <mxGeometry x="125" y="1105" width="30" height="30" as="geometry"/>
+        </mxCell>
+        <mxCell id="e16" value="" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="a13" target="end2ring" parent="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- End Node 3 (success) -->
+        <mxCell id="end3ring" value="" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;fillColor=#FFFFFF;strokeColor=#000000;strokeWidth=3;" vertex="1" parent="lane2">
+          <mxGeometry x="120" y="1430" width="40" height="40" as="geometry"/>
+        </mxCell>
+        <mxCell id="end3" value="" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;fillColor=#000000;strokeColor=#000000;" vertex="1" parent="lane2">
+          <mxGeometry x="125" y="1435" width="30" height="30" as="geometry"/>
+        </mxCell>
+        <mxCell id="e17" value="" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="a12" target="end3ring" parent="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

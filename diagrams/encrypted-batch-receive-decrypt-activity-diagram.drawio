@@ -1,0 +1,354 @@
+<mxfile host="app.diagrams.net" modified="2026-04-25T00:00:00.000Z" type="device">
+  <diagram name="Encrypted Batch Receive &amp; Decrypt Activity Diagram" id="encrypt-decrypt">
+    <mxGraphModel dx="1800" dy="900" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1900" pageHeight="3200" math="0" shadow="0">
+      <root>
+        <mxCell id="0"/>
+        <mxCell id="1" parent="0"/>
+
+        <!-- ========== SWIMLANES ========== -->
+        <!-- Swimlane: RTA Bank Backend (Sender) -->
+        <mxCell id="lane1" value="RTA Bank Backend (Sender - Port 8086)" style="shape=swimlane;startSize=35;horizontal=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1;fontSize=13;collapsible=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="20" y="40" width="350" height="3100" as="geometry"/>
+        </mxCell>
+
+        <!-- Swimlane: HTTPS Network -->
+        <mxCell id="lane2" value="HTTPS Network (Internal API)" style="shape=swimlane;startSize=35;horizontal=1;fillColor=#f5f5f5;strokeColor=#666666;fontStyle=1;fontSize=13;collapsible=0;whiteSpace=wrap;html=1;fontColor=#333333;" vertex="1" parent="1">
+          <mxGeometry x="370" y="40" width="250" height="3100" as="geometry"/>
+        </mxCell>
+
+        <!-- Swimlane: Authorization Service (Receiver) -->
+        <mxCell id="lane3" value="Authorization Service (Receiver - Port 8882)" style="shape=swimlane;startSize=35;horizontal=1;fillColor=#d5e8d4;strokeColor=#82b366;fontStyle=1;fontSize=13;collapsible=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="620" y="40" width="360" height="3100" as="geometry"/>
+        </mxCell>
+
+        <!-- Swimlane: MySQL -->
+        <mxCell id="lane4" value="MySQL Database" style="shape=swimlane;startSize=35;horizontal=1;fillColor=#fff2cc;strokeColor=#d6b656;fontStyle=1;fontSize=13;collapsible=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="980" y="40" width="280" height="3100" as="geometry"/>
+        </mxCell>
+
+        <!-- ========== ENCRYPTION PHASE (SENDER) ========== -->
+        <!-- Start -->
+        <mxCell id="start" value="" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;fillColor=#000000;strokeColor=#000000;" vertex="1" parent="lane1">
+          <mxGeometry x="160" y="55" width="30" height="30" as="geometry"/>
+        </mxCell>
+
+        <!-- Phase label -->
+        <mxCell id="phEnc" value="── Encryption Phase ──" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontStyle=1;fontSize=13;fontColor=#1A237E;" vertex="1" parent="lane1">
+          <mxGeometry x="70" y="100" width="210" height="30" as="geometry"/>
+        </mxCell>
+
+        <!-- Step 1: Fetch consumer public key -->
+        <mxCell id="a1" value="GET /api/internal/public-key&#xa;Fetch consumer's RSA&#xa;public key (PEM format)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;fontSize=11;" vertex="1" parent="lane1">
+          <mxGeometry x="65" y="150" width="220" height="60" as="geometry"/>
+        </mxCell>
+        <mxCell id="e0" value="" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="start" target="a1" parent="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- Consumer returns public key -->
+        <mxCell id="a1b" value="Return RSA public key&#xa;in PEM format" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;fontSize=11;" vertex="1" parent="lane3">
+          <mxGeometry x="80" y="150" width="200" height="50" as="geometry"/>
+        </mxCell>
+        <mxCell id="e1" value="HTTPS + API Key" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="a1" target="a1b" parent="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- Step 2: Generate CSV -->
+        <mxCell id="a2" value="Generate CSV file from&#xa;PENDING transactions&#xa;(transactionId, accountNum,&#xa;amount, currency, ...)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;fontSize=11;" vertex="1" parent="lane1">
+          <mxGeometry x="55" y="260" width="240" height="70" as="geometry"/>
+        </mxCell>
+        <mxCell id="e2" value="" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="a1b" target="a2" parent="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- Step 3: Generate AES key -->
+        <mxCell id="a3" value="Generate random AES-256&#xa;session key (32 bytes)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E3F2FD;strokeColor=#1565C0;fontSize=11;fontStyle=0;" vertex="1" parent="lane1">
+          <mxGeometry x="65" y="370" width="220" height="50" as="geometry"/>
+        </mxCell>
+        <mxCell id="e3" value="" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="a2" target="a3" parent="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- Step 4: Generate IV -->
+        <mxCell id="a4" value="Generate random IV&#xa;(16 bytes for AES-CBC)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E3F2FD;strokeColor=#1565C0;fontSize=11;" vertex="1" parent="lane1">
+          <mxGeometry x="65" y="460" width="220" height="50" as="geometry"/>
+        </mxCell>
+        <mxCell id="e4" value="" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="a3" target="a4" parent="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- Step 5: AES encrypt CSV -->
+        <mxCell id="a5" value="Encrypt CSV with AES-256-CBC&#xa;using AES key + IV&#xa;→ encryptedFileBytes (binary)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E3F2FD;strokeColor=#1565C0;fontSize=11;fontStyle=1;" vertex="1" parent="lane1">
+          <mxGeometry x="50" y="550" width="250" height="60" as="geometry"/>
+        </mxCell>
+        <mxCell id="e5" value="" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="a4" target="a5" parent="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- Step 6: RSA encrypt AES key -->
+        <mxCell id="a6" value="Encrypt AES key with consumer's&#xa;RSA public key (OAEP SHA-256)&#xa;→ encryptedAesKey (binary)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E3F2FD;strokeColor=#1565C0;fontSize=11;fontStyle=1;" vertex="1" parent="lane1">
+          <mxGeometry x="45" y="650" width="260" height="60" as="geometry"/>
+        </mxCell>
+        <mxCell id="e6" value="" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="a5" target="a6" parent="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- Step 7: Base64 encode -->
+        <mxCell id="a7" value="Base64 encode:&#xa;• encryptedAesKey → encryptedAesKeyBase64&#xa;• IV → ivBase64" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;fontSize=11;align=left;spacingLeft=10;" vertex="1" parent="lane1">
+          <mxGeometry x="45" y="750" width="260" height="70" as="geometry"/>
+        </mxCell>
+        <mxCell id="e7" value="" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="a6" target="a7" parent="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- Step 8: Save encryption key record -->
+        <mxCell id="a8" value="Save encryption key record&#xa;(batchId, merchantId, aesKey,&#xa;encryptedAesKey, IV, filename)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;fontSize=11;" vertex="1" parent="lane4">
+          <mxGeometry x="30" y="750" width="220" height="60" as="geometry"/>
+        </mxCell>
+        <mxCell id="e8" value="" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="a7" target="a8" parent="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- ========== TRANSMISSION PHASE ========== -->
+        <!-- Phase label -->
+        <mxCell id="phTx" value="── Transmission Phase ──" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontStyle=1;fontSize=13;fontColor=#1A237E;" vertex="1" parent="lane1">
+          <mxGeometry x="70" y="860" width="210" height="30" as="geometry"/>
+        </mxCell>
+
+        <!-- Build multipart request -->
+        <mxCell id="a9" value="Build HTTPS multipart POST&#xa;POST /api/internal/batch-upload&#xa;Headers: X-API-Key, Content-Type" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;fontSize=11;" vertex="1" parent="lane1">
+          <mxGeometry x="40" y="910" width="270" height="60" as="geometry"/>
+        </mxCell>
+        <mxCell id="e9" value="" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="a8" target="a9" parent="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- Data sent note -->
+        <mxCell id="note1" value="Multipart form data sent:&#xa;─────────────────────────&#xa;• file: encrypted CSV (binary)&#xa;• batchId: batch primary key&#xa;• merchantId: merchant ID&#xa;• encryptedAesKey: Base64 string&#xa;• iv: Base64 string (16 bytes)&#xa;• csvFilename: original filename&#xa;• transactionCount: integer&#xa;• producerPublicKey: PEM string" style="shape=note;whiteSpace=wrap;html=1;backgroundOutline=1;size=15;fillColor=#FFF9C4;strokeColor=#F9A825;fontSize=10;align=left;spacingLeft=8;spacingTop=5;" vertex="1" parent="lane2">
+          <mxGeometry x="15" y="880" width="220" height="170" as="geometry"/>
+        </mxCell>
+
+        <!-- Network arrow -->
+        <mxCell id="a10" value="Transmit over HTTPS/TLS" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E0E0E0;strokeColor=#616161;fontSize=11;fontStyle=2;" vertex="1" parent="lane2">
+          <mxGeometry x="40" y="1100" width="170" height="40" as="geometry"/>
+        </mxCell>
+        <mxCell id="e10" value="" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="a9" target="a10" parent="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- ========== DECRYPTION PHASE (RECEIVER) ========== -->
+        <!-- Phase label -->
+        <mxCell id="phDec" value="── Security Validation Phase ──" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontStyle=1;fontSize=13;fontColor=#1A237E;" vertex="1" parent="lane3">
+          <mxGeometry x="50" y="1160" width="260" height="30" as="geometry"/>
+        </mxCell>
+
+        <!-- Security filter -->
+        <mxCell id="a11" value="InternalApiSecurityFilter&#xa;validates request" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;fontSize=11;" vertex="1" parent="lane3">
+          <mxGeometry x="80" y="1210" width="200" height="50" as="geometry"/>
+        </mxCell>
+        <mxCell id="e11" value="" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="a10" target="a11" parent="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- Decision: API Key valid? -->
+        <mxCell id="d1" value="X-API-Key&#xa;matches?" style="rhombus;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;fontSize=11;" vertex="1" parent="lane3">
+          <mxGeometry x="120" y="1300" width="120" height="80" as="geometry"/>
+        </mxCell>
+        <mxCell id="e12" value="" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="a11" target="d1" parent="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- Reject 403 -->
+        <mxCell id="aReject1" value="Return 403 Forbidden" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFCDD2;strokeColor=#C62828;fontSize=11;" vertex="1" parent="lane3">
+          <mxGeometry x="10" y="1320" width="100" height="40" as="geometry"/>
+        </mxCell>
+        <mxCell id="eReject1" value="No" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="d1" target="aReject1" parent="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <!-- End reject 1 -->
+        <mxCell id="endR1o" value="" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;fillColor=#FFFFFF;strokeColor=#000000;strokeWidth=3;" vertex="1" parent="lane3">
+          <mxGeometry x="40" y="1390" width="40" height="40" as="geometry"/>
+        </mxCell>
+        <mxCell id="endR1" value="" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;fillColor=#000000;" vertex="1" parent="lane3">
+          <mxGeometry x="45" y="1395" width="30" height="30" as="geometry"/>
+        </mxCell>
+        <mxCell id="eR1end" value="" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="aReject1" target="endR1o" parent="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- Decision: IP whitelisted? -->
+        <mxCell id="d2" value="Client IP&#xa;in whitelist?" style="rhombus;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;fontSize=11;" vertex="1" parent="lane3">
+          <mxGeometry x="120" y="1420" width="120" height="80" as="geometry"/>
+        </mxCell>
+        <mxCell id="e13" value="Yes" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="d1" target="d2" parent="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- Reject 403 IP -->
+        <mxCell id="aReject2" value="Return 403 Forbidden" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFCDD2;strokeColor=#C62828;fontSize=11;" vertex="1" parent="lane3">
+          <mxGeometry x="10" y="1440" width="100" height="40" as="geometry"/>
+        </mxCell>
+        <mxCell id="eReject2" value="No" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="d2" target="aReject2" parent="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <!-- End reject 2 -->
+        <mxCell id="endR2o" value="" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;fillColor=#FFFFFF;strokeColor=#000000;strokeWidth=3;" vertex="1" parent="lane3">
+          <mxGeometry x="40" y="1510" width="40" height="40" as="geometry"/>
+        </mxCell>
+        <mxCell id="endR2" value="" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;fillColor=#000000;" vertex="1" parent="lane3">
+          <mxGeometry x="45" y="1515" width="30" height="30" as="geometry"/>
+        </mxCell>
+        <mxCell id="eR2end" value="" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="aReject2" target="endR2o" parent="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- ========== DECRYPTION STEPS ========== -->
+        <!-- Phase label -->
+        <mxCell id="phDec2" value="── Decryption Phase ──" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontStyle=1;fontSize=13;fontColor=#1A237E;" vertex="1" parent="lane3">
+          <mxGeometry x="70" y="1570" width="220" height="30" as="geometry"/>
+        </mxCell>
+
+        <!-- Extract multipart data -->
+        <mxCell id="a12" value="Extract multipart fields:&#xa;file, batchId, merchantId,&#xa;encryptedAesKey, iv,&#xa;csvFilename, transactionCount" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;fontSize=11;align=left;spacingLeft=10;" vertex="1" parent="lane3">
+          <mxGeometry x="60" y="1620" width="240" height="80" as="geometry"/>
+        </mxCell>
+        <mxCell id="e14" value="Yes" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="d2" target="a12" parent="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- Step 1: Base64 decode AES key -->
+        <mxCell id="a13" value="Step 1: Base64 decode&#xa;encryptedAesKeyBase64&#xa;→ encryptedAesKey (bytes)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#C8E6C9;strokeColor=#2E7D32;fontSize=11;" vertex="1" parent="lane3">
+          <mxGeometry x="65" y="1740" width="230" height="60" as="geometry"/>
+        </mxCell>
+        <mxCell id="e15" value="" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="a12" target="a13" parent="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- Step 2: RSA decrypt AES key -->
+        <mxCell id="a14" value="Step 2: RSA decrypt AES key&#xa;using system's RSA private key&#xa;Algorithm: RSA/ECB/OAEP&#xa;with SHA-256 &amp; MGF1 Padding&#xa;→ aesKeyBytes (32 bytes)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#C8E6C9;strokeColor=#2E7D32;fontSize=11;fontStyle=1;" vertex="1" parent="lane3">
+          <mxGeometry x="50" y="1840" width="260" height="90" as="geometry"/>
+        </mxCell>
+        <mxCell id="e16" value="" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="a13" target="a14" parent="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- Step 3: Base64 decode IV -->
+        <mxCell id="a15" value="Step 3: Base64 decode&#xa;ivBase64 → IV (16 bytes)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#C8E6C9;strokeColor=#2E7D32;fontSize=11;" vertex="1" parent="lane3">
+          <mxGeometry x="70" y="1970" width="220" height="50" as="geometry"/>
+        </mxCell>
+        <mxCell id="e17" value="" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="a14" target="a15" parent="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- Step 4: Read encrypted file bytes -->
+        <mxCell id="a16" value="Step 4: Read encrypted file&#xa;bytes from multipart &#39;file&#39;&#xa;→ encryptedFileBytes (binary)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#C8E6C9;strokeColor=#2E7D32;fontSize=11;" vertex="1" parent="lane3">
+          <mxGeometry x="55" y="2060" width="250" height="60" as="geometry"/>
+        </mxCell>
+        <mxCell id="e18" value="" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="a15" target="a16" parent="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- Step 5: AES decrypt CSV -->
+        <mxCell id="a17" value="Step 5: Reconstruct AES SecretKey&#xa;from decrypted aesKeyBytes&#xa;Decrypt encryptedFileBytes using&#xa;AES/CBC/PKCS5Padding + IV&#xa;→ csvBytes (plaintext CSV)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#C8E6C9;strokeColor=#2E7D32;fontSize=11;fontStyle=1;" vertex="1" parent="lane3">
+          <mxGeometry x="45" y="2160" width="270" height="100" as="geometry"/>
+        </mxCell>
+        <mxCell id="e19" value="" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="a16" target="a17" parent="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- ========== AUTHORIZATION PHASE ========== -->
+        <!-- Phase label -->
+        <mxCell id="phAuth" value="── Authorization Phase ──" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontStyle=1;fontSize=13;fontColor=#1A237E;" vertex="1" parent="lane3">
+          <mxGeometry x="70" y="2300" width="220" height="30" as="geometry"/>
+        </mxCell>
+
+        <!-- Parse CSV -->
+        <mxCell id="a18" value="Parse decrypted CSV rows&#xa;(skip header, extract&#xa;transactionId per row)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;fontSize=11;" vertex="1" parent="lane3">
+          <mxGeometry x="70" y="2350" width="220" height="60" as="geometry"/>
+        </mxCell>
+        <mxCell id="e20" value="" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="a17" target="a18" parent="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- Mock authorize -->
+        <mxCell id="a19" value="Mock authorize each transaction&#xa;(~90% APPROVED,&#xa;~10% FAILED)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;fontSize=11;" vertex="1" parent="lane3">
+          <mxGeometry x="70" y="2450" width="220" height="60" as="geometry"/>
+        </mxCell>
+        <mxCell id="e21" value="" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="a18" target="a19" parent="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- Bulk update DB -->
+        <mxCell id="a20" value="Bulk update transaction statuses&#xa;(APPROVED / FAILED)&#xa;via JDBC batch" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;fontSize=11;" vertex="1" parent="lane4">
+          <mxGeometry x="30" y="2450" width="220" height="60" as="geometry"/>
+        </mxCell>
+        <mxCell id="e22" value="" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="a19" target="a20" parent="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- Update batch status -->
+        <mxCell id="a21" value="Update RtaBatch status&#xa;→ PROCESSED" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;fontSize=11;" vertex="1" parent="lane4">
+          <mxGeometry x="45" y="2560" width="190" height="50" as="geometry"/>
+        </mxCell>
+        <mxCell id="e23" value="" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="a20" target="a21" parent="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- Save encryption key audit record -->
+        <mxCell id="a22" value="Persist encryption key&#xa;record for audit trail" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;fontSize=11;" vertex="1" parent="lane4">
+          <mxGeometry x="45" y="2660" width="190" height="50" as="geometry"/>
+        </mxCell>
+        <mxCell id="e24" value="" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="a21" target="a22" parent="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- ========== RESPONSE PHASE ========== -->
+        <!-- Phase label -->
+        <mxCell id="phResp" value="── Response Phase ──" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontStyle=1;fontSize=13;fontColor=#1A237E;" vertex="1" parent="lane3">
+          <mxGeometry x="70" y="2740" width="220" height="30" as="geometry"/>
+        </mxCell>
+
+        <!-- Build JSON response -->
+        <mxCell id="a23" value="Build JSON response:&#xa;batchId, merchantId,&#xa;batchStatus=PROCESSED,&#xa;approved count, rejected count,&#xa;per-transaction results[]" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;fontSize=11;align=left;spacingLeft=10;" vertex="1" parent="lane3">
+          <mxGeometry x="55" y="2790" width="250" height="100" as="geometry"/>
+        </mxCell>
+        <mxCell id="e25" value="" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="a22" target="a23" parent="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- Return response to sender -->
+        <mxCell id="a24" value="Return HTTP 200&#xa;with auth results" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E0E0E0;strokeColor=#616161;fontSize=11;fontStyle=2;" vertex="1" parent="lane2">
+          <mxGeometry x="40" y="2830" width="170" height="50" as="geometry"/>
+        </mxCell>
+        <mxCell id="e26" value="" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="a23" target="a24" parent="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- Sender receives response -->
+        <mxCell id="a25" value="Receive &amp; process&#xa;authorization results" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;fontSize=11;" vertex="1" parent="lane1">
+          <mxGeometry x="75" y="2830" width="200" height="50" as="geometry"/>
+        </mxCell>
+        <mxCell id="e27" value="" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="a24" target="a25" parent="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- End -->
+        <mxCell id="endSo" value="" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;fillColor=#FFFFFF;strokeColor=#000000;strokeWidth=3;" vertex="1" parent="lane1">
+          <mxGeometry x="155" y="2930" width="40" height="40" as="geometry"/>
+        </mxCell>
+        <mxCell id="endS" value="" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;fillColor=#000000;" vertex="1" parent="lane1">
+          <mxGeometry x="160" y="2935" width="30" height="30" as="geometry"/>
+        </mxCell>
+        <mxCell id="e28" value="" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="a25" target="endSo" parent="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- ========== LEGEND NOTE ========== -->
+        <mxCell id="legend" value="Hybrid Encryption Scheme:&#xa;───────────────────────&#xa;• AES-256-CBC encrypts the CSV data (symmetric, fast)&#xa;• RSA/ECB/OAEP-SHA256 encrypts the AES key (asymmetric)&#xa;• IV is randomly generated (16 bytes) per batch&#xa;• AES key &amp; IV transmitted as Base64 strings&#xa;• Encrypted CSV transmitted as binary (multipart file)&#xa;• Only the receiver's RSA private key can decrypt the AES key" style="shape=note;whiteSpace=wrap;html=1;backgroundOutline=1;size=18;fillColor=#FFF9C4;strokeColor=#F9A825;fontSize=11;align=left;spacingLeft=10;spacingTop=8;" vertex="1" parent="1">
+          <mxGeometry x="1300" y="100" width="350" height="170" as="geometry"/>
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

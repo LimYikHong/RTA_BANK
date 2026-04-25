@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterModule } from '@angular/router';
+import { Router, RouterModule } from '@angular/router';
 import { DashboardService, MerchantKeyOverview } from '../../services/dashboard.service';
 
 @Component({
@@ -14,7 +14,11 @@ export class MerchantKeyManagementComponent implements OnInit {
   merchantKeys: MerchantKeyOverview[] = [];
   loading = false;
 
-  constructor(private dashboardService: DashboardService) {}
+  constructor(private dashboardService: DashboardService, private router: Router) {}
+
+  viewDetail(merchantId: string): void {
+    this.router.navigate(['/merchant-key-detail', merchantId]);
+  }
 
   ngOnInit(): void {
     this.loadMerchantKeys();

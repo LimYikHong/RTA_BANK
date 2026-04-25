@@ -37,9 +37,7 @@
         </thead>
         <tbody>
             <tr *ngFor="let mk of merchantKeys">
-                <td>
-                    <a [routerLink]="['/merchant-key-detail', mk.merchantId]">{{ mk.merchantId }}</a>
-                </td>
+                <td>{{ mk.merchantId }}</td>
                 <td>{{ mk.merchantName || '-' }}</td>
                 <td>
                     <span class="status-badge"
@@ -59,9 +57,7 @@
                     <span *ngIf="mk.expired">❌ Expired</span>
                 </td>
                 <td class="action-cell">
-                    <a [routerLink]="['/merchant-key-detail', mk.merchantId]" class="btn-action btn-view"
-                       [title]="!mk.hasKey ? 'Need Request' : mk.canRotate ? 'Rotate' : 'View'">
-                    </a>
+                    <button class="btn-action btn-view" (click)="viewDetail(mk.merchantId)" title="View"></button>
                 </td>
             </tr>
         </tbody>

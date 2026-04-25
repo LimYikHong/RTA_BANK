@@ -1,0 +1,335 @@
+<mxfile host="app.diagrams.net" modified="2026-04-25T00:00:00.000Z" type="device">
+  <diagram name="Batch Pipeline Activity Diagram" id="batch-pipeline">
+    <mxGraphModel dx="1600" dy="900" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1800" pageHeight="2800" math="0" shadow="0">
+      <root>
+        <mxCell id="0"/>
+        <mxCell id="1" parent="0"/>
+
+        <!-- Swimlane: Scheduler -->
+        <mxCell id="lane1" value="BatchMaintenanceScheduler" style="shape=swimlane;startSize=30;horizontal=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1;fontSize=13;collapsible=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="20" y="40" width="280" height="2700" as="geometry"/>
+        </mxCell>
+
+        <!-- Swimlane: Spring Boot Backend -->
+        <mxCell id="lane2" value="Spring Boot Backend" style="shape=swimlane;startSize=30;horizontal=1;fillColor=#d5e8d4;strokeColor=#82b366;fontStyle=1;fontSize=13;collapsible=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="300" y="40" width="300" height="2700" as="geometry"/>
+        </mxCell>
+
+        <!-- Swimlane: MinIO -->
+        <mxCell id="lane3" value="MinIO Object Storage" style="shape=swimlane;startSize=30;horizontal=1;fillColor=#fff2cc;strokeColor=#d6b656;fontStyle=1;fontSize=13;collapsible=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="600" y="40" width="250" height="2700" as="geometry"/>
+        </mxCell>
+
+        <!-- Swimlane: Auth Service -->
+        <mxCell id="lane4" value="Authorization Service&#xa;(Port 8882)" style="shape=swimlane;startSize=40;horizontal=1;fillColor=#f8cecc;strokeColor=#b85450;fontStyle=1;fontSize=13;collapsible=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="850" y="40" width="280" height="2700" as="geometry"/>
+        </mxCell>
+
+        <!-- Swimlane: Merchant Service -->
+        <mxCell id="lane5" value="Merchant Service&#xa;(Port 8881)" style="shape=swimlane;startSize=40;horizontal=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontStyle=1;fontSize=13;collapsible=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="1130" y="40" width="280" height="2700" as="geometry"/>
+        </mxCell>
+
+        <!-- Swimlane: MySQL -->
+        <mxCell id="lane6" value="MySQL Database" style="shape=swimlane;startSize=30;horizontal=1;fillColor=#f5f5f5;strokeColor=#666666;fontStyle=1;fontSize=13;collapsible=0;whiteSpace=wrap;html=1;fontColor=#333333;" vertex="1" parent="1">
+          <mxGeometry x="1410" y="40" width="250" height="2700" as="geometry"/>
+        </mxCell>
+
+        <!-- ====== START ====== -->
+        <mxCell id="start" value="" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;fillColor=#000000;strokeColor=#000000;" vertex="1" parent="lane1">
+          <mxGeometry x="125" y="50" width="30" height="30" as="geometry"/>
+        </mxCell>
+
+        <!-- Trigger -->
+        <mxCell id="a1" value="Cron trigger fires&#xa;(every 5 minutes)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;fontSize=12;" vertex="1" parent="lane1">
+          <mxGeometry x="55" y="120" width="170" height="50" as="geometry"/>
+        </mxCell>
+        <mxCell id="e1" value="" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="start" target="a1" parent="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- ====== PHASE 1 HEADER ====== -->
+        <mxCell id="ph1" value="── Phase 1: Batch Assignment ──" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontStyle=1;fontSize=13;fontColor=#1A237E;" vertex="1" parent="lane1">
+          <mxGeometry x="20" y="200" width="240" height="30" as="geometry"/>
+        </mxCell>
+
+        <!-- Find eligible files -->
+        <mxCell id="a2" value="Query eligible IncomingBatchFiles&#xa;(insertionStatus=COMPLETED&#xa;&amp; successCount &gt; 0)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;fontSize=11;" vertex="1" parent="lane6">
+          <mxGeometry x="25" y="240" width="200" height="70" as="geometry"/>
+        </mxCell>
+        <mxCell id="e2" value="" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="a1" target="a2" parent="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- Decision: Eligible files? -->
+        <mxCell id="d1" value="Eligible&#xa;files found?" style="rhombus;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;fontSize=11;" vertex="1" parent="lane1">
+          <mxGeometry x="75" y="350" width="120" height="80" as="geometry"/>
+        </mxCell>
+        <mxCell id="e3" value="" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="a2" target="d1" parent="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- Create RtaBatch -->
+        <mxCell id="a3" value="Create RtaBatch&#xa;(status = CREATED)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;fontSize=12;" vertex="1" parent="lane6">
+          <mxGeometry x="35" y="380" width="180" height="50" as="geometry"/>
+        </mxCell>
+        <mxCell id="e4" value="Yes" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="d1" target="a3" parent="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- Create AuthBatch -->
+        <mxCell id="a3b" value="Create RtaAuthorizationBatch&#xa;(status = CREATED)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;fontSize=12;" vertex="1" parent="lane6">
+          <mxGeometry x="30" y="470" width="190" height="50" as="geometry"/>
+        </mxCell>
+        <mxCell id="e4b" value="" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="a3" target="a3b" parent="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- Link transactions -->
+        <mxCell id="a4" value="Link files &amp; transactions&#xa;to batch (bulk UPDATE)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;fontSize=12;" vertex="1" parent="lane6">
+          <mxGeometry x="35" y="560" width="180" height="50" as="geometry"/>
+        </mxCell>
+        <mxCell id="e5" value="" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="a3b" target="a4" parent="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- Log audit -->
+        <mxCell id="a4b" value="Log batch creation&#xa;in Audit Log" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;fontSize=12;" vertex="1" parent="lane6">
+          <mxGeometry x="35" y="650" width="180" height="50" as="geometry"/>
+        </mxCell>
+        <mxCell id="e5b" value="" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="a4" target="a4b" parent="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- ====== PHASE 2 HEADER ====== -->
+        <mxCell id="ph2" value="── Phase 2: Encrypt &amp; Send ──" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontStyle=1;fontSize=13;fontColor=#1A237E;" vertex="1" parent="lane1">
+          <mxGeometry x="20" y="730" width="240" height="30" as="geometry"/>
+        </mxCell>
+
+        <!-- Find CREATED batches -->
+        <mxCell id="a5" value="Find all CREATED batches" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;fontSize=12;" vertex="1" parent="lane6">
+          <mxGeometry x="35" y="770" width="180" height="50" as="geometry"/>
+        </mxCell>
+        <mxCell id="e6" value="" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="a4b" target="a5" parent="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- Decision: CREATED batches? -->
+        <mxCell id="d2" value="CREATED&#xa;batches?" style="rhombus;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;fontSize=11;" vertex="1" parent="lane1">
+          <mxGeometry x="75" y="860" width="120" height="80" as="geometry"/>
+        </mxCell>
+        <mxCell id="e7" value="" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="a5" target="d2" parent="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- Step 1: Generate CSV + AES encrypt -->
+        <mxCell id="a6" value="Step 1: Generate CSV from&#xa;PENDING transactions &amp;&#xa;AES-256 encrypt" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;fontSize=11;" vertex="1" parent="lane2">
+          <mxGeometry x="55" y="990" width="190" height="60" as="geometry"/>
+        </mxCell>
+        <mxCell id="e8" value="Yes" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="d2" target="a6" parent="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- Step 2: Store in MinIO -->
+        <mxCell id="a7" value="Step 2: Upload encrypted&#xa;CSV to MinIO" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;fontSize=12;" vertex="1" parent="lane3">
+          <mxGeometry x="35" y="1090" width="180" height="50" as="geometry"/>
+        </mxCell>
+        <mxCell id="e9" value="" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="a6" target="a7" parent="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- Step 3: Send to Auth Service -->
+        <mxCell id="a8" value="Step 3: Send encrypted CSV&#xa;+ RSA-encrypted AES key&#xa;via HTTPS Internal API" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;fontSize=11;" vertex="1" parent="lane2">
+          <mxGeometry x="50" y="1190" width="200" height="60" as="geometry"/>
+        </mxCell>
+        <mxCell id="e10" value="" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="a7" target="a8" parent="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- Auth Service: Validate API Key + IP -->
+        <mxCell id="a9" value="Validate X-API-Key&#xa;&amp; IP whitelist" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;fontSize=12;" vertex="1" parent="lane4">
+          <mxGeometry x="50" y="1190" width="180" height="50" as="geometry"/>
+        </mxCell>
+        <mxCell id="e11" value="" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="a8" target="a9" parent="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- Auth Service: Decrypt -->
+        <mxCell id="a10" value="Decrypt AES key (RSA)&#xa;→ Decrypt CSV (AES)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;fontSize=12;" vertex="1" parent="lane4">
+          <mxGeometry x="50" y="1290" width="180" height="50" as="geometry"/>
+        </mxCell>
+        <mxCell id="e12" value="" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="a9" target="a10" parent="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- Auth Service: Authorize -->
+        <mxCell id="a11" value="Authorize transactions&#xa;(~90% approval rate)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;fontSize=12;" vertex="1" parent="lane4">
+          <mxGeometry x="50" y="1380" width="180" height="50" as="geometry"/>
+        </mxCell>
+        <mxCell id="e13" value="" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="a10" target="a11" parent="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- Auth Service: Return results -->
+        <mxCell id="a12" value="Return encrypted&#xa;authorization results" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;fontSize=12;" vertex="1" parent="lane4">
+          <mxGeometry x="50" y="1470" width="180" height="50" as="geometry"/>
+        </mxCell>
+        <mxCell id="e14" value="" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="a11" target="a12" parent="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- Decision: Auth successful? -->
+        <mxCell id="d3" value="Auth&#xa;successful?" style="rhombus;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;fontSize=11;" vertex="1" parent="lane2">
+          <mxGeometry x="90" y="1560" width="120" height="80" as="geometry"/>
+        </mxCell>
+        <mxCell id="e15" value="" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="a12" target="d3" parent="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- Failed path -->
+        <mxCell id="aFail" value="Mark batch as&#xa;SEND_FAILED&#xa;(keep txns PENDING for retry)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;fontSize=11;" vertex="1" parent="lane6">
+          <mxGeometry x="25" y="1570" width="200" height="60" as="geometry"/>
+        </mxCell>
+        <mxCell id="eFail" value="No" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="d3" target="aFail" parent="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- End (fail) -->
+        <mxCell id="endFR" value="" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;fillColor=#FFFFFF;strokeColor=#000000;strokeWidth=3;" vertex="1" parent="lane6">
+          <mxGeometry x="105" y="1670" width="40" height="40" as="geometry"/>
+        </mxCell>
+        <mxCell id="endF" value="" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;fillColor=#000000;strokeColor=#000000;" vertex="1" parent="lane6">
+          <mxGeometry x="110" y="1675" width="30" height="30" as="geometry"/>
+        </mxCell>
+        <mxCell id="eFail2" value="" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="aFail" target="endFR" parent="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- Step 4: Update transaction statuses -->
+        <mxCell id="a13" value="Step 4: Decrypt response &amp;&#xa;bulk update transaction statuses&#xa;(APPROVED / FAILED)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;fontSize=11;" vertex="1" parent="lane6">
+          <mxGeometry x="20" y="1750" width="210" height="60" as="geometry"/>
+        </mxCell>
+        <mxCell id="e16" value="Yes" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="d3" target="a13" parent="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- Step 5: Update AuthBatch -->
+        <mxCell id="a14" value="Step 5: Update AuthorizationBatch&#xa;→ PROCESSED" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;fontSize=12;" vertex="1" parent="lane6">
+          <mxGeometry x="25" y="1860" width="200" height="50" as="geometry"/>
+        </mxCell>
+        <mxCell id="e17" value="" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="a13" target="a14" parent="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- Step 6: Send return batch -->
+        <mxCell id="a15" value="Step 6: Generate &amp; encrypt&#xa;return batch CSV" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;fontSize=12;" vertex="1" parent="lane2">
+          <mxGeometry x="55" y="1960" width="190" height="50" as="geometry"/>
+        </mxCell>
+        <mxCell id="e18" value="" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="a14" target="a15" parent="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- Send to Merchant -->
+        <mxCell id="a16" value="Receive encrypted&#xa;return batch file&#xa;via Internal API" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;fontSize=11;" vertex="1" parent="lane5">
+          <mxGeometry x="50" y="1960" width="180" height="60" as="geometry"/>
+        </mxCell>
+        <mxCell id="e19" value="HTTPS + API Key" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="a15" target="a16" parent="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- Step 7: Send report -->
+        <mxCell id="a17" value="Step 7: Generate &amp; encrypt&#xa;report summary" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;fontSize=12;" vertex="1" parent="lane2">
+          <mxGeometry x="55" y="2080" width="190" height="50" as="geometry"/>
+        </mxCell>
+        <mxCell id="e20" value="" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="a16" target="a17" parent="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- Send report to Merchant -->
+        <mxCell id="a18" value="Receive encrypted&#xa;report summary&#xa;via Internal API" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;fontSize=11;" vertex="1" parent="lane5">
+          <mxGeometry x="50" y="2080" width="180" height="60" as="geometry"/>
+        </mxCell>
+        <mxCell id="e21" value="HTTPS + API Key" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="a17" target="a18" parent="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- Step 8: Auto-generate results -->
+        <mxCell id="a19" value="Step 8: Auto-generate&#xa;batch file results &amp; reports" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;fontSize=12;" vertex="1" parent="lane2">
+          <mxGeometry x="55" y="2200" width="190" height="50" as="geometry"/>
+        </mxCell>
+        <mxCell id="e22" value="" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="a18" target="a19" parent="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- Store results in MinIO -->
+        <mxCell id="a20" value="Store generated report&#xa;files in MinIO" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;fontSize=12;" vertex="1" parent="lane3">
+          <mxGeometry x="35" y="2310" width="180" height="50" as="geometry"/>
+        </mxCell>
+        <mxCell id="e23" value="" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="a19" target="a20" parent="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- Save report metadata -->
+        <mxCell id="a21" value="Save report metadata&#xa;to MySQL" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;fontSize=12;" vertex="1" parent="lane6">
+          <mxGeometry x="35" y="2310" width="180" height="50" as="geometry"/>
+        </mxCell>
+        <mxCell id="e24" value="" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="a20" target="a21" parent="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- Log complete -->
+        <mxCell id="a22" value="Log batch completion&#xa;in Audit Log" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;fontSize=12;" vertex="1" parent="lane6">
+          <mxGeometry x="35" y="2410" width="180" height="50" as="geometry"/>
+        </mxCell>
+        <mxCell id="e25" value="" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="a21" target="a22" parent="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- ====== END (success) ====== -->
+        <mxCell id="endSR" value="" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;fillColor=#FFFFFF;strokeColor=#000000;strokeWidth=3;" vertex="1" parent="lane1">
+          <mxGeometry x="120" y="2530" width="40" height="40" as="geometry"/>
+        </mxCell>
+        <mxCell id="endS" value="" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;fillColor=#000000;strokeColor=#000000;" vertex="1" parent="lane1">
+          <mxGeometry x="125" y="2535" width="30" height="30" as="geometry"/>
+        </mxCell>
+        <mxCell id="e26" value="" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="a22" target="endSR" parent="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- Skip path (no eligible files) -->
+        <mxCell id="aSkip1" value="Skip&#xa;(no action)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;fontSize=11;" vertex="1" parent="lane1">
+          <mxGeometry x="10" y="470" width="100" height="40" as="geometry"/>
+        </mxCell>
+        <mxCell id="eSkip1" value="No" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="d1" target="aSkip1" parent="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="eSkip1b" value="" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="aSkip1" target="a5" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="80" y="570"/>
+              <mxPoint x="80" y="750"/>
+              <mxPoint x="1535" y="750"/>
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+        <!-- Skip path (no CREATED batches) -->
+        <mxCell id="endSkip2R" value="" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;fillColor=#FFFFFF;strokeColor=#000000;strokeWidth=3;" vertex="1" parent="lane1">
+          <mxGeometry x="120" y="980" width="40" height="40" as="geometry"/>
+        </mxCell>
+        <mxCell id="endSkip2" value="" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;fillColor=#000000;strokeColor=#000000;" vertex="1" parent="lane1">
+          <mxGeometry x="125" y="985" width="30" height="30" as="geometry"/>
+        </mxCell>
+        <mxCell id="eSkip2" value="No" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="d2" target="endSkip2R" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="155" y="940"/>
+              <mxPoint x="160" y="940"/>
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

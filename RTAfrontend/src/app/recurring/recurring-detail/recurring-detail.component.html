@@ -64,43 +64,73 @@
     </div>
 
     <!-- Transactions Table -->
-    <div class="transactions-section">
-      <h3>Transaction History</h3>
-      <div class="table-container">
-        <table class="transactions-table">
-          <thead>
-            <tr>
-              <th>#</th>
-              <th>Transaction ID</th>
-              <th>Batch ID</th>
-              <th>Customer</th>
-              <th>Account</th>
-              <th>Amount</th>
-              <th>Billing Date</th>
-              <th>Status</th>
-              <th>Remark</th>
-              <th>Created At</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr *ngFor="let txn of detail.transactions; let i = index">
-              <td>{{ i + 1 }}</td>
-              <td class="txn-id">{{ txn.transactionId }}</td>
-              <td>{{ txn.batchId || '-' }}</td>
-              <td>{{ txn.merchantCustomer || '-' }}</td>
-              <td class="masked-pan">{{ txn.maskedPan || '-' }}</td>
-              <td class="amount-cell">{{ formatAmount(txn.amount, txn.currency) }}</td>
-              <td>{{ formatDate(txn.actualBillingDate) }}</td>
-              <td>
-                <span class="status-badge" [ngClass]="getStatusClass(txn.status)">
-                  {{ txn.status }}
-                </span>
-              </td>
-              <td class="remark-cell" [title]="txn.remark || ''">{{ txn.remark || '-' }}</td>
-              <td>{{ formatDateTime(txn.createdAt) }}</td>
-            </tr>
-          </tbody>
-        </table>
+    <div class="section-header" style="margin-top: 20px;">
+      <h3 class="section-title">Transaction History</h3>
+      <span class="result-count">{{ detail.transactions.length }} record(s)</span>
+    </div>
+
+    <div class="table-card">
+      <table>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Transaction ID</th>
+            <th>Batch ID</th>
+            <th>Customer</th>
+            <th>Account</th>
+            <th>Amount</th>
+            <th>Billing Date</th>
+            <th>Status</th>
+            <th>Remark</th>
+            <th>Created At</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let txn of pagedTransactions; let i = index">
+            <td>{{ (currentPage - 1) * pageSize + i + 1 }}</td>
+            <td>{{ txn.transactionId }}</td>
+            <td>{{ txn.batchId || '-' }}</td>
+            <td>{{ txn.merchantCustomer || '-' }}</td>
+            <td>{{ txn.maskedPan || '-' }}</td>
+            <td>{{ formatAmount(txn.amount, txn.currency) }}</td>
+            <td>{{ formatDate(txn.actualBillingDate) }}</td>
+            <td>
+              <span class="status-badge" [ngClass]="getStatusClass(txn.status)">
+                {{ txn.status }}
+              </span>
+            </td>
+            <td [title]="txn.remark || ''">{{ txn.remark || '-' }}</td>
+            <td>{{ formatDateTime(txn.createdAt) }}</td>
+          </tr>
+          <tr *ngIf="detail.transactions.length === 0">
+            <td colspan="10" class="no-data-cell">No transactions found.</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <!-- Pagination -->
+      <div class="pagination-section" *ngIf="detail.transactions.length > pageSize">
+        <div class="pagination-info">
+          <div class="page-size-selector">
+            <label>Rows:</label>
+            <select [(ngModel)]="pageSize" (change)="onPageSizeChange()" class="filter-select">
+              <option *ngFor="let size of pageSizeOptions" [ngValue]="size">{{ size }}</option>
+            </select>
+          </div>
+          <span>Showing {{ startRecord }}–{{ endRecord }} of {{ detail.transactions.length }}</span>
+        </div>
+        <div class="pagination-controls">
+          <button class="page-btn" (click)="goToPage(1)" [disabled]="currentPage === 1">«</button>
+          <button class="page-btn" (click)="goToPage(currentPage - 1)" [disabled]="currentPage === 1">‹</button>
+          <button
+            *ngFor="let p of visiblePages"
+            class="page-btn"
+            [class.active]="p === currentPage"
+            (click)="goToPage(p)"
+          >{{ p }}</button>
+          <button class="page-btn" (click)="goToPage(currentPage + 1)" [disabled]="currentPage === totalPages">›</button>
+          <button class="page-btn" (click)="goToPage(totalPages)" [disabled]="currentPage === totalPages">»</button>
+        </div>
       </div>
     </div>
   </div>
