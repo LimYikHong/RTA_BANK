@@ -46,7 +46,7 @@ export class LoginComponent {
           this.step = 2;
           this.tempData = response;
 
-          // ⚠️ SSR-safe: only generate QR in browser
+          // SSR-safe: only generate QR in browser
           if (isPlatformBrowser(this.platformId)) {
             const QRCode = await import('qrcode');
             

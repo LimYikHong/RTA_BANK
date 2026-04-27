@@ -26,17 +26,17 @@
     <table *ngIf="merchantKeys.length > 0; else noKeys">
         <thead>
             <tr>
-                <th>Merchant ID</th>
-                <th>Name</th>
-                <th>Key Status</th>
-                <th>Version</th>
-                <th>Days Elapsed</th>
+                <th class="th-sort" (click)="sortBy('merchantId')" [attr.data-sort]="sortKey==='merchantId' ? sortDir : ''">Merchant ID</th>
+                <th class="th-sort" (click)="sortBy('merchantName')" [attr.data-sort]="sortKey==='merchantName' ? sortDir : ''">Name</th>
+                <th class="th-sort" (click)="sortBy('hasKey')" [attr.data-sort]="sortKey==='hasKey' ? sortDir : ''">Key Status</th>
+                <th class="th-sort" (click)="sortBy('keyVersion')" [attr.data-sort]="sortKey==='keyVersion' ? sortDir : ''">Version</th>
+                <th class="th-sort" (click)="sortBy('daysElapsed')" [attr.data-sort]="sortKey==='daysElapsed' ? sortDir : ''">Days Elapsed</th>
                 <th>Rotation Window</th>
                 <th>Action</th>
             </tr>
         </thead>
         <tbody>
-            <tr *ngFor="let mk of merchantKeys">
+            <tr *ngFor="let mk of sortedMerchantKeys">
                 <td>{{ mk.merchantId }}</td>
                 <td>{{ mk.merchantName || '-' }}</td>
                 <td>

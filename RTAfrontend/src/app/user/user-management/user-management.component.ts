@@ -6,6 +6,7 @@ import { ProfileService, UserListItem } from '../../services/profile.service';
 import { AuthService } from '../../services/auth.service';
 import { Subscription, filter } from 'rxjs';
 import { MerchantFilterComponent, MerchantFilterValues } from '../../shared/merchant-filter/merchant-filter.component';
+import { TableSorter } from '../../shared/table-sorter';
 
 @Component({
   selector: 'app-user-management',
@@ -34,35 +35,14 @@ export class UserManagementComponent implements OnInit, OnDestroy {
   pageSize = 10;
   pageSizeOptions = [10, 25, 50, 100];
 
-  sortKey: string = '';
-  sortDir: 'asc' | 'desc' = 'asc';
+  sorter = new TableSorter<UserListItem>();
 
-  sortBy(key: string): void {
-    if (this.sortKey === key) {
-      if (this.sortDir === 'asc') {
-        this.sortDir = 'desc';
-      } else {
-        this.sortKey = '';
-        this.sortDir = 'asc';
-      }
-    } else {
-      this.sortKey = key;
-      this.sortDir = 'asc';
-    }
-  }
+  get sortKey() { return this.sorter.sortKey; }
+  get sortDir() { return this.sorter.sortDir; }
+  sortBy(key: string): void { this.sorter.sortBy(key); }
 
   get sortedUsers(): UserListItem[] {
-    let list = this.filteredUsers;
-    if (this.sortKey) {
-      list = [...list].sort((a, b) => {
-        const av = (a as any)[this.sortKey] ?? '';
-        const bv = (b as any)[this.sortKey] ?? '';
-        const cmp = String(av).localeCompare(String(bv), undefined, { numeric: true });
-        return this.sortDir === 'asc' ? cmp : -cmp;
-      });
-    }
-    const start = (this.currentPage - 1) * this.pageSize;
-    return list.slice(start, start + this.pageSize);
+    return this.sorter.applyPaged(this.filteredUsers, this.currentPage, this.pageSize);
   }
 
   get totalElements(): number { return this.filteredUsers.length; }

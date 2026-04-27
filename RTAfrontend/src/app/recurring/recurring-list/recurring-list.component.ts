@@ -4,6 +4,7 @@ import { RouterModule, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { MerchantFilterComponent, MerchantFilterValues } from '../../shared/merchant-filter/merchant-filter.component';
+import { TableSorter } from '../../shared/table-sorter';
 interface RecurringItem {
   recurringReference: string;
   merchantId: string;
@@ -49,31 +50,14 @@ export class RecurringListComponent implements OnInit {
   // Merchant ID lists (loaded once from dedicated endpoint)
   merchantIds: string[] = [];          // full list from API
 
-  sortKey: string = '';
-  sortDir: 'asc' | 'desc' = 'asc';
+  sorter = new TableSorter<RecurringItem>();
 
-  sortBy(key: string): void {
-    if (this.sortKey === key) {
-      if (this.sortDir === 'asc') {
-        this.sortDir = 'desc';
-      } else {
-        this.sortKey = '';
-        this.sortDir = 'asc';
-      }
-    } else {
-      this.sortKey = key;
-      this.sortDir = 'asc';
-    }
-  }
+  get sortKey() { return this.sorter.sortKey; }
+  get sortDir() { return this.sorter.sortDir; }
+  sortBy(key: string): void { this.sorter.sortBy(key); }
 
   get sortedItems(): RecurringItem[] {
-    if (!this.sortKey) return this.pagedItems;
-    return [...this.pagedItems].sort((a, b) => {
-      const av = (a as any)[this.sortKey] ?? '';
-      const bv = (b as any)[this.sortKey] ?? '';
-      const cmp = String(av).localeCompare(String(bv), undefined, { numeric: true });
-      return this.sortDir === 'asc' ? cmp : -cmp;
-    });
+    return this.sorter.apply(this.pagedItems);
   }
 
   constructor(

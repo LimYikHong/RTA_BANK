@@ -2,6 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterModule } from '@angular/router';
 import { DashboardService, MerchantKeyOverview } from '../../services/dashboard.service';
+import { TableSorter } from '../../shared/table-sorter';
 
 @Component({
   selector: 'app-merchant-key-management',
@@ -13,6 +14,16 @@ import { DashboardService, MerchantKeyOverview } from '../../services/dashboard.
 export class MerchantKeyManagementComponent implements OnInit {
   merchantKeys: MerchantKeyOverview[] = [];
   loading = false;
+
+  // Sorting
+  sorter = new TableSorter<MerchantKeyOverview>();
+  get sortKey() { return this.sorter.sortKey; }
+  get sortDir() { return this.sorter.sortDir; }
+  sortBy(key: string): void { this.sorter.sortBy(key); }
+
+  get sortedMerchantKeys(): MerchantKeyOverview[] {
+    return this.sorter.apply(this.merchantKeys);
+  }
 
   constructor(private dashboardService: DashboardService, private router: Router) {}
 

@@ -6,6 +6,7 @@ import { HttpClient } from '@angular/common/http';
 import { AuthService } from '../../services/auth.service';
 import { BatchTimerService } from '../../services/batch-timer.service';
 import { MerchantFilterComponent, MerchantFilterValues } from '../../shared/merchant-filter/merchant-filter.component';
+import { TableSorter } from '../../shared/table-sorter';
 
 interface IncomingBatchFile {
   batchFileId: number;
@@ -63,35 +64,14 @@ export class IncomingBatchComponent implements OnInit {
   pageSize = 10;
   pageSizeOptions = [10, 25, 50, 100];
 
-  sortKey: string = '';
-  sortDir: 'asc' | 'desc' = 'asc';
+  sorter = new TableSorter<IncomingBatchFile>();
 
-  sortBy(key: string): void {
-    if (this.sortKey === key) {
-      if (this.sortDir === 'asc') {
-        this.sortDir = 'desc';
-      } else {
-        this.sortKey = '';
-        this.sortDir = 'asc';
-      }
-    } else {
-      this.sortKey = key;
-      this.sortDir = 'asc';
-    }
-  }
+  get sortKey() { return this.sorter.sortKey; }
+  get sortDir() { return this.sorter.sortDir; }
+  sortBy(key: string): void { this.sorter.sortBy(key); }
 
   get sortedFiles(): IncomingBatchFile[] {
-    let list = this.filteredFiles;
-    if (this.sortKey) {
-      list = [...list].sort((a, b) => {
-        const av = (a as any)[this.sortKey] ?? '';
-        const bv = (b as any)[this.sortKey] ?? '';
-        const cmp = String(av).localeCompare(String(bv), undefined, { numeric: true });
-        return this.sortDir === 'asc' ? cmp : -cmp;
-      });
-    }
-    const start = (this.currentPage - 1) * this.pageSize;
-    return list.slice(start, start + this.pageSize);
+    return this.sorter.applyPaged(this.filteredFiles, this.currentPage, this.pageSize);
   }
 
   get totalElements(): number { return this.filteredFiles.length; }

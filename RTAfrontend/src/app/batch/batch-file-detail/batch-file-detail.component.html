@@ -107,19 +107,19 @@
         </div>
 
         <!-- Filter Section -->
-        <app-merchant-filter
-          [merchantIds]="merchantIds"
-          (search)="onFilterSearch($event)">
-          <!-- Status filter -->
-          <div class="filter-field">
-            <label>Status</label>
-            <select class="filter-select" [(ngModel)]="statusFilter" (change)="onFilterChange()">
-              <option value="ALL">All Status</option>
-              <option value="SUCCESS">Success</option>
-              <option value="FAILED">Failed</option>
-            </select>
+        <div class="toolbar" style="margin-bottom: 16px;">
+          <div class="input-with-clear">
+            <input type="text" placeholder="Search by Transaction ID..." [(ngModel)]="txnIdSearch"
+              (keyup.enter)="applyFilter()" class="search-input" />
+            <span class="input-clear" *ngIf="txnIdSearch" (click)="txnIdSearch = ''; applyFilter()">&times;</span>
           </div>
-        </app-merchant-filter>
+          <select class="filter-select" [(ngModel)]="statusFilter">
+            <option value="ALL">All Status</option>
+            <option value="SUCCESS">Success</option>
+            <option value="FAILED">Failed</option>
+          </select>
+          <button class="btn btn-primary" (click)="applyFilter()">Search</button>
+        </div>
 
         <div class="table-container">
           <table class="data-table">

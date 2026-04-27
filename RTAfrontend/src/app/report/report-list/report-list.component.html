@@ -16,17 +16,17 @@
       <table class="data-table">
         <thead>
           <tr>
-            <th>Result Name</th>
-            <th>Merchant</th>
-            <th>Format</th>
-            <th>Total</th>
-            <th>Approved</th>
-            <th>Declined</th>
-            <th>Amount</th>
-            <th>Validation</th>
-            <th>Auth Status</th>
-            <th>Send</th>
-            <th>Created</th>
+            <th class="th-sort" (click)="sortBy('reportName')" [attr.data-sort]="sortKey==='reportName' ? sortDir : ''">Result Name</th>
+            <th class="th-sort" (click)="sortBy('batchFileId')" [attr.data-sort]="sortKey==='batchFileId' ? sortDir : ''">Batch File ID</th>
+            <th class="th-sort" (click)="sortBy('fileFormat')" [attr.data-sort]="sortKey==='fileFormat' ? sortDir : ''">Format</th>
+            <th class="th-sort" (click)="sortBy('totalRecords')" [attr.data-sort]="sortKey==='totalRecords' ? sortDir : ''">Total</th>
+            <th class="th-sort" (click)="sortBy('approvedCount')" [attr.data-sort]="sortKey==='approvedCount' ? sortDir : ''">Approved</th>
+            <th class="th-sort" (click)="sortBy('declinedCount')" [attr.data-sort]="sortKey==='declinedCount' ? sortDir : ''">Declined</th>
+            <th class="th-sort" (click)="sortBy('totalAmount')" [attr.data-sort]="sortKey==='totalAmount' ? sortDir : ''">Amount</th>
+            <th class="th-sort" (click)="sortBy('validationStatus')" [attr.data-sort]="sortKey==='validationStatus' ? sortDir : ''">Validation</th>
+            <th class="th-sort" (click)="sortBy('authStatus')" [attr.data-sort]="sortKey==='authStatus' ? sortDir : ''">Auth Status</th>
+            <th class="th-sort" (click)="sortBy('sendStatus')" [attr.data-sort]="sortKey==='sendStatus' ? sortDir : ''">Send</th>
+            <th class="th-sort" (click)="sortBy('createdAt')" [attr.data-sort]="sortKey==='createdAt' ? sortDir : ''">Created</th>
             <th>Actions</th>
           </tr>
         </thead>
@@ -34,9 +34,9 @@
           <tr *ngIf="reports.length === 0">
             <td colspan="12" style="text-align:center; padding:40px; color:#94a3b8;">No batch file results found. Results are auto-generated when batches are processed.</td>
           </tr>
-          <tr *ngFor="let report of reports" (click)="viewReport(report.reportId)" class="clickable-row">
+          <tr *ngFor="let report of sortedReports" (click)="viewReport(report.reportId)" class="clickable-row">
             <td class="report-name">{{ report.reportName }}</td>
-            <td>{{ report.merchantId }}</td>
+            <td>{{ report.batchFileId }}</td>
             <td><span class="format-badge">{{ report.fileFormat }}</span></td>
             <td class="count-cell">{{ report.totalRecords }}</td>
             <td class="count-cell success-text">{{ report.approvedCount }}</td>

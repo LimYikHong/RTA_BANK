@@ -11,9 +11,18 @@
         <div class="header-actions">
           <button class="btn-action btn-edit" *ngIf="isOwnProfile && hasPermission('USER_EDIT')" (click)="editUser()" title="Edit Profile"></button>
           <button class="btn-action btn-edit" *ngIf="!isOwnProfile && hasPermission('USER_EDIT')" (click)="editUser()" title="Edit User"></button>
-          <button class="btn-action btn-disable" *ngIf="!isOwnProfile && canToggleStatus && !isDisabledUser" (click)="openDisableModal()" title="Disable User"></button>
-          <button class="btn-action btn-enable" *ngIf="!isOwnProfile && canToggleStatus && isDisabledUser" (click)="confirmEnable()"
-            [disabled]="isDisabling" title="Enable User"></button>
+          <div class="toggle-status-wrapper" *ngIf="!isOwnProfile && canToggleStatus">
+            <span class="toggle-label">{{ isDisabledUser ? 'Disabled' : 'Enabled' }}</span>
+            <button
+              class="toggle-btn"
+              [class.toggle-on]="!isDisabledUser"
+              [class.toggle-off]="isDisabledUser"
+              [disabled]="isDisabling"
+              (click)="isDisabledUser ? confirmEnable() : openDisableModal()"
+              [title]="isDisabledUser ? 'Click to Enable User' : 'Click to Disable User'">
+              <span class="toggle-knob"></span>
+            </button>
+          </div>
           <button class="btn-action btn-delete" *ngIf="!isOwnProfile && canDelete" (click)="openDeleteModal()" title="Delete User"></button>
         </div>
       </div>

@@ -215,6 +215,7 @@ public class InternalChannelController {
                         RtaBatchEncryptionKey keyRecord = RtaBatchEncryptionKey.builder()
                                 .batchId(batchId)
                                 .merchantId(merchantId)
+                                .aesKeyBase64(Base64.getEncoder().encodeToString(aesKeyBytes))
                                 .encryptedAesKeyBase64(encryptedAesKeyBase64)
                                 .ivBase64(ivBase64)
                                 .csvFilename(csvFilename)

@@ -5,6 +5,7 @@ import { FormsModule } from '@angular/forms';
 import { ReportService, RtaReport, ReportPage } from '../../services/report.service';
 import { AuthService } from '../../services/auth.service';
 import { MerchantFilterComponent, MerchantFilterValues } from '../../shared/merchant-filter/merchant-filter.component';
+import { TableSorter } from '../../shared/table-sorter';
 
 @Component({
   selector: 'app-report-list',
@@ -24,6 +25,16 @@ export class ReportListComponent implements OnInit {
   totalElements = 0;
   isGenerating = false;
   userRole = '';
+
+  // Sorting
+  sorter = new TableSorter<RtaReport>();
+  get sortKey() { return this.sorter.sortKey; }
+  get sortDir() { return this.sorter.sortDir; }
+  sortBy(key: string): void { this.sorter.sortBy(key); }
+
+  get sortedReports(): RtaReport[] {
+    return this.sorter.apply(this.reports);
+  }
 
   // Merchant filter
   merchantIds: string[] = [];

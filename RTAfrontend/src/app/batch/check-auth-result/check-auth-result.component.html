@@ -22,15 +22,15 @@
         <table class="data-table">
           <thead>
             <tr>
-              <th>Batch ID</th>
-              <th>Batch Reference</th>
-              <th>Files</th>
-              <th>Total</th>
-              <th>Approved</th>
-              <th>Failed</th>
-              <th>Amount</th>
-              <th>Status</th>
-              <th>Processed At</th>
+              <th class="th-sort" (click)="sortBy('authBatchId')" [attr.data-sort]="sortKey==='authBatchId' ? sortDir : ''">Batch ID</th>
+              <th class="th-sort" (click)="sortBy('batchReference')" [attr.data-sort]="sortKey==='batchReference' ? sortDir : ''">Batch Reference</th>
+              <th class="th-sort" (click)="sortBy('fileCount')" [attr.data-sort]="sortKey==='fileCount' ? sortDir : ''">Files</th>
+              <th class="th-sort" (click)="sortBy('totalCount')" [attr.data-sort]="sortKey==='totalCount' ? sortDir : ''">Total</th>
+              <th class="th-sort" (click)="sortBy('successCount')" [attr.data-sort]="sortKey==='successCount' ? sortDir : ''">Approved</th>
+              <th class="th-sort" (click)="sortBy('failCount')" [attr.data-sort]="sortKey==='failCount' ? sortDir : ''">Failed</th>
+              <th class="th-sort" (click)="sortBy('totalAmountCents')" [attr.data-sort]="sortKey==='totalAmountCents' ? sortDir : ''">Amount</th>
+              <th class="th-sort" (click)="sortBy('batchStatus')" [attr.data-sort]="sortKey==='batchStatus' ? sortDir : ''">Status</th>
+              <th class="th-sort" (click)="sortBy('lastModifiedAt')" [attr.data-sort]="sortKey==='lastModifiedAt' ? sortDir : ''">Processed At</th>
               <th>Actions</th>
             </tr>
           </thead>
@@ -40,7 +40,7 @@
                 <div class="no-data"><p>No processed authorization batches found.</p></div>
               </td>
             </tr>
-            <tr *ngFor="let b of filteredBatches" class="clickable-row">
+            <tr *ngFor="let b of sortedBatches" class="clickable-row">
               <td>{{ b.authBatchId }}</td>
               <td class="monospace">{{ b.batchReference }}</td>
               <td class="count-cell">{{ b.fileCount }}</td>

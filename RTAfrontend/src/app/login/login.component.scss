@@ -1,4 +1,5 @@
 /* ── Login Page ── */
+@use 'sass:color';
 $navy:   #0f172a;
 $blue:   #1e3a5f;
 $accent: #2563eb;
@@ -198,7 +199,7 @@ label {
   transition: background 0.2s, box-shadow 0.2s;
 
   &:hover {
-    background: darken($accent, 8%);
+    background: color.adjust($accent, $lightness: -8%);
     box-shadow: 0 4px 12px rgba($accent, 0.25);
   }
 

@@ -18,8 +18,8 @@
       <li class="menu-category">Batch Operations</li>
       <li routerLink="/upload-batch-file" routerLinkActive="active"><b>Manual Upload Batch File</b></li>
       <li routerLink="/incoming-batch" routerLinkActive="active"><b>Merchant Incoming Batch File</b></li>
-      <li routerLink="/batch-file-maintenance" routerLinkActive="active"><b>Batch File Maintenance</b></li>
-      <li routerLink="/batch-maintenance" routerLinkActive="active"><b>Batch Maintenance</b></li>
+      <li routerLink="/batch-file-maintenance" routerLinkActive="active"><b>Batch File Inquiry</b></li>
+      <li routerLink="/batch-maintenance" routerLinkActive="active"><b>Batch Inquiry</b></li>
 
       <!-- Results & Reports -->
       <li class="menu-category">Results & Reports</li>
@@ -57,6 +57,7 @@
 
   <!-- Main Content -->
   <main class="main-content">
+    <app-top-bar></app-top-bar>
     <router-outlet></router-outlet>
   </main>
 </div>

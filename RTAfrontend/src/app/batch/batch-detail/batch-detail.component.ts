@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { RouterModule, Router, ActivatedRoute } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
 import { AuthService } from '../../services/auth.service';
+import { TableSorter } from '../../shared/table-sorter';
 interface BatchSummary {
   batchFileId: number;
   batchId: number | null;
@@ -53,9 +54,6 @@ export class BatchDetailComponent implements OnInit {
   isLoading = true;
   activeTab: 'summary' | 'failed' = 'summary';
 
-  sortKey: string = '';
-  sortDir: 'asc' | 'desc' = 'asc';
-
   // Pagination
   currentPage = 1;
   pageSize = 10;
@@ -98,28 +96,14 @@ export class BatchDetailComponent implements OnInit {
     this.currentPage = 1;
   }
 
-  sortBy(key: string): void {
-    if (this.sortKey === key) {
-      if (this.sortDir === 'asc') {
-        this.sortDir = 'desc';
-      } else {
-        this.sortKey = '';
-        this.sortDir = 'asc';
-      }
-    } else {
-      this.sortKey = key;
-      this.sortDir = 'asc';
-    }
-  }
+  sorter = new TableSorter<TransactionRecord>();
+
+  get sortKey() { return this.sorter.sortKey; }
+  get sortDir() { return this.sorter.sortDir; }
+  sortBy(key: string): void { this.sorter.sortBy(key); }
 
   get sortedTransactions(): TransactionRecord[] {
-    if (!this.sortKey) return this.failedTransactions;
-    return [...this.failedTransactions].sort((a, b) => {
-      const av = (a as any)[this.sortKey] ?? '';
-      const bv = (b as any)[this.sortKey] ?? '';
-      const cmp = String(av).localeCompare(String(bv), undefined, { numeric: true });
-      return this.sortDir === 'asc' ? cmp : -cmp;
-    });
+    return this.sorter.apply(this.failedTransactions);
   }
 
   constructor(

@@ -4,6 +4,7 @@ import { RouterModule } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { AuditLogService, AuditLogEntry } from '../services/audit-log.service';
 import { AuthService } from '../services/auth.service';
+import { TableSorter } from '../shared/table-sorter';
 @Component({
   selector: 'app-audit-log',
   standalone: true,
@@ -17,8 +18,9 @@ export class AuditLogComponent implements OnInit {
   filteredUserLogs: AuditLogEntry[] = [];
   userSearchKeyword = '';
   userLoading = false;
-  userSortKey = '';
-  userSortDir: 'asc' | 'desc' = 'asc';
+  userSorter = new TableSorter<AuditLogEntry>();
+  get userSortKey() { return this.userSorter.sortKey; }
+  get userSortDir() { return this.userSorter.sortDir; }
   userCurrentPage = 1;
   userPageSize = 10;
   pageSizeOptions = [10, 25, 50, 100];
@@ -28,8 +30,9 @@ export class AuditLogComponent implements OnInit {
   filteredSystemLogs: AuditLogEntry[] = [];
   systemSearchKeyword = '';
   systemLoading = false;
-  systemSortKey = '';
-  systemSortDir: 'asc' | 'desc' = 'asc';
+  systemSorter = new TableSorter<AuditLogEntry>();
+  get systemSortKey() { return this.systemSorter.sortKey; }
+  get systemSortDir() { return this.systemSorter.sortDir; }
   systemCurrentPage = 1;
   systemPageSize = 10;
 
@@ -82,29 +85,11 @@ export class AuditLogComponent implements OnInit {
   }
 
   userSortBy(key: string): void {
-    if (this.userSortKey === key) {
-      this.userSortDir = this.userSortDir === 'asc' ? 'desc' : 'asc';
-      if (this.userSortDir === 'asc' && this.userSortKey === key) {
-        this.userSortKey = '';
-      }
-    } else {
-      this.userSortKey = key;
-      this.userSortDir = 'asc';
-    }
+    this.userSorter.sortBy(key);
   }
 
   get sortedUserLogs(): AuditLogEntry[] {
-    let list = this.filteredUserLogs;
-    if (this.userSortKey) {
-      list = [...list].sort((a, b) => {
-        const av = (a as any)[this.userSortKey] ?? '';
-        const bv = (b as any)[this.userSortKey] ?? '';
-        const cmp = String(av).localeCompare(String(bv), undefined, { numeric: true });
-        return this.userSortDir === 'asc' ? cmp : -cmp;
-      });
-    }
-    const start = (this.userCurrentPage - 1) * this.userPageSize;
-    return list.slice(start, start + this.userPageSize);
+    return this.userSorter.applyPaged(this.filteredUserLogs, this.userCurrentPage, this.userPageSize);
   }
 
   get userTotalElements(): number { return this.filteredUserLogs.length; }
@@ -161,29 +146,11 @@ export class AuditLogComponent implements OnInit {
   }
 
   systemSortBy(key: string): void {
-    if (this.systemSortKey === key) {
-      this.systemSortDir = this.systemSortDir === 'asc' ? 'desc' : 'asc';
-      if (this.systemSortDir === 'asc' && this.systemSortKey === key) {
-        this.systemSortKey = '';
-      }
-    } else {
-      this.systemSortKey = key;
-      this.systemSortDir = 'asc';
-    }
+    this.systemSorter.sortBy(key);
   }
 
   get sortedSystemLogs(): AuditLogEntry[] {
-    let list = this.filteredSystemLogs;
-    if (this.systemSortKey) {
-      list = [...list].sort((a, b) => {
-        const av = (a as any)[this.systemSortKey] ?? '';
-        const bv = (b as any)[this.systemSortKey] ?? '';
-        const cmp = String(av).localeCompare(String(bv), undefined, { numeric: true });
-        return this.systemSortDir === 'asc' ? cmp : -cmp;
-      });
-    }
-    const start = (this.systemCurrentPage - 1) * this.systemPageSize;
-    return list.slice(start, start + this.systemPageSize);
+    return this.systemSorter.applyPaged(this.filteredSystemLogs, this.systemCurrentPage, this.systemPageSize);
   }
 
   get systemTotalElements(): number { return this.filteredSystemLogs.length; }

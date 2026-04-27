@@ -4,6 +4,7 @@ import { RouterModule, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { AuthService } from '../../services/auth.service';
+import { TableSorter } from '../../shared/table-sorter';
 
 interface AuthBatchSummary {
   authBatchId: number;
@@ -48,6 +49,12 @@ export class CheckAuthResultComponent implements OnInit {
   totalElements = 0;
 
   // --- Selected batch detail (now in separate component) ---
+
+  // --- Sorting ---
+  sorter = new TableSorter<AuthBatchSummary>();
+  get sortKey() { return this.sorter.sortKey; }
+  get sortDir() { return this.sorter.sortDir; }
+  sortBy(key: string): void { this.sorter.sortBy(key); }
 
   // --- Filter ---
   dateFrom = '';
@@ -107,6 +114,10 @@ export class CheckAuthResultComponent implements OnInit {
       items = items.filter(b => b.lastModifiedAt && new Date(b.lastModifiedAt) <= to);
     }
     return items;
+  }
+
+  get sortedBatches(): AuthBatchSummary[] {
+    return this.sorter.apply(this.filteredBatches);
   }
 
   onSearchBatches(): void {

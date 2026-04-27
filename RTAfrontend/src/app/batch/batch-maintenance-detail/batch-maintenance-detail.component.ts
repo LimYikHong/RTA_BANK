@@ -4,6 +4,7 @@ import { RouterModule, Router, ActivatedRoute } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 import { AuthService } from '../../services/auth.service';
+import { TableSorter } from '../../shared/table-sorter';
 interface BatchDetailData {
   authBatchId: number;
   batchReference: string;
@@ -58,14 +59,10 @@ export class BatchMaintenanceDetailComponent implements OnInit {
   isLoading = true;
 
   // --- Files table ---
-  fileSortKey = '';
-  fileSortDir: 'asc' | 'desc' = 'asc';
 
   // --- Transactions table with pagination + file filter ---
   allTransactions: TransactionRecord[] = [];
   selectedFileId: number | null = null; // null = show all
-  txnSortKey = '';
-  txnSortDir: 'asc' | 'desc' = 'asc';
   txnCurrentPage = 1;
   txnPageSize = 10;
   txnPageSizeOptions = [10, 25, 50, 100];
@@ -103,48 +100,23 @@ export class BatchMaintenanceDetailComponent implements OnInit {
   }
 
   // ---- File table sort ----
-  fileSortBy(key: string): void {
-    if (this.fileSortKey === key) {
-      if (this.fileSortDir === 'asc') {
-        this.fileSortDir = 'desc';
-      } else {
-        this.fileSortKey = '';
-        this.fileSortDir = 'asc';
-      }
-    } else {
-      this.fileSortKey = key;
-      this.fileSortDir = 'asc';
-    }
-  }
+  fileSorter = new TableSorter<BatchFile>();
+
+  get fileSortKey() { return this.fileSorter.sortKey; }
+  get fileSortDir() { return this.fileSorter.sortDir; }
+  fileSortBy(key: string): void { this.fileSorter.sortBy(key); }
 
   get sortedFiles(): BatchFile[] {
     if (!this.batch) return [];
-    let list = [...this.batch.files];
-    if (this.fileSortKey) {
-      list.sort((a, b) => {
-        const av = (a as any)[this.fileSortKey] ?? '';
-        const bv = (b as any)[this.fileSortKey] ?? '';
-        const cmp = String(av).localeCompare(String(bv), undefined, { numeric: true });
-        return this.fileSortDir === 'asc' ? cmp : -cmp;
-      });
-    }
-    return list;
+    return this.fileSorter.apply(this.batch.files);
   }
 
   // ---- Transaction table sort + pagination ----
-  txnSortBy(key: string): void {
-    if (this.txnSortKey === key) {
-      if (this.txnSortDir === 'asc') {
-        this.txnSortDir = 'desc';
-      } else {
-        this.txnSortKey = '';
-        this.txnSortDir = 'asc';
-      }
-    } else {
-      this.txnSortKey = key;
-      this.txnSortDir = 'asc';
-    }
-  }
+  txnSorter = new TableSorter<TransactionRecord>();
+
+  get txnSortKey() { return this.txnSorter.sortKey; }
+  get txnSortDir() { return this.txnSorter.sortDir; }
+  txnSortBy(key: string): void { this.txnSorter.sortBy(key); }
 
   /** Transactions filtered by the selected file */
   get filteredTransactions(): TransactionRecord[] {
@@ -157,17 +129,7 @@ export class BatchMaintenanceDetailComponent implements OnInit {
   }
 
   get sortedTransactions(): TransactionRecord[] {
-    let list = [...this.filteredTransactions];
-    if (this.txnSortKey) {
-      list.sort((a, b) => {
-        const av = (a as any)[this.txnSortKey] ?? '';
-        const bv = (b as any)[this.txnSortKey] ?? '';
-        const cmp = String(av).localeCompare(String(bv), undefined, { numeric: true });
-        return this.txnSortDir === 'asc' ? cmp : -cmp;
-      });
-    }
-    const start = (this.txnCurrentPage - 1) * this.txnPageSize;
-    return list.slice(start, start + this.txnPageSize);
+    return this.txnSorter.applyPaged(this.filteredTransactions, this.txnCurrentPage, this.txnPageSize);
   }
 
   get txnTotalElements(): number { return this.filteredTransactions.length; }

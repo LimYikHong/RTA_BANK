@@ -5,6 +5,7 @@ import { FormsModule } from '@angular/forms';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { AuthService } from '../../services/auth.service';
 import { MerchantFilterComponent, MerchantFilterValues } from '../../shared/merchant-filter/merchant-filter.component';
+import { TableSorter } from '../../shared/table-sorter';
 interface BatchFileItem {
   batchFileId: number;
   batchId: number | null;
@@ -60,10 +61,6 @@ export class BatchFileMaintenanceComponent implements OnInit {
   pageSizeOptions = [10, 25, 50, 100];
   totalPages = 1;
   totalElements = 0;
-
-  // Sorting
-  sortKey = '';
-  sortDir: 'asc' | 'desc' = 'asc';
 
   constructor(
     private http: HttpClient,
@@ -141,28 +138,14 @@ export class BatchFileMaintenanceComponent implements OnInit {
   }
 
   // Sorting
-  sortBy(key: string): void {
-    if (this.sortKey === key) {
-      if (this.sortDir === 'asc') {
-        this.sortDir = 'desc';
-      } else {
-        this.sortKey = '';
-        this.sortDir = 'asc';
-      }
-    } else {
-      this.sortKey = key;
-      this.sortDir = 'asc';
-    }
-  }
+  sorter = new TableSorter<BatchFileItem>();
+
+  get sortKey() { return this.sorter.sortKey; }
+  get sortDir() { return this.sorter.sortDir; }
+  sortBy(key: string): void { this.sorter.sortBy(key); }
 
   get sortedItems(): BatchFileItem[] {
-    if (!this.sortKey) return this.pagedItems;
-    return [...this.pagedItems].sort((a, b) => {
-      const av = (a as any)[this.sortKey] ?? '';
-      const bv = (b as any)[this.sortKey] ?? '';
-      const cmp = String(av).localeCompare(String(bv), undefined, { numeric: true });
-      return this.sortDir === 'asc' ? cmp : -cmp;
-    });
+    return this.sorter.apply(this.pagedItems);
   }
 
   viewDetail(batchFileId: number): void {

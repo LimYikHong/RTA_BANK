@@ -5,6 +5,7 @@ import { RouterModule, Router } from '@angular/router';
 import { PortalService, UploadHistoryItem } from '../../services/portal.service';
 import { ProfileService, UserProfile } from '../../services/profile.service';
 import { AuthService } from '../../services/auth.service';
+import { TableSorter } from '../../shared/table-sorter';
 interface MerchantOption {
   merchantId: string;
   name: string;
@@ -52,35 +53,14 @@ export class BatchListComponent implements OnInit, OnDestroy {
   pageSize = 10;
   pageSizeOptions = [10, 25, 50, 100];
 
-  sortKey: string = '';
-  sortDir: 'asc' | 'desc' = 'asc';
+  sorter = new TableSorter<UploadHistoryItem>();
 
-  sortBy(key: string): void {
-    if (this.sortKey === key) {
-      if (this.sortDir === 'asc') {
-        this.sortDir = 'desc';
-      } else {
-        this.sortKey = '';
-        this.sortDir = 'asc';
-      }
-    } else {
-      this.sortKey = key;
-      this.sortDir = 'asc';
-    }
-  }
+  get sortKey() { return this.sorter.sortKey; }
+  get sortDir() { return this.sorter.sortDir; }
+  sortBy(key: string): void { this.sorter.sortBy(key); }
 
   get sortedFiles(): UploadHistoryItem[] {
-    let list = [...this.files];
-    if (this.sortKey) {
-      list.sort((a, b) => {
-        const av = (a as any)[this.sortKey] ?? '';
-        const bv = (b as any)[this.sortKey] ?? '';
-        const cmp = String(av).localeCompare(String(bv), undefined, { numeric: true });
-        return this.sortDir === 'asc' ? cmp : -cmp;
-      });
-    }
-    const start = (this.currentPage - 1) * this.pageSize;
-    return list.slice(start, start + this.pageSize);
+    return this.sorter.applyPaged(this.files, this.currentPage, this.pageSize);
   }
 
   get totalElements(): number { return this.files.length; }

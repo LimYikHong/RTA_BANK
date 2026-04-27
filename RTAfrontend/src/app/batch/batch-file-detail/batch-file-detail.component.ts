@@ -4,7 +4,7 @@ import { RouterModule, Router, ActivatedRoute } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 import { AuthService } from '../../services/auth.service';
-import { MerchantFilterComponent, MerchantFilterValues } from '../../shared/merchant-filter/merchant-filter.component';
+import { TableSorter } from '../../shared/table-sorter';
 interface BatchFileDetail {
   batchFileId: number;
   batchId: number | null;
@@ -61,7 +61,7 @@ interface TransactionRecord {
 @Component({
   selector: 'app-batch-file-detail',
   standalone: true,
-  imports: [CommonModule, RouterModule, FormsModule, MerchantFilterComponent],
+  imports: [CommonModule, RouterModule, FormsModule],
   templateUrl: './batch-file-detail.component.html',
   styleUrl: './batch-file-detail.component.scss'
 })
@@ -74,15 +74,9 @@ export class BatchFileDetailComponent implements OnInit {
 
   // Transaction filter
   statusFilter = 'ALL';
-  searchTerm = '';
-  merchantIds: string[] = [];
-  merchantSelectedId = '';
-  txnDateFrom = '';
-  txnDateTo = '';
-
-  // Transaction table sort
-  sortKey = '';
-  sortDir: 'asc' | 'desc' = 'asc';
+  txnIdSearch = '';
+  appliedTxnIdSearch = '';
+  appliedStatusFilter = 'ALL';
 
   // Transaction pagination (client-side)
   txnPage = 1;
@@ -106,7 +100,6 @@ export class BatchFileDetailComponent implements OnInit {
     this.http.get<BatchFileDetail>(`${this.apiUrl}/detail/${this.batchFileId}`).subscribe({
       next: (data) => {
         this.detail = data;
-        this.merchantIds = [...new Set((data.transactions || []).map(t => t.merchantId).filter(Boolean))].sort();
         this.isLoading = false;
       },
       error: (err) => {
@@ -121,73 +114,37 @@ export class BatchFileDetailComponent implements OnInit {
     if (!this.detail) return [];
     let txns = this.detail.transactions;
 
-    if (this.merchantSelectedId) {
-      txns = txns.filter(t => t.merchantId === this.merchantSelectedId);
+    if (this.appliedStatusFilter !== 'ALL') {
+      txns = txns.filter(t => t.status === this.appliedStatusFilter);
     }
-    if (this.txnDateFrom) {
-      const from = new Date(this.txnDateFrom);
-      txns = txns.filter(t => t.createdAt && new Date(t.createdAt) >= from);
-    }
-    if (this.txnDateTo) {
-      const to = new Date(this.txnDateTo);
-      to.setHours(23, 59, 59, 999);
-      txns = txns.filter(t => t.createdAt && new Date(t.createdAt) <= to);
-    }
-    if (this.statusFilter !== 'ALL') {
-      txns = txns.filter(t => t.status === this.statusFilter);
-    }
-    if (this.searchTerm.trim()) {
-      const term = this.searchTerm.toLowerCase();
-      txns = txns.filter(t =>
-        (t.transactionId?.toString() || '').includes(term) ||
-        (t.customerReference || '').toLowerCase().includes(term) ||
-        (t.maskedPan || '').toLowerCase().includes(term) ||
-        (t.billingRef || '').toLowerCase().includes(term) ||
-        (t.description || '').toLowerCase().includes(term) ||
-        (t.recurringReference || '').toLowerCase().includes(term) ||
-        (t.status || '').toLowerCase().includes(term) ||
-        (t.remark || '').toLowerCase().includes(term)
-      );
+    if (this.appliedTxnIdSearch.trim()) {
+      const term = this.appliedTxnIdSearch.trim().toLowerCase();
+      txns = txns.filter(t => t.transactionId?.toString().includes(term));
     }
     return txns;
   }
 
-  onFilterSearch(values: MerchantFilterValues): void {
-    this.merchantSelectedId = values.merchantId;
-    this.txnDateFrom = values.dateFrom;
-    this.txnDateTo = values.dateTo;
+  applyFilter(): void {
+    this.appliedTxnIdSearch = this.txnIdSearch;
+    this.appliedStatusFilter = this.statusFilter;
+    this.txnPage = 1;
+  }
+
+  onFilterSearch(values: any): void {
+    this.txnPage = 1;
   }
 
   onTxnSearch(): void {}
 
-  onFilterChange(): void {
-    this.txnPage = 1;
-  }
-
   // ---- Sorting ----
-  sortBy(key: string): void {
-    if (this.sortKey === key) {
-      if (this.sortDir === 'asc') {
-        this.sortDir = 'desc';
-      } else {
-        this.sortKey = '';
-        this.sortDir = 'asc';
-      }
-    } else {
-      this.sortKey = key;
-      this.sortDir = 'asc';
-    }
-  }
+  sorter = new TableSorter<TransactionRecord>();
+
+  get sortKey() { return this.sorter.sortKey; }
+  get sortDir() { return this.sorter.sortDir; }
+  sortBy(key: string): void { this.sorter.sortBy(key); }
 
   get sortedTransactions(): TransactionRecord[] {
-    const txns = this.filteredTransactions;
-    if (!this.sortKey) return txns;
-    return [...txns].sort((a, b) => {
-      const av = (a as any)[this.sortKey] ?? '';
-      const bv = (b as any)[this.sortKey] ?? '';
-      const cmp = String(av).localeCompare(String(bv), undefined, { numeric: true });
-      return this.sortDir === 'asc' ? cmp : -cmp;
-    });
+    return this.sorter.apply(this.filteredTransactions);
   }
 
   // ---- Client-side pagination ----

@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { AuditLogService, AuditLogEntry } from '../../services/audit-log.service';
+import { TableSorter } from '../../shared/table-sorter';
 
 @Component({
   selector: 'app-system-log',
@@ -16,8 +17,9 @@ export class SystemLogComponent implements OnInit {
   filteredSystemLogs: AuditLogEntry[] = [];
   systemSearchKeyword = '';
   systemLoading = false;
-  systemSortKey = '';
-  systemSortDir: 'asc' | 'desc' = 'asc';
+  systemSorter = new TableSorter<AuditLogEntry>();
+  get systemSortKey() { return this.systemSorter.sortKey; }
+  get systemSortDir() { return this.systemSorter.sortDir; }
   systemCurrentPage = 1;
   systemPageSize = 10;
   pageSizeOptions = [10, 25, 50, 100];
@@ -64,26 +66,11 @@ export class SystemLogComponent implements OnInit {
   }
 
   systemSortBy(key: string): void {
-    if (this.systemSortKey === key) {
-      this.systemSortDir = this.systemSortDir === 'asc' ? 'desc' : 'asc';
-    } else {
-      this.systemSortKey = key;
-      this.systemSortDir = 'asc';
-    }
+    this.systemSorter.sortBy(key);
   }
 
   get sortedSystemLogs(): AuditLogEntry[] {
-    let list = this.filteredSystemLogs;
-    if (this.systemSortKey) {
-      list = [...list].sort((a, b) => {
-        const av = (a as any)[this.systemSortKey] ?? '';
-        const bv = (b as any)[this.systemSortKey] ?? '';
-        const cmp = String(av).localeCompare(String(bv), undefined, { numeric: true });
-        return this.systemSortDir === 'asc' ? cmp : -cmp;
-      });
-    }
-    const start = (this.systemCurrentPage - 1) * this.systemPageSize;
-    return list.slice(start, start + this.systemPageSize);
+    return this.systemSorter.applyPaged(this.filteredSystemLogs, this.systemCurrentPage, this.systemPageSize);
   }
 
   get systemTotalElements(): number { return this.filteredSystemLogs.length; }
