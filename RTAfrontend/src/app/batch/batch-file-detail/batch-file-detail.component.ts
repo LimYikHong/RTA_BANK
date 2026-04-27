@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ViewEncapsulation } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule, Router, ActivatedRoute } from '@angular/router';
 import { FormsModule } from '@angular/forms';
@@ -63,7 +63,8 @@ interface TransactionRecord {
   standalone: true,
   imports: [CommonModule, RouterModule, FormsModule],
   templateUrl: './batch-file-detail.component.html',
-  styleUrl: './batch-file-detail.component.scss'
+  styleUrl: './batch-file-detail.component.scss',
+  encapsulation: ViewEncapsulation.None
 })
 export class BatchFileDetailComponent implements OnInit {
   private apiUrl = 'https://localhost:8086/api/batch-file-maintenance';
@@ -226,22 +227,62 @@ export class BatchFileDetailComponent implements OnInit {
     switch (status?.toUpperCase()) {
       case 'VALIDATED': return 'status-success';
       case 'RECEIVED': return 'status-ready';
-      case 'FAILED': case 'VALIDATION_FAILED': return 'status-failed';
       case 'PROCESSING': return 'status-processing';
-      default: return '';
+      case 'PARTIAL': return 'status-processing';
+      case 'FAILED':
+      case 'VALIDATION_FAILED':
+      case 'VALIDATION_ERROR':
+      case 'NO_FILE_PROFILE':
+      case 'NO_FIELD_MAPPING':
+      case 'WRONG_FILE_FORMAT':
+      case 'MISSING_HEADER':
+      case 'INVALID_FILE_CONTENT':
+        return 'status-failed';
+      default: return 'status-ready';
     }
   }
 
   getBatchStatusClass(status: string): string {
     switch (status?.toUpperCase()) {
-      case 'BATCHED': return 'status-success';
+      case 'BATCHED':
+      case 'SENT':
+      case 'COMPLETED':
+      case 'PROCESSED':
+        return 'status-success';
       case 'PENDING': return 'status-ready';
       case 'READY_TO_SEND': return 'status-ready';
-      case 'SENT': case 'COMPLETED': return 'status-success';
-      case 'PROCESSING': return 'status-processing';
-      case 'FAILED': return 'status-failed';
-      default: return '';
+      case 'CREATED': return 'status-ready';
+      case 'PROCESSING':
+      case 'RETRYING':
+        return 'status-processing';
+      case 'FAILED':
+      case 'SEND_FAILED':
+        return 'status-failed';
+      case 'REPORTED': return 'status-reported';
+      default: return 'status-ready';
     }
+  }
+
+  getStatusBg(statusClass: string): string {
+    const bg: { [key: string]: string } = {
+      'status-ready': '#dbeafe',
+      'status-processing': '#fef3c7',
+      'status-success': '#d1fae5',
+      'status-failed': '#fee2e2',
+      'status-reported': '#e0e7ff',
+    };
+    return bg[statusClass] || 'transparent';
+  }
+
+  getStatusColor(statusClass: string): string {
+    const fg: { [key: string]: string } = {
+      'status-ready': '#1d4ed8',
+      'status-processing': '#92400e',
+      'status-success': '#065f46',
+      'status-failed': '#991b1b',
+      'status-reported': '#3730a3',
+    };
+    return fg[statusClass] || 'inherit';
   }
 
   getTxnStatusClass(status: string): string {

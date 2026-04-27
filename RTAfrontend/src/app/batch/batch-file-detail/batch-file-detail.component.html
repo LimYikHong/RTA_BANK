@@ -59,11 +59,11 @@
           </div>
           <div class="info-item">
             <span class="info-label">File Status</span>
-            <span class="status-badge" [ngClass]="getFileStatusClass(detail.fileStatus)">{{ detail.fileStatus }}</span>
+            <span class="status-badge" [ngClass]="getFileStatusClass(detail.fileStatus)" [style.background-color]="getStatusBg(getFileStatusClass(detail.fileStatus))" [style.color]="getStatusColor(getFileStatusClass(detail.fileStatus))">{{ detail.fileStatus }}</span>
           </div>
           <div class="info-item">
             <span class="info-label">Batch Status</span>
-            <span class="status-badge" [ngClass]="getBatchStatusClass(detail.batchStatus)" *ngIf="detail.batchStatus">{{ detail.batchStatus }}</span>
+            <span class="status-badge" [ngClass]="getBatchStatusClass(detail.batchStatus)" [style.background-color]="getStatusBg(getBatchStatusClass(detail.batchStatus))" [style.color]="getStatusColor(getBatchStatusClass(detail.batchStatus))" *ngIf="detail.batchStatus">{{ detail.batchStatus }}</span>
             <span *ngIf="!detail.batchStatus" class="text-muted">—</span>
           </div>
           <div class="info-item">
@@ -93,7 +93,7 @@
         <div class="auth-batch-list">
           <div class="auth-batch-item" *ngFor="let ab of detail.authorizationBatches">
             <div class="ab-ref">{{ ab.batchReference }}</div>
-            <span class="status-badge" [ngClass]="getBatchStatusClass(ab.batchStatus)">{{ ab.batchStatus }}</span>
+            <span class="status-badge" [style.backgroundColor]="getStatusBg(getBatchStatusClass(ab.batchStatus))" [style.color]="getStatusColor(getBatchStatusClass(ab.batchStatus))">{{ ab.batchStatus }}</span>
             <span class="ab-info">{{ ab.totalCount }} txns · {{ formatAmount(ab.totalAmountCents) }} total</span>
             <span class="ab-date">{{ ab.createdAt | date:'yyyy-MM-dd HH:mm' }}</span>
           </div>
@@ -152,10 +152,10 @@
                   <span *ngIf="!txn.isRecurring">—</span>
                 </td>
                 <td>
-                  <span class="status-badge" [ngClass]="getValidationStatusClass(txn.validationStatus)">{{ txn.validationStatus || '—' }}</span>
+                  <span class="status-badge" [style.backgroundColor]="getStatusBg(getValidationStatusClass(txn.validationStatus))" [style.color]="getStatusColor(getValidationStatusClass(txn.validationStatus))">{{ txn.validationStatus || '—' }}</span>
                 </td>
                 <td>
-                  <span class="status-badge" [ngClass]="getTxnStatusClass(txn.status)">{{ txn.status }}</span>
+                  <span class="status-badge" [style.backgroundColor]="getStatusBg(getTxnStatusClass(txn.status))" [style.color]="getStatusColor(getTxnStatusClass(txn.status))">{{ txn.status }}</span>
                 </td>
                 <td class="remark-cell" [title]="txn.remark || ''">{{ txn.remark || '—' }}</td>
               </tr>

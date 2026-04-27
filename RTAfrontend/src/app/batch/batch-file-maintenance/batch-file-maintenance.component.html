@@ -32,8 +32,8 @@
         <tbody>
           <tr *ngFor="let item of filteredItems">
             <td class="batch-id-cell">{{ item.authBatchId ?? '—' }}</td>
-            <td>
-              <span class="status-badge" [ngClass]="getBatchStatusClass(item.batchStatus)" *ngIf="item.batchStatus">
+            <td class="status-cell">
+              <span class="status-badge" [ngStyle]="getStatusStyle(getBatchStatusClass(item.batchStatus))" *ngIf="item.batchStatus">
                 {{ item.batchStatus }}
               </span>
               <span *ngIf="!item.batchStatus" class="text-muted">—</span>
@@ -41,12 +41,12 @@
             <td>{{ item.batchFileId }}</td>
             <td class="filename-cell" [title]="item.storedFilename">{{ item.storedFilename }}</td>
             <td>
-              <span class="status-badge" [ngClass]="getFileStatusClass(item.fileStatus)">
+              <span class="status-badge" [ngStyle]="getStatusStyle(getFileStatusClass(item.fileStatus))">
                 {{ item.fileStatus }}
               </span>
             </td>
             <td>
-              <span class="status-badge" [ngClass]="getInsertionStatusClass(item.insertionStatus)" *ngIf="item.insertionStatus">
+              <span class="status-badge" [ngStyle]="getStatusStyle(getInsertionStatusClass(item.insertionStatus))" *ngIf="item.insertionStatus">
                 {{ item.insertionStatus }}
               </span>
               <span *ngIf="!item.insertionStatus" class="text-muted">—</span>

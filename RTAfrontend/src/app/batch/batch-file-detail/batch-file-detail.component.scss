@@ -68,6 +68,7 @@
 .info-item {
   display: flex;
   flex-direction: column;
+  align-items: flex-start;
   gap: 4px;
 }
 
@@ -246,25 +247,35 @@
   font-weight: 600;
 }
 
-// Status badge variants
-.status-ready {
-  background: #dbeafe !important;
-  color: #1d4ed8 !important;
-}
+// Status badge base + variants
+.status-badge {
+  display: inline-block;
+  padding: 3px 12px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  white-space: nowrap;
 
-.status-processing {
-  background: #fef3c7 !important;
-  color: #92400e !important;
-}
+  &.status-ready {
+    background: #dbeafe;
+    color: #1d4ed8;
+  }
 
-.status-success {
-  background: #d1fae5 !important;
-  color: #065f46 !important;
-}
+  &.status-processing {
+    background: #fef3c7;
+    color: #92400e;
+  }
 
-.status-failed {
-  background: #fee2e2 !important;
-  color: #991b1b !important;
+  &.status-success {
+    background: #d1fae5;
+    color: #065f46;
+  }
+
+  &.status-failed {
+    background: #fee2e2;
+    color: #991b1b;
+  }
 }
 
 // Responsive

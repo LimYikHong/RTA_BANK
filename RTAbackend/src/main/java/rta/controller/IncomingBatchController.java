@@ -1326,9 +1326,40 @@ public class IncomingBatchController {
                     txn.setRecordHash(hash);
                 }
 
+                // ── Intra-file duplicate detection (within the same batch file) ──
+                // If two or more rows in this upload have the same hash, keep the first
+                // and mark subsequent occurrences as DUPLICATE.
+                java.util.Set<String> seenHashesInFile = new java.util.HashSet<>();
+                for (RtaTransaction txn : transactionsToSave) {
+                    if (txn.getRecordHash() != null
+                            && !"FAILED".equals(txn.getValidationStatus())
+                            && !"DUPLICATE".equals(txn.getValidationStatus())) {
+                        if (!seenHashesInFile.add(txn.getRecordHash())) {
+                            // Hash already seen in this file → mark as intra-file duplicate
+                            txn.setValidationStatus("DUPLICATE");
+                            txn.setStatus("FAILED");
+                            txn.setRemark(txn.getRemark() != null
+                                    ? txn.getRemark() + "; Duplicate record within same batch file"
+                                    : "Duplicate record within same batch file");
+                            duplicateRecordCount++;
+                            duplicatedRecordDetails.add("Row " + txn.getBatchSeq() + " (intra-file): "
+                                    + txn.getMerchantCustomer() + " / "
+                                    + (txn.getAmount() != null ? txn.getAmount() / 100.0 : "N/A")
+                                    + " / " + txn.getActualBillingDate());
+                            successCount--;
+                            failCount++;
+                            if (txn.getAmount() != null) {
+                                totalAmountCents -= txn.getAmount();
+                            }
+                        }
+                    }
+                }
+
+                // ── Cross-DB duplicate detection (against previously uploaded batches) ──
                 // Collect hashes of valid (non-FAILED) transactions for duplicate check
                 List<String> validHashes = transactionsToSave.stream()
-                        .filter(t -> !"FAILED".equals(t.getValidationStatus()))
+                        .filter(t -> !"FAILED".equals(t.getValidationStatus())
+                        && !"DUPLICATE".equals(t.getValidationStatus()))
                         .map(RtaTransaction::getRecordHash)
                         .filter(h -> h != null)
                         .collect(java.util.stream.Collectors.toList());

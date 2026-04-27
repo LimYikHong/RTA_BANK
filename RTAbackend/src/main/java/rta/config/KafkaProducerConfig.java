@@ -62,12 +62,14 @@ public class KafkaProducerConfig {
         Map<String, Object> props = new HashMap<>();
         props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
         props.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
+        props.put(ConsumerConfig.MAX_PARTITION_FETCH_BYTES_CONFIG, 10485760);
+        props.put(ConsumerConfig.FETCH_MAX_BYTES_CONFIG, 10485760);
         props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
         props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, ErrorHandlingDeserializer.class);
         props.put(ErrorHandlingDeserializer.VALUE_DESERIALIZER_CLASS, JsonDeserializer.class.getName());
         props.put(JsonDeserializer.TRUSTED_PACKAGES, "rta.event,com.worldline.mock.dto");
-        props.put(JsonDeserializer.VALUE_DEFAULT_TYPE, "java.lang.Object");
-        props.put(JsonDeserializer.USE_TYPE_INFO_HEADERS, true);
+        props.put(JsonDeserializer.VALUE_DEFAULT_TYPE, "rta.event.BatchResponseEvent");
+        props.put(JsonDeserializer.USE_TYPE_INFO_HEADERS, false);
         // Map external auth service class to our local event class
         props.put(JsonDeserializer.TYPE_MAPPINGS,
                 "com.worldline.mock.dto.BatchResponseMessage:rta.event.BatchResponseEvent");

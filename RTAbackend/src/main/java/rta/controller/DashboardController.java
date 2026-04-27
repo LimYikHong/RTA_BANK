@@ -202,10 +202,18 @@ public class DashboardController {
             stats.put("recurringBreakdown", recurringMap);
 
             // ── Authorization status breakdown (APPROVED vs DECLINED) ───────────
+            // Only count transactions that have been through authorization
+            // (status is APPROVED, DECLINED, or FAILED — not PENDING/SUCCESS etc.)
             long approvedCount = allTxns.stream()
                     .filter(t -> "APPROVED".equalsIgnoreCase(t.getStatus())).count();
             long declinedCount = allTxns.stream()
-                    .filter(t -> "DECLINED".equalsIgnoreCase(t.getStatus())).count();
+                    .filter(t -> {
+                        String s = t.getStatus();
+                        return s != null
+                                && !"APPROVED".equalsIgnoreCase(s)
+                                && !"PENDING".equalsIgnoreCase(s)
+                                && !"SUCCESS".equalsIgnoreCase(s);
+                    }).count();
             Map<String, Long> authStatusMap = new LinkedHashMap<>();
             authStatusMap.put("APPROVED", approvedCount);
             authStatusMap.put("DECLINED", declinedCount);

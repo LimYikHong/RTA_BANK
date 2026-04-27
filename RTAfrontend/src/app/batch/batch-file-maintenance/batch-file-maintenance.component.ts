@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ViewEncapsulation } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
@@ -39,7 +39,8 @@ interface PagedResponse {
   standalone: true,
   imports: [CommonModule, RouterModule, FormsModule, MerchantFilterComponent],
   templateUrl: './batch-file-maintenance.component.html',
-  styleUrl: './batch-file-maintenance.component.scss'
+  styleUrl: './batch-file-maintenance.component.scss',
+  encapsulation: ViewEncapsulation.None
 })
 export class BatchFileMaintenanceComponent implements OnInit {
   private apiUrl = 'https://localhost:8086/api/batch-file-maintenance';
@@ -208,6 +209,7 @@ export class BatchFileMaintenanceComponent implements OnInit {
       case 'PENDING': return 'status-ready';
       case 'PROCESSING': return 'status-processing';
       case 'FAILED': return 'status-failed';
+      case 'REPORTED': return 'status-reported';
       default: return '';
     }
   }
@@ -218,6 +220,17 @@ export class BatchFileMaintenanceComponent implements OnInit {
       case 'INSERTING': return 'status-processing';
       default: return '';
     }
+  }
+
+  getStatusStyle(statusClass: string): { [key: string]: string } {
+    const styles: { [key: string]: { 'background-color': string; color: string } } = {
+      'status-ready': { 'background-color': '#dbeafe', color: '#1d4ed8' },
+      'status-processing': { 'background-color': '#fef3c7', color: '#92400e' },
+      'status-success': { 'background-color': '#d1fae5', color: '#065f46' },
+      'status-failed': { 'background-color': '#fee2e2', color: '#991b1b' },
+      'status-reported': { 'background-color': '#e0e7ff', color: '#3730a3' },
+    };
+    return styles[statusClass] || {};
   }
 
   logout(): void {
