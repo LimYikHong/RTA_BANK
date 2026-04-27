@@ -122,10 +122,12 @@ public class TransactionUpdateService {
             approved = transactionRepository.countByBatchBatchIdAndStatus(event.getBatchId(), "APPROVED");
         }
 
+        long updateElapsedMs = System.currentTimeMillis() - startMs;
         auditLogService.logSystemActivity("UPDATE_AUTH_STATUS",
                 String.valueOf(event.getBatchId()),
                 "Updated transaction auth statuses for batch #" + event.getBatchId()
-                + " — " + approved + " approved, " + failed + " failed",
+                + " — " + approved + " approved, " + failed + " failed. "
+                + "Time: " + String.format("%.3f", updateElapsedMs / 1000.0) + "s",
                 "SUCCESS");
 
         // Load RtaBatch for subsequent steps
@@ -171,10 +173,12 @@ public class TransactionUpdateService {
             incomingFileRepository.save(bf);
         }
 
+        long receiveElapsedMs = System.currentTimeMillis() - startMs;
         auditLogService.logSystemActivity("BATCH_RESPONSE",
                 String.valueOf(event.getBatchId()),
                 "Authorization response received for batch #" + event.getBatchId()
-                + ": " + approved + " approved, " + failed + " failed",
+                + ": " + approved + " approved, " + failed + " failed. "
+                + "Time: " + String.format("%.3f", receiveElapsedMs / 1000.0) + "s",
                 "SUCCESS");
 
         // ── Step 6: Send return batch file back to merchant (encrypted) ───
@@ -186,9 +190,11 @@ public class TransactionUpdateService {
                             approved + " approved, " + failed + " rejected");
             if (returnResponse.isSuccess()) {
                 log.info("[TxnUpdateService] Return batch sent for batch {}", event.getBatchId());
+                long returnElapsedMs = System.currentTimeMillis() - startMs;
                 auditLogService.logSystemActivity("SEND_RETURN_BATCH",
                         String.valueOf(event.getBatchId()),
-                        "Return batch file sent to consumer for batch #" + event.getBatchId(),
+                        "Return batch file sent to consumer for batch #" + event.getBatchId()
+                        + ". Time: " + String.format("%.3f", returnElapsedMs / 1000.0) + "s",
                         "SUCCESS");
             } else {
                 log.warn("[TxnUpdateService] Failed to send return batch for batch {}: {}",
@@ -213,9 +219,11 @@ public class TransactionUpdateService {
                             Math.max(failedCount, 0), cachedTxns);
             if (reportResponse.isSuccess()) {
                 log.info("[TxnUpdateService] Report summary sent for batch {}", event.getBatchId());
+                long reportElapsedMs = System.currentTimeMillis() - startMs;
                 auditLogService.logSystemActivity("SEND_REPORT",
                         String.valueOf(event.getBatchId()),
-                        "Report summary sent to consumer for batch #" + event.getBatchId(),
+                        "Report summary sent to consumer for batch #" + event.getBatchId()
+                        + ". Time: " + String.format("%.3f", reportElapsedMs / 1000.0) + "s",
                         "SUCCESS");
             } else {
                 log.warn("[TxnUpdateService] Failed to send report for batch {}: {}",
@@ -232,9 +240,16 @@ public class TransactionUpdateService {
 
         // ── Step 8: Auto-generate batch file results ──────────────────────
         try {
+            long genStartMs = System.currentTimeMillis();
             var results = reportGenerationService.generateReportsForProcessedBatches();
-            log.info("[TxnUpdateService] Auto-generated {} batch file result(s) for batch {}",
-                    results.size(), event.getBatchId());
+            long genElapsedMs = System.currentTimeMillis() - genStartMs;
+            log.info("[TxnUpdateService] Auto-generated {} batch file result(s) for batch {} in {}ms",
+                    results.size(), event.getBatchId(), genElapsedMs);
+            auditLogService.logSystemActivity("GENERATE_REPORT",
+                    String.valueOf(event.getBatchId()),
+                    "Auto-generated " + results.size() + " batch file result(s) for batch #"
+                    + event.getBatchId() + ". Time: " + String.format("%.3f", genElapsedMs / 1000.0) + "s",
+                    "SUCCESS");
         } catch (Exception resultEx) {
             log.error("[TxnUpdateService] Error auto-generating batch file results for batch {}: {}",
                     event.getBatchId(), resultEx.getMessage(), resultEx);
