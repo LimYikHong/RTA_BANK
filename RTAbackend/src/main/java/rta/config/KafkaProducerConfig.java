@@ -65,9 +65,12 @@ public class KafkaProducerConfig {
         props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
         props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, ErrorHandlingDeserializer.class);
         props.put(ErrorHandlingDeserializer.VALUE_DESERIALIZER_CLASS, JsonDeserializer.class.getName());
-        props.put(JsonDeserializer.TRUSTED_PACKAGES, "rta.event");
+        props.put(JsonDeserializer.TRUSTED_PACKAGES, "rta.event,com.worldline.mock.dto");
         props.put(JsonDeserializer.VALUE_DEFAULT_TYPE, "java.lang.Object");
         props.put(JsonDeserializer.USE_TYPE_INFO_HEADERS, true);
+        // Map external auth service class to our local event class
+        props.put(JsonDeserializer.TYPE_MAPPINGS,
+                "com.worldline.mock.dto.BatchResponseMessage:rta.event.BatchResponseEvent");
         return new DefaultKafkaConsumerFactory<>(props);
     }
 

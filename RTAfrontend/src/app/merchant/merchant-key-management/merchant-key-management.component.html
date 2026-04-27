@@ -7,15 +7,18 @@
     </div>
 </div>
 
-<!-- Summary -->
+<div >
+     <button class="btn btn-primary" style="margin-right: 16px;" (click)="loadMerchantKeys()">Refresh</button>
+
+     <!-- Summary -->
 <div style="margin: 4px 0 12px; display: flex; align-items: center;">
+   
     <span class="result-count">
         Showing {{ merchantKeys.length }} merchant(s)
     </span>
     <span class="result-count" style="margin-left: 16px;" *ngIf="merchantKeysNeedingAction.length > 0">
         · {{ merchantKeysNeedingAction.length }} need{{ merchantKeysNeedingAction.length === 1 ? 's' : '' }} attention
     </span>
-    <button class="btn btn-primary" style="margin-left: auto;" (click)="loadMerchantKeys()">Refresh</button>
 </div>
 
 <!-- Loading -->

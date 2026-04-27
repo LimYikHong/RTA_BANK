@@ -53,11 +53,42 @@ public class TransactionUpdateService {
             containerFactory = "kafkaListenerContainerFactory")
     @Transactional
     public void onBatchResponse(BatchResponseEvent event) {
-        log.info("[TxnUpdateService] Received batch-response: batchId={}, merchant={}, resultCount={}",
-                event.getBatchId(), event.getMerchantId(),
+        log.info("[TxnUpdateService] Received batch-response: batchId={}, merchant={}, status={}, resultCount={}",
+                event.getBatchId(), event.getMerchantId(), event.getBatchStatus(),
                 event.getResults() != null ? event.getResults().size() : 0);
 
         long startMs = System.currentTimeMillis();
+
+        // ── Handle FAILED response from auth service ──────────────────────
+        if ("FAILED".equalsIgnoreCase(event.getBatchStatus())) {
+            log.error("[TxnUpdateService] Auth service returned FAILED for batch {}: {}",
+                    event.getBatchId(), event.getErrorMessage());
+
+            RtaBatch failedBatch = batchRepository.findById(event.getBatchId()).orElse(null);
+            if (failedBatch != null) {
+                failedBatch.setStatus("SEND_FAILED");
+                failedBatch.setLastModifiedAt(LocalDateTime.now());
+                failedBatch.setLastModifiedBy("SYSTEM");
+                batchRepository.save(failedBatch);
+
+                RtaAuthorizationBatch failedAuthBatch = authBatchRepository
+                        .findByBatchReference(failedBatch.getFileName()).orElse(null);
+                if (failedAuthBatch != null) {
+                    failedAuthBatch.setBatchStatus("SEND_FAILED");
+                    failedAuthBatch.setLastModifiedAt(LocalDateTime.now());
+                    failedAuthBatch.setRemark("Auth service failed: " + event.getErrorMessage());
+                    authBatchRepository.save(failedAuthBatch);
+                }
+            }
+
+            auditLogService.logSystemActivity("BATCH_RESPONSE",
+                    String.valueOf(event.getBatchId()),
+                    "Auth service returned FAILED for batch #" + event.getBatchId()
+                    + ": " + event.getErrorMessage(),
+                    "FAILED");
+            return;
+        }
+
         int approved = 0;
         int failed = 0;
 

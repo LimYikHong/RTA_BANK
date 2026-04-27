@@ -92,9 +92,10 @@ public class MockAuthorizationService {
 
                 // Parse transaction_id from first column
                 String[] parts = line.split(",", 2);
-                Long transactionId;
+                String transactionId;
                 try {
-                    transactionId = Long.parseLong(parts[0].trim());
+                    transactionId = parts[0].trim();
+                    Long.parseLong(transactionId); // validate it's numeric
                 } catch (NumberFormatException e) {
                     log.warn("[MockAuth] Skipping unparseable line: {}", line);
                     continue;

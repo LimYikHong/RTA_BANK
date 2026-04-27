@@ -178,7 +178,7 @@ public class InternalChannelController {
                 }
 
                 results.add(BatchResponseEvent.TransactionResult.builder()
-                        .transactionId(transactionId)
+                        .transactionId(String.valueOf(transactionId))
                         .status(status)
                         .remark(remark)
                         .build());

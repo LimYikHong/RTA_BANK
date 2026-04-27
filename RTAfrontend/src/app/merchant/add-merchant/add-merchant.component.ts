@@ -115,8 +115,12 @@ export class AddMerchantComponent implements OnInit {
   }
 
   onMerchantNameChange(): void {
-    // Auto-fill account name when name changes
-    this.merchant.merchantAccName = this.merchant.name;
+    // No longer auto-fills account name (moved to company)
+  }
+
+  onCompanyChange(): void {
+    // Auto-fill account name from company name
+    this.merchant.merchantAccName = this.merchant.company;
   }
 
   /** Format a canonical field name for display: customer_reference -> Customer Reference */
