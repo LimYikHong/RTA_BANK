@@ -52,12 +52,8 @@ public class BatchMaintenanceScheduler {
     private final AuditLogService auditLogService;
     private final BatchFileGenerationService batchFileGenerationService;
     private final BatchRequestProducer batchRequestProducer;
-    private final SendAuthService sendAuthService;
     private final MinioStorageService minioStorageService;
     private final TransactionTemplate transactionTemplate;
-    private final TransactionBulkInsertService bulkInsertService;
-    private final ReturnBatchSendService returnBatchSendService;
-    private final ReportGenerationService reportGenerationService;
 
     /**
      * Epoch millis of the last completed batch run.
@@ -71,12 +67,8 @@ public class BatchMaintenanceScheduler {
             AuditLogService auditLogService,
             BatchFileGenerationService batchFileGenerationService,
             BatchRequestProducer batchRequestProducer,
-            SendAuthService sendAuthService,
             MinioStorageService minioStorageService,
-            PlatformTransactionManager transactionManager,
-            TransactionBulkInsertService bulkInsertService,
-            ReturnBatchSendService returnBatchSendService,
-            ReportGenerationService reportGenerationService) {
+            PlatformTransactionManager transactionManager) {
         this.transactionRepository = transactionRepository;
         this.incomingFileRepository = incomingFileRepository;
         this.batchRepository = batchRepository;
@@ -84,12 +76,8 @@ public class BatchMaintenanceScheduler {
         this.auditLogService = auditLogService;
         this.batchFileGenerationService = batchFileGenerationService;
         this.batchRequestProducer = batchRequestProducer;
-        this.sendAuthService = sendAuthService;
         this.minioStorageService = minioStorageService;
         this.transactionTemplate = new TransactionTemplate(transactionManager);
-        this.bulkInsertService = bulkInsertService;
-        this.returnBatchSendService = returnBatchSendService;
-        this.reportGenerationService = reportGenerationService;
     }
 
     /**
@@ -323,189 +311,44 @@ public class BatchMaintenanceScheduler {
             // Continue — MinIO failure should not block the auth process
         }
 
-        // ── Step 3: Send to consumer sendAuth system via HTTPS ────────────
+        // ── Step 3: Publish to auth service via Kafka (async) ────────────
+        // Authorization result will arrive asynchronously on the batch-response
+        // topic and be processed by TransactionUpdateService (steps 4-8).
         long sendStartMs = System.currentTimeMillis();
-        SendAuthService.SendAuthResponse authResponse = sendAuthService.sendBatchToConsumer(
-                batch.getBatchId(),
-                batch.getMerchantIds(),
-                encrypted.getCsvFilename(),
-                pendingTxns.size(),
-                encrypted.getEncryptedFileBytes(),
-                encrypted.getEncryptedAesKeyBase64(),
-                encrypted.getIvBase64());
-        long sendElapsedMs = System.currentTimeMillis() - sendStartMs;
+        try {
+            batchRequestProducer.send(
+                    batch.getBatchId(),
+                    batch.getMerchantIds(),
+                    encrypted.getCsvFilename(),
+                    pendingTxns.size(),
+                    encrypted.getEncryptedFileBytes(),
+                    encrypted.getEncryptedAesKeyBase64(),
+                    encrypted.getIvBase64());
 
-        if (authResponse.isSuccess()) {
-            log.info("[BatchMaintenance] Batch {} authorized by consumer in {}ms: {} approved, {} rejected",
-                    batch.getBatchId(), sendElapsedMs,
-                    authResponse.getApproved(), authResponse.getRejected());
+            long sendElapsedMs = System.currentTimeMillis() - sendStartMs;
+            log.info("[BatchMaintenance] Batch {} published to Kafka auth topic in {}ms",
+                    batch.getBatchId(), sendElapsedMs);
 
-            // ── Step 4: Update transaction statuses from response ─────────
-            long updateAuthStartMs = System.currentTimeMillis();
-            if (authResponse.getResults() != null && !authResponse.getResults().isEmpty()) {
-                // JDBC batch update — all per-transaction results in bulk
-                bulkInsertService.bulkUpdateAuthStatus(authResponse.getResults());
-            } else {
-                // No per-transaction detail — single UPDATE for all PENDING txns
-                log.info("[BatchMaintenance] No per-txn results for batch {}. Bulk-updating {} PENDING txns to APPROVED.",
-                        batch.getBatchId(), pendingTxns.size());
-                transactionRepository.bulkUpdateAuthStatusByBatchId(
-                        batch.getBatchId(), "APPROVED",
-                        "Authorized by consumer (batch result)",
-                        LocalDateTime.now());
-            }
-
-            long updateAuthElapsedMs = System.currentTimeMillis() - updateAuthStartMs;
-            double updateAuthSec = updateAuthElapsedMs / 1000.0;
-            auditLogService.logSystemActivity("UPDATE_AUTH_STATUS",
-                    String.valueOf(batch.getBatchId()),
-                    "Updated transaction auth statuses for batch #" + batch.getBatchId()
-                    + " — " + authResponse.getApproved() + " approved, " + authResponse.getRejected() + " rejected. "
-                    + "Time: " + String.format("%.3f", updateAuthSec) + "s",
-                    "SUCCESS");
-
-            // ── Pre-cache: load transactions once for steps 5-7 ──
-            List<RtaTransaction> cachedTxns = transactionRepository.findByBatchBatchId(batch.getBatchId());
-            String primaryMerchant = cachedTxns.isEmpty() ? batch.getMerchantIds()
-                    : cachedTxns.get(0).getMerchantId();
-
-            // ── Step 5: Update existing RtaAuthorizationBatch with auth results ──
-            long step5StartMs = System.currentTimeMillis();
-            long totalAmountCents = transactionRepository.sumAmountByBatchIdAndStatusSuccess(batch.getBatchId());
-
-            // Find the auth batch created in Phase 1 via batch reference
-            RtaAuthorizationBatch authBatch = authBatchRepository
-                    .findByBatchReference(batch.getFileName()).orElse(null);
-            if (authBatch != null) {
-                authBatch.setSuccessCount(authResponse.getApproved());
-                authBatch.setFailCount(authResponse.getRejected());
-                authBatch.setTotalAmountCents(totalAmountCents);
-                authBatch.setBatchStatus("PROCESSED");
-                authBatch.setLastModifiedAt(LocalDateTime.now());
-                authBatch.setRemark(authResponse.getApproved() + " approved, "
-                        + authResponse.getRejected() + " rejected");
-                authBatchRepository.save(authBatch);
-                log.info("[BatchMaintenance] AuthorizationBatch #{} updated to PROCESSED for batch {}",
-                        authBatch.getAuthBatchId(), batch.getBatchId());
-            } else {
-                log.warn("[BatchMaintenance] AuthorizationBatch not found for batch ref '{}'",
-                        batch.getFileName());
-            }
-
-            // Update batch status → PROCESSED
-            batch.setStatus("PROCESSED");
+            // Mark batch as SENT — TransactionUpdateService will update to PROCESSED
+            batch.setStatus("SENT");
             batch.setLastModifiedAt(LocalDateTime.now());
             batch.setLastModifiedBy("SYSTEM");
             batchRepository.save(batch);
 
-            // Also mark all incoming batch files in this batch as PROCESSED
-            List<RtaIncomingBatchFile> batchFiles = incomingFileRepository.findByBatchId(batch.getBatchId());
-            for (RtaIncomingBatchFile bf : batchFiles) {
-                bf.setBatchStatus("PROCESSED");
-                bf.setLastModifiedAt(LocalDateTime.now());
-                bf.setLastModifiedBy("SYSTEM");
-                incomingFileRepository.save(bf);
-            }
-
-            long step5ElapsedMs = System.currentTimeMillis() - step5StartMs;
-            double step5Sec = step5ElapsedMs / 1000.0;
-
-            // ── Step 6: Send return batch file back to consumer (encrypted) ──
-            long step6StartMs = System.currentTimeMillis();
-            try {
-                ReturnBatchSendService.ReturnBatchResponse returnResponse
-                        = returnBatchSendService.sendReturnBatch(
-                                batch, primaryMerchant, cachedTxns,
-                                batch.getOriginalFileName(),
-                                authResponse.getApproved() + " approved, "
-                                + authResponse.getRejected() + " rejected");
-
-                if (returnResponse.isSuccess()) {
-                    log.info("[BatchMaintenance] Return batch sent for batch {}", batch.getBatchId());
-                    auditLogService.logSystemActivity("SEND_RETURN_BATCH",
-                            String.valueOf(batch.getBatchId()),
-                            "Return batch file sent to consumer for batch #" + batch.getBatchId(),
-                            "SUCCESS");
-                } else {
-                    log.warn("[BatchMaintenance] Failed to send return batch for batch {}: {}",
-                            batch.getBatchId(), returnResponse.getErrorMessage());
-                    auditLogService.logSystemActivity("SEND_RETURN_BATCH",
-                            String.valueOf(batch.getBatchId()),
-                            "Failed to send return batch: " + returnResponse.getErrorMessage(),
-                            "FAILED");
-                }
-            } catch (Exception returnEx) {
-                log.error("[BatchMaintenance] Error sending return batch for batch {}: {}",
-                        batch.getBatchId(), returnEx.getMessage(), returnEx);
-            }
-
-            long step6ElapsedMs = System.currentTimeMillis() - step6StartMs;
-            double step6Sec = step6ElapsedMs / 1000.0;
-
-            // ── Step 7: Send report summary to consumer (encrypted) ──
-            long step7StartMs = System.currentTimeMillis();
-            try {
-                int failedCount = cachedTxns.size() - authResponse.getApproved() - authResponse.getRejected();
-                ReturnBatchSendService.ReportResponse reportResponse
-                        = returnBatchSendService.sendReportSummary(
-                                batch, primaryMerchant,
-                                authResponse.getApproved(), authResponse.getRejected(),
-                                Math.max(failedCount, 0), cachedTxns);
-
-                if (reportResponse.isSuccess()) {
-                    log.info("[BatchMaintenance] Report summary sent for batch {}", batch.getBatchId());
-                    auditLogService.logSystemActivity("SEND_REPORT",
-                            String.valueOf(batch.getBatchId()),
-                            "Report summary sent to consumer for batch #" + batch.getBatchId(),
-                            "SUCCESS");
-                } else {
-                    log.warn("[BatchMaintenance] Failed to send report for batch {}: {}",
-                            batch.getBatchId(), reportResponse.getErrorMessage());
-                    auditLogService.logSystemActivity("SEND_REPORT",
-                            String.valueOf(batch.getBatchId()),
-                            "Failed to send report: " + reportResponse.getErrorMessage(),
-                            "FAILED");
-                }
-            } catch (Exception reportEx) {
-                log.error("[BatchMaintenance] Error sending report for batch {}: {}",
-                        batch.getBatchId(), reportEx.getMessage(), reportEx);
-            }
-
-            long step7ElapsedMs = System.currentTimeMillis() - step7StartMs;
-            double step7Sec = step7ElapsedMs / 1000.0;
-
-            // ── Step 8: Auto-generate batch file results ──
-            long step8StartMs = System.currentTimeMillis();
-            try {
-                var results = reportGenerationService.generateReportsForProcessedBatches();
-                log.info("[BatchMaintenance] Auto-generated {} batch file result(s) for batch {}",
-                        results.size(), batch.getBatchId());
-            } catch (Exception resultEx) {
-                log.error("[BatchMaintenance] Error auto-generating batch file results for batch {}: {}",
-                        batch.getBatchId(), resultEx.getMessage(), resultEx);
-            }
-
-            long step8ElapsedMs = System.currentTimeMillis() - step8StartMs;
-            double step8Sec = step8ElapsedMs / 1000.0;
-
             long totalElapsedMs = System.currentTimeMillis() - batchStartMs;
-
             double sendElapsedSec = sendElapsedMs / 1000.0;
             double totalElapsedSec = totalElapsedMs / 1000.0;
             auditLogService.logSystemActivity("SEND_AUTH",
                     String.valueOf(batch.getBatchId()),
-                    "Batch #" + batch.getBatchId() + " sent to consumer and authorized — "
-                    + authResponse.getApproved() + " approved, " + authResponse.getRejected() + " rejected. "
-                    + "CSV: " + String.format("%.3f", csvElapsedSec) + "s, Send+Auth: " + String.format("%.3f", sendElapsedSec) + "s, "
-                    + "Update: " + String.format("%.3f", updateAuthSec) + "s, StatusUpdate: " + String.format("%.3f", step5Sec) + "s, "
-                    + "ReturnBatch: " + String.format("%.3f", step6Sec) + "s, Report: " + String.format("%.3f", step7Sec) + "s, "
-                    + "GenResults: " + String.format("%.3f", step8Sec) + "s, Total: " + String.format("%.3f", totalElapsedSec) + "s",
+                    "Batch #" + batch.getBatchId() + " published to Kafka for authorization. "
+                    + "CSV: " + String.format("%.3f", csvElapsedSec) + "s, "
+                    + "Send: " + String.format("%.3f", sendElapsedSec) + "s, "
+                    + "Total: " + String.format("%.3f", totalElapsedSec) + "s",
                     "SUCCESS");
 
-        } else {
-            // Auth failed after all retries — mark batch as SEND_FAILED for manual retry
-            log.error("[BatchMaintenance] Failed to send batch {} to consumer after retries: {}",
-                    batch.getBatchId(), authResponse.getErrorMessage());
+        } catch (Exception e) {
+            log.error("[BatchMaintenance] Failed to publish batch {} to Kafka: {}",
+                    batch.getBatchId(), e.getMessage(), e);
 
             // Keep transactions as PENDING so they can be retried
             batch.setStatus("SEND_FAILED");
@@ -513,23 +356,20 @@ public class BatchMaintenanceScheduler {
             batch.setLastModifiedBy("SYSTEM");
             batchRepository.save(batch);
 
-            // Update auth batch status to SEND_FAILED
             RtaAuthorizationBatch failedAuthBatch = authBatchRepository
                     .findByBatchReference(batch.getFileName()).orElse(null);
             if (failedAuthBatch != null) {
                 failedAuthBatch.setBatchStatus("SEND_FAILED");
                 failedAuthBatch.setLastModifiedAt(LocalDateTime.now());
-                failedAuthBatch.setRemark("Send auth failed: " + authResponse.getErrorMessage());
+                failedAuthBatch.setRemark("Send auth failed: " + e.getMessage());
                 authBatchRepository.save(failedAuthBatch);
             }
 
             long totalElapsedMs = System.currentTimeMillis() - batchStartMs;
-
             auditLogService.logSystemActivity("SEND_AUTH",
                     String.valueOf(batch.getBatchId()),
-                    "Batch #" + batch.getBatchId() + " failed to send to consumer: "
-                    + authResponse.getErrorMessage()
-                    + ". CSV generation: " + csvElapsedMs + "ms, Total: " + totalElapsedMs + "ms",
+                    "Batch #" + batch.getBatchId() + " failed to publish to Kafka: "
+                    + e.getMessage() + ". Total: " + totalElapsedMs + "ms",
                     "FAILED");
         }
     }

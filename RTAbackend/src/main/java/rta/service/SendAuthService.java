@@ -26,7 +26,6 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
-import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestTemplate;
@@ -44,7 +43,7 @@ import lombok.extern.slf4j.Slf4j;
  * decrypts, authorizes transactions, and returns results in the HTTP
  * response.</p>
  */
-@Service
+// @Service  — No longer used; batch auth is now via Kafka (BatchRequestProducer → MockAuthorizationService → TransactionUpdateService)
 @Slf4j
 public class SendAuthService {
 

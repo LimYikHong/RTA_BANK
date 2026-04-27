@@ -1,58 +1,54 @@
 package rta.service;
 
-import java.util.Collections;
-import java.util.List;
-
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import rta.entity.RtaBatch;
-import rta.entity.RtaIncomingBatchFile;
 import rta.repository.RtaAuthorizationBatchRepository;
 import rta.repository.RtaBatchRepository;
 import rta.repository.RtaIncomingBatchFileRepository;
 import rta.repository.RtaTransactionRepository;
 
-import static org.assertj.core.api.Assertions.*;
-import static org.mockito.Mockito.*;
-
 /**
  * Unit tests for BatchMaintenanceScheduler — batch assignment and timer logic.
- * The actual encrypt-and-send phase requires many external services, so we
- * test the simpler helper methods and Phase 1 (assignBatchIds) here.
+ * The actual encrypt-and-send phase requires many external services, so we test
+ * the simpler helper methods and Phase 1 (assignBatchIds) here.
  */
 @ExtendWith(MockitoExtension.class)
 class BatchMaintenanceSchedulerTest {
 
-    @Mock private RtaTransactionRepository transactionRepository;
-    @Mock private RtaIncomingBatchFileRepository incomingFileRepository;
-    @Mock private RtaBatchRepository batchRepository;
-    @Mock private RtaAuthorizationBatchRepository authBatchRepository;
-    @Mock private AuditLogService auditLogService;
-    @Mock private BatchFileGenerationService batchFileGenerationService;
-    @Mock private BatchRequestProducer batchRequestProducer;
-    @Mock private SendAuthService sendAuthService;
-    @Mock private MinioStorageService minioStorageService;
-    @Mock private org.springframework.transaction.PlatformTransactionManager transactionManager;
-    @Mock private TransactionBulkInsertService bulkInsertService;
-    @Mock private ReturnBatchSendService returnBatchSendService;
-    @Mock private ReportGenerationService reportGenerationService;
+    @Mock
+    private RtaTransactionRepository transactionRepository;
+    @Mock
+    private RtaIncomingBatchFileRepository incomingFileRepository;
+    @Mock
+    private RtaBatchRepository batchRepository;
+    @Mock
+    private RtaAuthorizationBatchRepository authBatchRepository;
+    @Mock
+    private AuditLogService auditLogService;
+    @Mock
+    private BatchFileGenerationService batchFileGenerationService;
+    @Mock
+    private BatchRequestProducer batchRequestProducer;
+    @Mock
+    private MinioStorageService minioStorageService;
+    @Mock
+    private org.springframework.transaction.PlatformTransactionManager transactionManager;
 
     /* ── getNextRunTimeMs ────────────────────────────────────── */
-
     @Test
     @DisplayName("getNextRunTimeMs returns a time in the future")
     void getNextRunTimeMs_isFuture() {
         BatchMaintenanceScheduler scheduler = new BatchMaintenanceScheduler(
                 transactionRepository, incomingFileRepository, batchRepository,
                 authBatchRepository, auditLogService, batchFileGenerationService,
-                batchRequestProducer, sendAuthService, minioStorageService,
-                transactionManager, bulkInsertService, returnBatchSendService,
-                reportGenerationService);
+                batchRequestProducer, minioStorageService,
+                transactionManager);
 
         long nextRun = scheduler.getNextRunTimeMs();
 
@@ -65,9 +61,8 @@ class BatchMaintenanceSchedulerTest {
         BatchMaintenanceScheduler scheduler = new BatchMaintenanceScheduler(
                 transactionRepository, incomingFileRepository, batchRepository,
                 authBatchRepository, auditLogService, batchFileGenerationService,
-                batchRequestProducer, sendAuthService, minioStorageService,
-                transactionManager, bulkInsertService, returnBatchSendService,
-                reportGenerationService);
+                batchRequestProducer, minioStorageService,
+                transactionManager);
 
         long nextRun = scheduler.getNextRunTimeMs();
 
@@ -82,16 +77,14 @@ class BatchMaintenanceSchedulerTest {
     }
 
     /* ── runBatchGrouping — no eligible files ─────────────────── */
-
     @Test
     @DisplayName("runBatchGrouping skips when no eligible files exist")
     void runBatchGrouping_noFiles() {
         BatchMaintenanceScheduler scheduler = new BatchMaintenanceScheduler(
                 transactionRepository, incomingFileRepository, batchRepository,
                 authBatchRepository, auditLogService, batchFileGenerationService,
-                batchRequestProducer, sendAuthService, minioStorageService,
-                transactionManager, bulkInsertService, returnBatchSendService,
-                reportGenerationService);
+                batchRequestProducer, minioStorageService,
+                transactionManager);
 
         // Phase 1 requires a real TransactionTemplate, which needs a real TxManager.
         // We test that runBatchGrouping does not throw even when the tx manager returns null.
