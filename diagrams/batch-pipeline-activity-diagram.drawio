@@ -1,6 +1,6 @@
 <mxfile host="app.diagrams.net" modified="2026-04-25T00:00:00.000Z" type="device">
   <diagram name="Batch Pipeline Activity Diagram" id="batch-pipeline">
-    <mxGraphModel dx="1600" dy="900" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1800" pageHeight="2800" math="0" shadow="0">
+    <mxGraphModel dx="1600" dy="900" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="2100" pageHeight="2800" math="0" shadow="0">
       <root>
         <mxCell id="0"/>
         <mxCell id="1" parent="0"/>
@@ -20,19 +20,24 @@
           <mxGeometry x="600" y="40" width="250" height="2700" as="geometry"/>
         </mxCell>
 
+        <!-- Swimlane: Kafka -->
+        <mxCell id="lane_kafka" value="Apache Kafka" style="shape=swimlane;startSize=30;horizontal=1;fillColor=#ffe0b2;strokeColor=#ef6c00;fontStyle=1;fontSize=13;collapsible=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="850" y="40" width="250" height="2700" as="geometry"/>
+        </mxCell>
+
         <!-- Swimlane: Auth Service -->
-        <mxCell id="lane4" value="Authorization Service&#xa;(Port 8882)" style="shape=swimlane;startSize=40;horizontal=1;fillColor=#f8cecc;strokeColor=#b85450;fontStyle=1;fontSize=13;collapsible=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
-          <mxGeometry x="850" y="40" width="280" height="2700" as="geometry"/>
+        <mxCell id="lane4" value="Authorization Service&#xa;(MockAuthorizationService)" style="shape=swimlane;startSize=40;horizontal=1;fillColor=#f8cecc;strokeColor=#b85450;fontStyle=1;fontSize=13;collapsible=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="1100" y="40" width="280" height="2700" as="geometry"/>
         </mxCell>
 
         <!-- Swimlane: Merchant Service -->
         <mxCell id="lane5" value="Merchant Service&#xa;(Port 8881)" style="shape=swimlane;startSize=40;horizontal=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontStyle=1;fontSize=13;collapsible=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
-          <mxGeometry x="1130" y="40" width="280" height="2700" as="geometry"/>
+          <mxGeometry x="1380" y="40" width="280" height="2700" as="geometry"/>
         </mxCell>
 
         <!-- Swimlane: MySQL -->
         <mxCell id="lane6" value="MySQL Database" style="shape=swimlane;startSize=30;horizontal=1;fillColor=#f5f5f5;strokeColor=#666666;fontStyle=1;fontSize=13;collapsible=0;whiteSpace=wrap;html=1;fontColor=#333333;" vertex="1" parent="1">
-          <mxGeometry x="1410" y="40" width="250" height="2700" as="geometry"/>
+          <mxGeometry x="1660" y="40" width="250" height="2700" as="geometry"/>
         </mxCell>
 
         <!-- ====== START ====== -->
@@ -138,19 +143,27 @@
           <mxGeometry relative="1" as="geometry"/>
         </mxCell>
 
-        <!-- Step 3: Send to Auth Service -->
-        <mxCell id="a8" value="Step 3: Send encrypted CSV&#xa;+ RSA-encrypted AES key&#xa;via HTTPS Internal API" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;fontSize=11;" vertex="1" parent="lane2">
+        <!-- Step 3: Publish batch request to Kafka -->
+        <mxCell id="a8" value="Step 3: Publish batch request&#xa;(encrypted CSV + AES key + IV)&#xa;to Kafka" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;fontSize=11;" vertex="1" parent="lane2">
           <mxGeometry x="50" y="1190" width="200" height="60" as="geometry"/>
         </mxCell>
         <mxCell id="e10" value="" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="a7" target="a8" parent="1">
           <mxGeometry relative="1" as="geometry"/>
         </mxCell>
 
-        <!-- Auth Service: Validate API Key + IP -->
-        <mxCell id="a9" value="Validate X-API-Key&#xa;&amp; IP whitelist" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;fontSize=12;" vertex="1" parent="lane4">
+        <!-- Kafka: batch-request topic -->
+        <mxCell id="kafka_req" value="batch-request&#xa;topic" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=10;fillColor=#ffe0b2;strokeColor=#ef6c00;fontSize=11;fontStyle=1;" vertex="1" parent="lane_kafka">
+          <mxGeometry x="65" y="1190" width="120" height="60" as="geometry"/>
+        </mxCell>
+        <mxCell id="e_pub_req" value="publish" style="edgeStyle=orthogonalEdgeStyle;dashed=0;" edge="1" source="a8" target="kafka_req" parent="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- Auth Service: Consume from Kafka -->
+        <mxCell id="a9" value="@KafkaListener&#xa;consumes batch-request" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;fontSize=12;" vertex="1" parent="lane4">
           <mxGeometry x="50" y="1190" width="180" height="50" as="geometry"/>
         </mxCell>
-        <mxCell id="e11" value="" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="a8" target="a9" parent="1">
+        <mxCell id="e11" value="consume" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="kafka_req" target="a9" parent="1">
           <mxGeometry relative="1" as="geometry"/>
         </mxCell>
 
@@ -170,25 +183,41 @@
           <mxGeometry relative="1" as="geometry"/>
         </mxCell>
 
-        <!-- Auth Service: Return results -->
-        <mxCell id="a12" value="Return encrypted&#xa;authorization results" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;fontSize=12;" vertex="1" parent="lane4">
+        <!-- Auth Service: Publish results to Kafka -->
+        <mxCell id="a12" value="Publish authorization&#xa;results to Kafka" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;fontSize=12;" vertex="1" parent="lane4">
           <mxGeometry x="50" y="1470" width="180" height="50" as="geometry"/>
         </mxCell>
         <mxCell id="e14" value="" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="a11" target="a12" parent="1">
           <mxGeometry relative="1" as="geometry"/>
         </mxCell>
 
+        <!-- Kafka: batch-response topic -->
+        <mxCell id="kafka_resp" value="batch-response&#xa;topic" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=10;fillColor=#ffe0b2;strokeColor=#ef6c00;fontSize=11;fontStyle=1;" vertex="1" parent="lane_kafka">
+          <mxGeometry x="65" y="1470" width="120" height="60" as="geometry"/>
+        </mxCell>
+        <mxCell id="e_pub_resp" value="publish" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="a12" target="kafka_resp" parent="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- Backend: Consume response from Kafka -->
+        <mxCell id="a12b" value="@KafkaListener&#xa;consumes batch-response&#xa;(TransactionUpdateService)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;fontSize=11;" vertex="1" parent="lane2">
+          <mxGeometry x="45" y="1560" width="210" height="60" as="geometry"/>
+        </mxCell>
+        <mxCell id="e_con_resp" value="consume" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="kafka_resp" target="a12b" parent="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
         <!-- Decision: Auth successful? -->
         <mxCell id="d3" value="Auth&#xa;successful?" style="rhombus;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;fontSize=11;" vertex="1" parent="lane2">
-          <mxGeometry x="90" y="1560" width="120" height="80" as="geometry"/>
+          <mxGeometry x="90" y="1660" width="120" height="80" as="geometry"/>
         </mxCell>
-        <mxCell id="e15" value="" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="a12" target="d3" parent="1">
+        <mxCell id="e15" value="" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="a12b" target="d3" parent="1">
           <mxGeometry relative="1" as="geometry"/>
         </mxCell>
 
         <!-- Failed path -->
         <mxCell id="aFail" value="Mark batch as&#xa;SEND_FAILED&#xa;(keep txns PENDING for retry)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;fontSize=11;" vertex="1" parent="lane6">
-          <mxGeometry x="25" y="1570" width="200" height="60" as="geometry"/>
+          <mxGeometry x="25" y="1670" width="200" height="60" as="geometry"/>
         </mxCell>
         <mxCell id="eFail" value="No" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="d3" target="aFail" parent="1">
           <mxGeometry relative="1" as="geometry"/>
@@ -196,18 +225,18 @@
 
         <!-- End (fail) -->
         <mxCell id="endFR" value="" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;fillColor=#FFFFFF;strokeColor=#000000;strokeWidth=3;" vertex="1" parent="lane6">
-          <mxGeometry x="105" y="1670" width="40" height="40" as="geometry"/>
+          <mxGeometry x="105" y="1770" width="40" height="40" as="geometry"/>
         </mxCell>
         <mxCell id="endF" value="" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;fillColor=#000000;strokeColor=#000000;" vertex="1" parent="lane6">
-          <mxGeometry x="110" y="1675" width="30" height="30" as="geometry"/>
+          <mxGeometry x="110" y="1775" width="30" height="30" as="geometry"/>
         </mxCell>
         <mxCell id="eFail2" value="" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="aFail" target="endFR" parent="1">
           <mxGeometry relative="1" as="geometry"/>
         </mxCell>
 
         <!-- Step 4: Update transaction statuses -->
-        <mxCell id="a13" value="Step 4: Decrypt response &amp;&#xa;bulk update transaction statuses&#xa;(APPROVED / FAILED)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;fontSize=11;" vertex="1" parent="lane6">
-          <mxGeometry x="20" y="1750" width="210" height="60" as="geometry"/>
+        <mxCell id="a13" value="Step 4: Bulk update&#xa;transaction statuses&#xa;(APPROVED / DECLINED)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;fontSize=11;" vertex="1" parent="lane6">
+          <mxGeometry x="20" y="1850" width="210" height="60" as="geometry"/>
         </mxCell>
         <mxCell id="e16" value="Yes" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="d3" target="a13" parent="1">
           <mxGeometry relative="1" as="geometry"/>
@@ -215,7 +244,7 @@
 
         <!-- Step 5: Update AuthBatch -->
         <mxCell id="a14" value="Step 5: Update AuthorizationBatch&#xa;→ PROCESSED" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;fontSize=12;" vertex="1" parent="lane6">
-          <mxGeometry x="25" y="1860" width="200" height="50" as="geometry"/>
+          <mxGeometry x="25" y="1960" width="200" height="50" as="geometry"/>
         </mxCell>
         <mxCell id="e17" value="" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="a13" target="a14" parent="1">
           <mxGeometry relative="1" as="geometry"/>
@@ -223,7 +252,7 @@
 
         <!-- Step 6: Send return batch -->
         <mxCell id="a15" value="Step 6: Generate &amp; encrypt&#xa;return batch CSV" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;fontSize=12;" vertex="1" parent="lane2">
-          <mxGeometry x="55" y="1960" width="190" height="50" as="geometry"/>
+          <mxGeometry x="55" y="2060" width="190" height="50" as="geometry"/>
         </mxCell>
         <mxCell id="e18" value="" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="a14" target="a15" parent="1">
           <mxGeometry relative="1" as="geometry"/>
@@ -231,7 +260,7 @@
 
         <!-- Send to Merchant -->
         <mxCell id="a16" value="Receive encrypted&#xa;return batch file&#xa;via Internal API" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;fontSize=11;" vertex="1" parent="lane5">
-          <mxGeometry x="50" y="1960" width="180" height="60" as="geometry"/>
+          <mxGeometry x="50" y="2060" width="180" height="60" as="geometry"/>
         </mxCell>
         <mxCell id="e19" value="HTTPS + API Key" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="a15" target="a16" parent="1">
           <mxGeometry relative="1" as="geometry"/>
@@ -239,7 +268,7 @@
 
         <!-- Step 7: Send report -->
         <mxCell id="a17" value="Step 7: Generate &amp; encrypt&#xa;report summary" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;fontSize=12;" vertex="1" parent="lane2">
-          <mxGeometry x="55" y="2080" width="190" height="50" as="geometry"/>
+          <mxGeometry x="55" y="2180" width="190" height="50" as="geometry"/>
         </mxCell>
         <mxCell id="e20" value="" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="a16" target="a17" parent="1">
           <mxGeometry relative="1" as="geometry"/>
@@ -247,7 +276,7 @@
 
         <!-- Send report to Merchant -->
         <mxCell id="a18" value="Receive encrypted&#xa;report summary&#xa;via Internal API" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;fontSize=11;" vertex="1" parent="lane5">
-          <mxGeometry x="50" y="2080" width="180" height="60" as="geometry"/>
+          <mxGeometry x="50" y="2180" width="180" height="60" as="geometry"/>
         </mxCell>
         <mxCell id="e21" value="HTTPS + API Key" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="a17" target="a18" parent="1">
           <mxGeometry relative="1" as="geometry"/>
@@ -255,7 +284,7 @@
 
         <!-- Step 8: Auto-generate results -->
         <mxCell id="a19" value="Step 8: Auto-generate&#xa;batch file results &amp; reports" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;fontSize=12;" vertex="1" parent="lane2">
-          <mxGeometry x="55" y="2200" width="190" height="50" as="geometry"/>
+          <mxGeometry x="55" y="2300" width="190" height="50" as="geometry"/>
         </mxCell>
         <mxCell id="e22" value="" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="a18" target="a19" parent="1">
           <mxGeometry relative="1" as="geometry"/>
@@ -263,7 +292,7 @@
 
         <!-- Store results in MinIO -->
         <mxCell id="a20" value="Store generated report&#xa;files in MinIO" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;fontSize=12;" vertex="1" parent="lane3">
-          <mxGeometry x="35" y="2310" width="180" height="50" as="geometry"/>
+          <mxGeometry x="35" y="2410" width="180" height="50" as="geometry"/>
         </mxCell>
         <mxCell id="e23" value="" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="a19" target="a20" parent="1">
           <mxGeometry relative="1" as="geometry"/>
@@ -271,7 +300,7 @@
 
         <!-- Save report metadata -->
         <mxCell id="a21" value="Save report metadata&#xa;to MySQL" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;fontSize=12;" vertex="1" parent="lane6">
-          <mxGeometry x="35" y="2310" width="180" height="50" as="geometry"/>
+          <mxGeometry x="35" y="2410" width="180" height="50" as="geometry"/>
         </mxCell>
         <mxCell id="e24" value="" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="a20" target="a21" parent="1">
           <mxGeometry relative="1" as="geometry"/>
@@ -279,7 +308,7 @@
 
         <!-- Log complete -->
         <mxCell id="a22" value="Log batch completion&#xa;in Audit Log" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;fontSize=12;" vertex="1" parent="lane6">
-          <mxGeometry x="35" y="2410" width="180" height="50" as="geometry"/>
+          <mxGeometry x="35" y="2510" width="180" height="50" as="geometry"/>
         </mxCell>
         <mxCell id="e25" value="" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="a21" target="a22" parent="1">
           <mxGeometry relative="1" as="geometry"/>
@@ -287,10 +316,10 @@
 
         <!-- ====== END (success) ====== -->
         <mxCell id="endSR" value="" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;fillColor=#FFFFFF;strokeColor=#000000;strokeWidth=3;" vertex="1" parent="lane1">
-          <mxGeometry x="120" y="2530" width="40" height="40" as="geometry"/>
+          <mxGeometry x="120" y="2630" width="40" height="40" as="geometry"/>
         </mxCell>
         <mxCell id="endS" value="" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;fillColor=#000000;strokeColor=#000000;" vertex="1" parent="lane1">
-          <mxGeometry x="125" y="2535" width="30" height="30" as="geometry"/>
+          <mxGeometry x="125" y="2635" width="30" height="30" as="geometry"/>
         </mxCell>
         <mxCell id="e26" value="" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="a22" target="endSR" parent="1">
           <mxGeometry relative="1" as="geometry"/>

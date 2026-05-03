@@ -21,11 +21,11 @@
         </div>
         <div class="summary-card success">
           <div class="card-value">{{ batch.successCount }}</div>
-          <div class="card-label">Successful</div>
+          <div class="card-label">Approved</div>
         </div>
         <div class="summary-card failed">
           <div class="card-value">{{ batch.failCount }}</div>
-          <div class="card-label">Failed</div>
+          <div class="card-label">Declined</div>
         </div>
         <div class="summary-card amount">
           <div class="card-value">{{ formatAmount(batch.totalAmountCents) }}</div>
@@ -127,7 +127,7 @@
               <th class="th-sort" (click)="txnSortBy('transactionId')" [attr.data-sort]="txnSortKey==='transactionId' ? txnSortDir : ''">Txn ID</th>
               <th class="th-sort" (click)="txnSortBy('merchantId')" [attr.data-sort]="txnSortKey==='merchantId' ? txnSortDir : ''">Merchant</th>
               <th class="th-sort" (click)="txnSortBy('merchantCustomer')" [attr.data-sort]="txnSortKey==='merchantCustomer' ? txnSortDir : ''">Customer</th>
-              <th class="th-sort" (click)="txnSortBy('maskedPan')" [attr.data-sort]="txnSortKey==='maskedPan' ? txnSortDir : ''">Masked PAN</th>
+              <th class="th-sort" (click)="txnSortBy('maskedPan')" [attr.data-sort]="txnSortKey==='maskedPan' ? txnSortDir : ''">Account</th>
               <th class="th-sort" (click)="txnSortBy('amount')" [attr.data-sort]="txnSortKey==='amount' ? txnSortDir : ''">Amount</th>
               <th class="th-sort" (click)="txnSortBy('currency')" [attr.data-sort]="txnSortKey==='currency' ? txnSortDir : ''">Currency</th>
               <th class="th-sort" (click)="txnSortBy('actualBillingDate')" [attr.data-sort]="txnSortKey==='actualBillingDate' ? txnSortDir : ''">Billing Date</th>
